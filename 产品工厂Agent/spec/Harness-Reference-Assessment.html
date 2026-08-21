@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>产品工厂 Agent - Harness 参考评估</title>
+  <style>
+    :root{
+      --page:#f5f6f4;--surface:#fff;--surface-2:#edf1ee;--text:#18211e;--muted:#596660;
+      --line:#cbd4cf;--line-strong:#8d9d96;--blue:#1b63a2;--blue-soft:#e7f1fa;
+      --green:#126d55;--green-soft:#e3f3ed;--amber:#915600;--amber-soft:#fff0d4;
+      --red:#a23838;--red-soft:#fae8e8;--violet:#66519b;--violet-soft:#efebf8;
+      --shadow:0 1px 2px rgb(0 0 0 / 8%);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+      font-size:16px;line-height:1.58;letter-spacing:0
+    }
+    @media(prefers-color-scheme:dark){:root{--page:#151a18;--surface:#1d2421;--surface-2:#252d29;--text:#edf2ef;--muted:#adbbb5;--line:#3a4741;--line-strong:#68776f;--blue:#79b5e9;--blue-soft:#1b3449;--green:#72cbb1;--green-soft:#1d4035;--amber:#efb25a;--amber-soft:#47351b;--red:#ed8b8b;--red-soft:#492929;--violet:#baa5ea;--violet-soft:#352d49;--shadow:none}}
+    *{box-sizing:border-box}html{scroll-behavior:auto}body{margin:0;background:var(--page);color:var(--text)}a{color:var(--blue)}button{font:inherit}button:focus-visible,a:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:2px}
+    .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:11px max(20px,calc((100% - 1180px)/2));background:color-mix(in srgb,var(--surface) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .brand{font-weight:750;white-space:nowrap}.nav{display:flex;gap:3px;overflow-x:auto}.nav a{padding:6px 8px;border-radius:4px;color:var(--muted);text-decoration:none;white-space:nowrap}.nav a:hover{background:var(--surface-2);color:var(--text)}
+    .band{padding:52px 0;border-bottom:1px solid var(--line);scroll-margin-top:66px}.band.alt{background:color-mix(in srgb,var(--surface) 48%,transparent)}.inner{width:min(1180px,calc(100% - 40px));margin:auto}
+    h1,h2,h3,p{margin-top:0}h1{max-width:920px;margin-bottom:15px;font-size:40px;line-height:1.18;letter-spacing:0}h2{margin-bottom:8px;font-size:27px;line-height:1.25;letter-spacing:0}h3{margin-bottom:6px;font-size:17px;line-height:1.35;letter-spacing:0}.lead{max-width:890px;color:var(--muted);font-size:18px}.eyebrow{display:block;margin-bottom:9px;color:var(--blue);font-size:13px;font-weight:750}.section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:22px}.section-copy{max-width:790px;margin:0;color:var(--muted)}
+    .verdict{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,.7fr);gap:16px;margin-top:25px}.verdict-main{padding:19px 21px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--green);border-radius:6px;box-shadow:var(--shadow)}.verdict-main strong{display:block;margin-bottom:5px;font-size:21px}.verdict-main p{margin:0;color:var(--muted)}.verdict-side{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{display:grid;align-content:center;min-height:82px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:6px;text-align:center}.metric strong{font-size:25px}.metric span{color:var(--muted);font-size:12px}
+    .equation{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));align-items:stretch;gap:8px}.eq-block{display:grid;align-content:center;min-height:104px;padding:13px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:6px;text-align:center}.eq-block.model{border-top-color:var(--violet)}.eq-block.harness{border-top-color:var(--green)}.eq-block.human{border-top-color:var(--amber)}.eq-block.review{border-top-color:var(--red)}.eq-block strong,.eq-block span{display:block}.eq-block span{margin-top:4px;color:var(--muted);font-size:12px}.operator{display:grid;place-items:center;color:var(--line-strong);font-size:24px;font-weight:700}
+    .boundary{display:grid;grid-template-columns:1fr 52px 1fr;margin-top:24px}.lane{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden}.lane-head{padding:13px 16px;border-bottom:1px solid var(--line);font-weight:750}.lane.model .lane-head{background:var(--violet-soft);color:var(--violet)}.lane.control .lane-head{background:var(--green-soft);color:var(--green)}.lane-row{display:grid;grid-template-columns:38px minmax(0,1fr);gap:11px;padding:12px 15px;border-bottom:1px solid var(--line)}.lane-row:last-child{border-bottom:0}.lane-num{display:grid;place-items:center;width:30px;height:30px;background:var(--surface-2);border-radius:50%;font-size:12px;font-weight:750}.lane-row span{display:block;color:var(--muted);font-size:12px}.bridge{display:grid;place-items:center;color:var(--line-strong);font-size:24px}
+    .segment{display:inline-flex;flex-wrap:wrap;padding:3px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px}.segment button{min-height:35px;padding:5px 11px;background:transparent;color:var(--muted);border:0;border-radius:4px;cursor:pointer}.segment button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    .chapter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.chapter{display:grid;grid-template-columns:42px minmax(0,1fr);gap:11px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:6px}.chapter[hidden]{display:none}.chapter-id{display:grid;place-items:center;width:42px;height:42px;background:var(--surface-2);border-radius:4px;font-weight:800}.chapter strong{display:block}.chapter p{margin:3px 0 8px;color:var(--muted);font-size:12px}.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:750}.badge.must{background:var(--green-soft);color:var(--green)}.badge.adapt{background:var(--blue-soft);color:var(--blue)}.badge.later{background:var(--amber-soft);color:var(--amber)}.badge.reject{background:var(--red-soft);color:var(--red)}
+    .dag-compare{display:grid;grid-template-columns:1fr 62px 1fr;align-items:center;min-width:0}.dag{min-width:0;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:6px}.dag h3 span{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:400}.nodes{display:flex;align-items:center;gap:7px;max-width:100%;margin-top:16px;overflow-x:auto;padding-bottom:5px}.node{flex:0 0 auto;min-width:92px;padding:9px 10px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;text-align:center;font-size:12px}.node.task{border-left:4px solid var(--blue)}.node.artifact{border-left:4px solid var(--green)}.edge{flex:0 0 auto;color:var(--line-strong)}.link-label{display:grid;place-items:center;min-height:80px;color:var(--muted);font-size:12px;text-align:center}
+    .delta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.delta{position:relative;padding:16px 17px 16px 58px;background:var(--surface);border:1px solid var(--line);border-radius:6px}.delta-num{position:absolute;left:15px;top:16px;display:grid;place-items:center;width:30px;height:30px;background:var(--text);color:var(--page);border-radius:50%;font-size:12px;font-weight:800}.delta p{margin:0;color:var(--muted);font-size:13px}.delta code{font-size:12px;color:var(--blue)}
+    .permission{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:17px}.permission-item{padding:14px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--green);border-radius:6px}.permission-item.ask{border-top-color:var(--amber)}.permission-item.deny{border-top-color:var(--red)}.permission-item strong,.permission-item span{display:block}.permission-item span{color:var(--muted);font-size:12px}
+    .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px}table{width:100%;border-collapse:collapse}th,td{padding:11px 13px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{background:var(--surface-2);color:var(--muted);font-size:12px}td{font-size:13px}tr:last-child td{border-bottom:0}
+    .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.time{padding:16px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:6px}.time:nth-child(2){border-top-color:var(--violet)}.time:nth-child(3){border-top-color:var(--green)}.time strong,.time span{display:block}.time span{margin-top:5px;color:var(--muted);font-size:13px}.cut{margin-top:13px;padding:14px 16px;background:var(--amber-soft);border-left:4px solid var(--amber)}.cut strong{color:var(--amber)}
+    .evidence{display:grid;grid-template-columns:1fr 1fr;gap:12px}.evidence-block{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:6px}.evidence-block ul{margin:10px 0 0;padding-left:19px}.evidence-block li{margin:6px 0;color:var(--muted);font-size:13px}.warning{padding:16px;background:var(--red-soft);border-left:4px solid var(--red)}.warning strong{color:var(--red)}.warning p{margin:4px 0 0;color:var(--muted)}
+    .doc-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.doc-link{display:block;padding:13px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none}.doc-link:hover{border-color:var(--blue)}.doc-link strong,.doc-link span{display:block}.doc-link span{color:var(--muted);font-size:12px}
+    .footer{padding:28px 0 45px;color:var(--muted);font-size:13px}
+    @media(max-width:920px){.chapter-grid{grid-template-columns:1fr 1fr}.equation{grid-template-columns:1fr 28px 1fr 28px 1fr}.equation .operator:nth-of-type(6){display:none}.eq-block.review{grid-column:1/-1}.boundary{grid-template-columns:1fr}.bridge{height:42px;transform:rotate(90deg)}.dag-compare{grid-template-columns:1fr}.link-label{min-height:42px}.delta-grid,.evidence{grid-template-columns:1fr}.doc-links{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.inner{width:min(100% - 24px,1180px)}.band{padding:39px 0;scroll-margin-top:146px}.topbar{align-items:flex-start;flex-direction:column}.nav{width:100%;flex-wrap:wrap;overflow:visible}.nav a{padding:4px 6px}h1{font-size:31px}h2{font-size:23px}.section-head{align-items:flex-start;flex-direction:column}.verdict{grid-template-columns:1fr}.chapter-grid,.timeline,.permission,.doc-links{grid-template-columns:1fr}.equation{grid-template-columns:1fr}.operator{height:24px}.eq-block.review{grid-column:auto}.verdict-side{grid-template-columns:1fr 1fr}.delta{padding-left:52px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">产品工厂 Agent · Harness 审计</div>
+    <nav class="nav" aria-label="报告导航">
+      <a href="#verdict">结论</a><a href="#principle">第一性原理</a><a href="#chapters">17章裁决</a><a href="#dags">双 DAG</a><a href="#deltas">规格增量</a><a href="#redteam">反方测试</a><a href="#schedule">排期</a><a href="#evidence">证据</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="band" id="verdict">
+      <div class="inner">
+        <span class="eyebrow">D1-D2 REFERENCE REVIEW / 2026-08-20</span>
+        <h1>能用的是 Harness 机制，不是教学实现</h1>
+        <p class="lead">`learn-claude-code-main` 证明了 Agent Loop 周围需要权限、上下文、任务、恢复与完成判定。它强化现有 4 Agent 方案，不构成新增框架、第五个 Agent 或提前开工的理由。</p>
+        <div class="verdict">
+          <div class="verdict-main"><strong>裁决：吸收 6 项运行时契约，拒绝复制单机示例代码</strong><p>保持 FastAPI + LangGraph + PostgreSQL + Codex CLI Adapter；Spec Freeze 已批准，D3 只按本项目契约实现，不复制教学运行时。</p></div>
+          <div class="verdict-side"><div class="metric"><strong>17</strong><span>机制章节已裁决</span></div><div class="metric"><strong>6</strong><span>D1-D2 必补契约</span></div><div class="metric"><strong>4</strong><span>核心 Agent 不变</span></div><div class="metric"><strong>0</strong><span>新增运行时依赖</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band alt" id="principle">
+      <div class="inner">
+        <div class="section-head"><div><h2>第一性原理：谁负责什么</h2><p class="section-copy">产品结果不是模型单独产生，也不是工作流节点越多越可靠。四个因素任一为零，系统都不能交付。</p></div></div>
+        <div class="equation">
+          <div class="eq-block model"><strong>模型能力</strong><span>理解、分解、选择策略</span></div><div class="operator">×</div>
+          <div class="eq-block harness"><strong>可观察环境</strong><span>事实、产物、日志、状态</span></div><div class="operator">×</div>
+          <div class="eq-block harness"><strong>可执行行动</strong><span>Skill、Tool、受限工作区</span></div><div class="operator">×</div>
+          <div class="eq-block review"><strong>可验证反馈</strong><span>测试、Reviewer、人工 Gate</span></div>
+        </div>
+        <div class="boundary">
+          <div class="lane model"><div class="lane-head">模型自主决策区</div><div class="lane-row"><div class="lane-num">1</div><div><strong>理解当前目标</strong><span>基于版本化 Context Pack，而不是全量群聊。</span></div></div><div class="lane-row"><div class="lane-num">2</div><div><strong>选择能力与工具</strong><span>按需加载 Skill，提出任务分解和下一行动。</span></div></div><div class="lane-row"><div class="lane-num">3</div><div><strong>生成候选产物</strong><span>文档、代码、审查意见和状态转移建议。</span></div></div></div>
+          <div class="bridge">⇄</div>
+          <div class="lane control"><div class="lane-head">确定性 Harness 控制区</div><div class="lane-row"><div class="lane-num">A</div><div><strong>验证与授权</strong><span>Schema、阶段、路径、预算、权限和 Gate。</span></div></div><div class="lane-row"><div class="lane-num">B</div><div><strong>执行与持久化</strong><span>副作用、Task/Run、Event、Artifact 和幂等。</span></div></div><div class="lane-row"><div class="lane-num">C</div><div><strong>恢复与收口</strong><span>失败恢复、stale 检查、证据判定和人工责任。</span></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="chapters">
+      <div class="inner">
+        <div class="section-head"><div><h2>17 章机制裁决</h2><p class="section-copy">筛选查看 V1 必须采纳、改造后采纳、延后和拒绝项。章节号采用根目录新主线。</p></div><div class="segment" role="group" aria-label="章节裁决筛选"><button data-filter="all" aria-pressed="true">全部</button><button data-filter="must" aria-pressed="false">V1 采纳</button><button data-filter="adapt" aria-pressed="false">改造采纳</button><button data-filter="later" aria-pressed="false">延后</button><button data-filter="reject" aria-pressed="false">拒绝</button></div></div>
+        <div class="chapter-grid" id="chapter-grid"></div>
+      </div>
+    </section>
+
+    <section class="band alt" id="dags">
+      <div class="inner">
+        <div class="section-head"><div><h2>最关键发现：产品需要两张 DAG</h2><p class="section-copy">当前画布的 Artifact DAG 用来解释交付历史；参考工程的 Task System 提醒我们，还需要一张内部 Execution Task DAG 来决定依赖、认领和恢复。</p></div></div>
+        <div class="dag-compare">
+          <div class="dag"><h3>Execution Task DAG<span>内部控制面：现在谁能做什么</span></h3><div class="nodes"><div class="node task">证据任务</div><div class="edge">→</div><div class="node task">BRD 红队</div><div class="edge">→</div><div class="node task">PRD 任务</div><div class="edge">→</div><div class="node task">Builder</div></div></div>
+          <div class="link-label">task_id<br>↕<br>artifact refs</div>
+          <div class="dag"><h3>Artifact DAG<span>用户视图：已经产生了什么</span></h3><div class="nodes"><div class="node artifact">Brief</div><div class="edge">→</div><div class="node artifact">BRD</div><div class="edge">→</div><div class="node artifact">PRD</div><div class="edge">→</div><div class="node artifact">Code</div></div></div>
+        </div>
+        <div class="cut"><strong>不变量：</strong>任务标记完成，不代表产物通过；产物文件存在，也不代表依赖、证据或人工闸已满足。</div>
+      </div>
+    </section>
+
+    <section class="band" id="deltas">
+      <div class="inner">
+        <div class="section-head"><div><h2>D1-D2 补强的 6 项契约</h2><p class="section-copy">这些是冻结前应写清的运行时语义，不是 D3 已实现事实。</p></div></div>
+        <div class="delta-grid">
+          <div class="delta"><div class="delta-num">1</div><h3>Execution Task DAG</h3><p>任务依赖、原子认领、owner、失败和取消，与 Artifact DAG 分离并建立引用。</p></div>
+          <div class="delta"><div class="delta-num">2</div><h3>Run Journal</h3><p><code>run_id + step_id + input hashes + versions</code> 支持恢复；副作用先对账再重试。</p></div>
+          <div class="delta"><div class="delta-num">3</div><h3>三态权限</h3><p><code>allow / ask / deny</code>；一次工具审批与 G0-G6 产品阶段闸严格分开。</p></div>
+          <div class="delta"><div class="delta-num">4</div><h3>上下文压缩</h3><p>保留 tool use/result 对、未读结果、当前目标和完整 transcript 引用；摘要不升级为事实。</p></div>
+          <div class="delta"><div class="delta-num">5</div><h3>后台结果回注</h3><p>完成事件回到原 Project/Task/Run/Context；Context 变化则标记 stale。</p></div>
+          <div class="delta"><div class="delta-num">6</div><h3>有界完成判断</h3><p>确定性证据 → clean-context Reviewer → 人工 Gate；达到预算或重试上限即交还用户。</p></div>
+        </div>
+        <div class="permission"><div class="permission-item"><strong>ALLOW</strong><span>已在 Agent、阶段、参数、路径、预算和副作用授权内。</span></div><div class="permission-item ask"><strong>ASK</strong><span>创建持久 PermissionRequest，群聊展示影响、范围和时效。</span></div><div class="permission-item deny"><strong>DENY</strong><span>硬禁止直接阻断，普通会话批准也不能绕过。</span></div></div>
+      </div>
+    </section>
+
+    <section class="band alt" id="redteam">
+      <div class="inner">
+        <div class="section-head"><div><h2>为什么不能直接复制实现</h2><p class="section-copy">教学实现用最少代码解释概念；企业内部 Agent 需要面对绕过、并发、重启和审计。</p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>示例做法</th><th>对抗性攻击/故障</th><th>产品工厂裁决</th></tr></thead><tbody>
+          <tr><td><code>shell=True</code> + 模型字符串</td><td>连接符、重定向、环境展开、间接脚本可绕过浅层检查</td><td>只通过 Codex CLI Adapter/结构化工具；路径、网络和副作用另行判定</td></tr>
+          <tr><td>命令子字符串黑名单</td><td>编码、别名、脚本文件、工具变体导致漏拦或误拦</td><td>按 Agent、阶段、目标、参数 Schema、信任边界和副作用组合授权</td></tr>
+          <tr><td>终端 <code>input()</code> 审批</td><td>Web 请求断开、审批丢失、无时效/审批人/幂等</td><td>PermissionRequest + Decision 持久化，并通过事件恢复</td></tr>
+          <tr><td>文件 JSON/JSONL 唯一状态</td><td>进程崩溃半写、并发覆盖、跨实例争抢</td><td>PostgreSQL 事务状态 + append-only Event；文件仅存产物</td></tr>
+          <tr><td>内存 Thread/Queue</td><td>服务重启后任务和结果消失</td><td>Run/Task 状态持久化；V1 可单 worker，但不能只靠内存</td></tr>
+          <tr><td>纯 LLM Goal Evaluator</td><td>被执行者自述、提示注入或伪造测试文本误导</td><td>确定性证据优先，Reviewer 只判语义，最终业务 Gate 留给人</td></tr>
+        </tbody></table></div>
+      </div>
+    </section>
+
+    <section class="band" id="schedule">
+      <div class="inner">
+        <div class="section-head"><div><h2>不延长 10 日排期</h2><p class="section-copy">新增的是底层契约优先级，不是新的用户阶段和功能清单。</p></div></div>
+        <div class="timeline"><div class="time"><strong>D3-D4 · 最小控制面</strong><span>Task/Dependency、AgentRun/RunStep、三态权限、事件与恢复骨架；只做单 worker 和 mock。</span></div><div class="time"><strong>D5-D7 · 纵向切片接入</strong><span>Skill 两阶段加载、上下文压缩、后台结果回注；只接当前切片需要的能力。</span></div><div class="time"><strong>D8-D10 · 证据收口</strong><span>独立完成判断、恢复/重复副作用/压缩对抗测试；真实模型和真实浏览器验收。</span></div></div>
+        <div class="cut"><strong>优先级冲突时：</strong>保留恢复、权限和证据，削减非核心动画、旁白变化和额外 Skill。Cron、动态 MCP、自动长期记忆、并行 worktree 团队全部延后。</div>
+      </div>
+    </section>
+
+    <section class="band alt" id="evidence">
+      <div class="inner">
+        <div class="section-head"><div><h2>证据与验证边界</h2><p class="section-copy">本报告区分“已阅读源码/测试设计”和“已运行测试”。</p></div></div>
+        <div class="evidence"><div class="evidence-block"><h3>已核验</h3><ul><li>根 README 与新主线 s01-s17 的机制说明。</li><li>权限、Hook、Skill、压缩、Task、后台任务、集成 Harness、Workflow 和 Goal Loop 关键源码。</li><li>任务依赖、上下文工具对、Workflow 恢复、Goal Loop 和 Web 场景等测试文件。</li><li>现有产品工厂 Context、State、Capability、Tool、Technical 和 Acceptance 规格。</li></ul></div><div class="warning"><strong>未声称测试通过</strong><p>尝试执行参考仓库测试时，系统 Python 返回 <code>No module named pytest</code>。当前仍在 D1-D2，且该仓库不是产品依赖，因此未安装依赖。可以确认测试设计存在，不能声称本机执行通过。</p></div></div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="inner">
+        <div class="section-head"><div><h2>对应权威文件</h2><p class="section-copy">HTML 用于评审，Markdown 与现有 spec 用于后续 Agent 按需加载。</p></div></div>
+        <div class="doc-links"><a class="doc-link" href="./Harness-Reference-Assessment.md"><strong>评估 Markdown</strong><span>完整章节裁决、反方测试与排期影响</span></a><a class="doc-link" href="./Context-Schema.md"><strong>Context Schema</strong><span>Context Pack、压缩和 transcript 约束</span></a><a class="doc-link" href="./State-Machine-and-Gates.md"><strong>State / Gates</strong><span>Task DAG、Run Journal 和完成判定</span></a><a class="doc-link" href="./Capability-Registry.md"><strong>Capability Registry</strong><span>Skill 两阶段加载和版本记录</span></a><a class="doc-link" href="./Tool-and-Permission-Policy.md"><strong>Tool Policy</strong><span>三态权限、Hook 和后台任务</span></a><a class="doc-link" href="./Acceptance-Test-Plan.md"><strong>Acceptance Plan</strong><span>新增恢复、压缩、权限和目标测试</span></a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="inner">产品工厂 Agent · Harness 参考评估 · 2026-08-20 · Spec Freeze 已批准，D3 进行中。</div></footer>
+  <script>
+    (() => {
+      const chapters = [
+        ['s01','Agent Loop','adapt','改造采纳','每个 Agent Run 的模型→工具→结果循环；补持久化、预算和取消。'],
+        ['s02','Tool Dispatch','must','V1 采纳','通过注册表扩展工具，不改编排核心。'],
+        ['s03','Permission','adapt','改造采纳','采纳 allow/ask/deny，拒绝字符串黑名单和终端审批。'],
+        ['s04','Hooks','must','V1 采纳','把权限、脱敏、审计和指标挂到固定生命周期点。'],
+        ['s05','Todo','later','有限使用','只作 Agent 私有计划，不代替项目状态和任务事实。'],
+        ['s06','Subagent','must','V1 采纳','Context Pack → 独立 Run → Handoff。'],
+        ['s07','Skill Loading','must','V1 采纳','先暴露 Skill 描述，命中后加载正文和版本。'],
+        ['s08','Context Compact','must','V1 采纳','持久化大输出，保留工具对、未读结果和 transcript。'],
+        ['s09','Memory','later','V2 延后','避免错误草稿自动变成跨项目长期事实。'],
+        ['s10','Task System','must','V1 必须','新增内部 Execution Task DAG，与 Artifact DAG 分离。'],
+        ['s11','Background Tasks','adapt','有限采纳','Web 长任务异步化，但状态必须持久化且可恢复。'],
+        ['s12','Cron','reject','V1 拒绝','当前闭环无需无人值守定时任务，风险高于价值。'],
+        ['s13','Agent Teams','adapt','只采纳协议','保留任务归属和结构化消息，不复制常驻线程团队。'],
+        ['s14','MCP / Plugin','later','V2 延后','V1 使用固定白名单 Adapter，不动态扩大信任边界。'],
+        ['s15','Integrated Harness','later','参考清单','用来检查机制组合，不把单文件示例当生产架构。'],
+        ['s16','Workflow Runtime','must','V1 必须','Run Journal、Step、恢复、并发锁和预算语义。'],
+        ['s17','Goal Loop','adapt','改造采纳','确定性证据 + Reviewer + 人工 Gate + 有界续跑。']
+      ];
+      const grid = document.getElementById('chapter-grid');
+      grid.innerHTML = chapters.map(([id,name,type,label,copy]) => `<div class="chapter" data-type="${type}"><div class="chapter-id">${id}</div><div><strong>${name}</strong><p>${copy}</p><span class="badge ${type}">${label}</span></div></div>`).join('');
+      document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => {
+        const filter = button.dataset.filter;
+        document.querySelectorAll('[data-filter]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        document.querySelectorAll('.chapter').forEach(item => { item.hidden = filter !== 'all' && item.dataset.type !== filter; });
+      }));
+    })();
+  </script>
+</body>
+</html>

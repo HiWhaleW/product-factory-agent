@@ -1,0 +1,1556 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>产品工厂 Agent｜Harness 流程与能力注册表</title>
+  <style>
+    :root {
+      --page: #f4f6f5;
+      --surface: #ffffff;
+      --surface-2: #eef2f0;
+      --text: #17201d;
+      --muted: #596661;
+      --line: #cbd4d0;
+      --line-strong: #96a59f;
+      --agent: #1f65a6;
+      --agent-soft: #e8f2fb;
+      --human: #9a5b00;
+      --human-soft: #fff2d9;
+      --role: #6550a0;
+      --role-soft: #f0ecfa;
+      --tool: #13705b;
+      --tool-soft: #e4f5ef;
+      --harness: #a63838;
+      --harness-soft: #fbeaea;
+      --ok: #217647;
+      --warn: #946200;
+      --danger: #aa3434;
+      --shadow: 0 1px 2px rgb(0 0 0 / 8%);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      letter-spacing: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #151a18;
+        --surface: #1d2421;
+        --surface-2: #252e2a;
+        --text: #ecf2ef;
+        --muted: #adbbb5;
+        --line: #3a4741;
+        --line-strong: #617169;
+        --agent: #78b5ed;
+        --agent-soft: #1a344a;
+        --human: #f0b35a;
+        --human-soft: #47351b;
+        --role: #b6a0ec;
+        --role-soft: #342c4a;
+        --tool: #6dceb5;
+        --tool-soft: #1e4137;
+        --harness: #ef8a8a;
+        --harness-soft: #4a2929;
+        --ok: #74cf9b;
+        --warn: #e8bd65;
+        --danger: #ef8989;
+        --shadow: none;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { scroll-behavior: auto; }
+    body { margin: 0; background: var(--page); color: var(--text); }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    button:focus-visible, a:focus-visible, summary:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--agent) 55%, transparent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px max(20px, calc((100% - 1180px) / 2));
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand { font-weight: 700; white-space: nowrap; }
+    .topnav { display: flex; gap: 4px; overflow-x: auto; }
+    .topnav a {
+      padding: 7px 10px;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .topnav a:hover { background: var(--surface-2); color: var(--text); }
+
+    main { width: 100%; }
+    .inner { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .band { padding: 64px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 72px; }
+    .band:nth-child(even) { background: color-mix(in srgb, var(--surface) 48%, transparent); }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 880px; margin-bottom: 16px; font-size: 42px; line-height: 1.18; letter-spacing: 0; }
+    h2 { margin-bottom: 10px; font-size: 28px; line-height: 1.25; letter-spacing: 0; }
+    h3 { margin-bottom: 8px; font-size: 18px; line-height: 1.35; letter-spacing: 0; }
+    .lead { max-width: 820px; margin-bottom: 30px; color: var(--muted); font-size: 18px; }
+    .section-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 28px; }
+    .section-copy { max-width: 780px; color: var(--muted); }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 12px;
+      color: var(--agent);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .decision-grid, .metric-grid, .principle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .decision, .metric, .principle {
+      min-width: 0;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+    }
+    .decision strong, .metric strong { display: block; margin-bottom: 6px; }
+    .decision p, .principle p { margin: 0; color: var(--muted); }
+    .decision.must { border-top: 4px solid var(--harness); }
+    .decision.scope { border-top: 4px solid var(--agent); }
+    .decision.form { border-top: 4px solid var(--tool); }
+    .metric .value { font-size: 28px; font-weight: 700; }
+    .metric .label { color: var(--muted); }
+
+    .notice {
+      margin-top: 22px;
+      padding: 16px 18px;
+      background: var(--human-soft);
+      border-left: 4px solid var(--human);
+      color: var(--text);
+    }
+    .notice strong { color: var(--human); }
+
+    .team-model {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .team-role {
+      min-width: 0;
+      padding: 14px 15px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--agent);
+      border-radius: 6px;
+    }
+    .team-role:nth-child(2) { border-top-color: var(--role); }
+    .team-role:nth-child(3) { border-top-color: var(--tool); }
+    .team-role:nth-child(4) { border-top-color: var(--harness); }
+    .team-role strong, .team-role span { display: block; }
+    .team-role span { margin-top: 4px; color: var(--muted); font-size: 13px; }
+
+    .prototype-frame {
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+    }
+    .prototype-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+    }
+    .project-identity strong, .project-identity span { display: block; }
+    .project-identity span { color: var(--muted); font-size: 12px; }
+    .stage-counter { color: var(--agent); font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .stage-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+    }
+    .stage-tab {
+      min-height: 58px;
+      padding: 8px 7px;
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+    .stage-tab:last-child { border-right: 0; }
+    .stage-tab span, .stage-tab strong { display: block; }
+    .stage-tab span { font-size: 11px; }
+    .stage-tab strong { margin-top: 2px; font-size: 13px; }
+    .stage-tab[aria-pressed="true"] { background: var(--agent-soft); color: var(--text); border-bottom-color: var(--agent); }
+    .workspace { display: grid; grid-template-columns: minmax(330px, 38%) minmax(0, 62%); min-height: 680px; }
+    .chat-panel { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--surface); }
+    .team-presence {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+    }
+    .participant { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px; background: transparent; color: var(--muted); border: 0; border-radius: 4px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+    .participant:hover { background: var(--surface-2); color: var(--text); }
+    .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .chat-stream { flex: 1; min-height: 0; max-height: 520px; overflow-y: auto; padding: 14px 12px 22px; }
+    .message { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; margin-bottom: 15px; }
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .message.user .avatar { background: var(--human-soft); color: var(--human); }
+    .message.lead .avatar { background: var(--agent-soft); color: var(--agent); }
+    .message.pm .avatar { background: var(--role-soft); color: var(--role); }
+    .message.builder .avatar { background: var(--tool-soft); color: var(--tool); }
+    .message.reviewer .avatar { background: var(--harness-soft); color: var(--harness); }
+    .message-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .message-meta strong { font-size: 13px; }
+    .message-meta time { color: var(--muted); font-size: 11px; }
+    .bubble { padding: 10px 11px; background: var(--surface-2); border-radius: 6px; color: var(--text); font-size: 13px; }
+    .message.user .bubble { background: var(--human-soft); }
+    .tool-event {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      margin: 0 0 14px 39px;
+      padding: 8px 10px;
+      background: var(--tool-soft);
+      border-left: 3px solid var(--tool);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .narration {
+      margin: 8px 18px 14px 39px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    .narration::before, .narration::after { content: ""; display: inline-block; width: 20px; margin: 0 8px 3px; border-top: 1px solid var(--line-strong); }
+    .tool-mark { color: var(--tool); font-weight: 700; }
+    .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; padding: 10px 12px; border-top: 1px solid var(--line); }
+    .composer input { min-width: 0; height: 38px; padding: 7px 10px; background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); border-radius: 4px; }
+    .composer button { min-width: 58px; height: 38px; background: var(--agent); color: #fff; border: 1px solid var(--agent); border-radius: 4px; cursor: pointer; }
+    .gate-panel { padding: 12px; background: var(--human-soft); border-top: 1px solid color-mix(in srgb, var(--human) 35%, var(--line)); }
+    .gate-panel strong { display: block; color: var(--human); font-size: 13px; }
+    .gate-panel p { margin: 3px 0 9px; color: var(--muted); font-size: 12px; }
+    .gate-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .action-button {
+      min-height: 34px;
+      padding: 6px 10px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line-strong);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .action-button.primary { background: var(--human); color: #fff; border-color: var(--human); }
+    .action-button:disabled { opacity: .45; cursor: not-allowed; }
+    .gate-status { min-height: 19px; margin-top: 7px; color: var(--human); font-size: 12px; }
+
+    .canvas-panel { position: relative; min-width: 0; background: var(--surface-2); }
+    .canvas-toolbar {
+      position: absolute;
+      z-index: 5;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .canvas-label, .zoom-tools {
+      padding: 6px 8px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+    .canvas-label { color: var(--muted); font-size: 12px; }
+    .zoom-tools { display: inline-flex; align-items: center; gap: 2px; }
+    .zoom-tools button {
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      color: var(--text);
+      border: 0;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .zoom-value { min-width: 48px; text-align: center; color: var(--muted); font-size: 12px; }
+    .canvas-space { position: relative; height: 680px; overflow: auto; padding: 0; background: var(--surface-2); }
+    .canvas-world { position: relative; width: 1120px; height: 720px; transform-origin: top left; }
+    .canvas-edges { position: absolute; inset: 0; width: 1120px; height: 720px; pointer-events: none; }
+    .canvas-edges line { stroke: var(--line-strong); stroke-width: 2; }
+    .artifact-node {
+      position: absolute;
+      width: 210px;
+      min-height: 118px;
+      padding: 12px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line-strong);
+      border-top: 4px solid var(--agent);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      text-align: left;
+    }
+    .artifact-node.doc { border-top-color: var(--role); }
+    .artifact-node.code { border-top-color: var(--tool); }
+    .artifact-node.review { border-top-color: var(--harness); }
+    .artifact-node.gate-artifact { border-top-color: var(--human); }
+    .artifact-node.link { border-top-color: var(--agent); }
+    .artifact-node.feedback { border-top-color: var(--danger); }
+    .artifact-node.past { opacity: .66; }
+    .artifact-node.active-stage { box-shadow: 0 0 0 3px color-mix(in srgb, var(--agent) 20%, transparent), var(--shadow); }
+    .artifact-kind { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .artifact-node strong { display: block; margin: 5px 0; font-size: 14px; overflow-wrap: anywhere; }
+    .artifact-node span:last-child { color: var(--muted); font-size: 12px; }
+    .artifact-state { position: absolute; top: 10px; right: 10px; color: var(--ok); font-size: 11px; }
+    .artifact-state.waiting { color: var(--human); }
+    .preview-drawer {
+      position: absolute;
+      z-index: 6;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(430px, 78%);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-left: 1px solid var(--line-strong);
+      box-shadow: -8px 0 22px rgb(0 0 0 / 10%);
+      transform: translateX(102%);
+      transition: transform 180ms ease;
+    }
+    .preview-drawer.open { transform: translateX(0); }
+    .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .preview-head strong { overflow-wrap: anywhere; }
+    .icon-button { width: 34px; height: 34px; background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+    .preview-body { flex: 1; overflow: auto; margin: 0; padding: 16px; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .preview-actions { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); }
+
+    .prototype-note { margin-top: 12px; color: var(--muted); font-size: 13px; }
+
+    .context-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); gap: 24px; align-items: start; }
+    .context-layout > * { min-width: 0; }
+    .context-stack { position: relative; padding-left: 30px; }
+    .context-stack::before { content: ""; position: absolute; top: 20px; bottom: 20px; left: 10px; width: 2px; background: var(--line-strong); }
+    .context-layer { position: relative; margin-bottom: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+    .context-layer::before { content: ""; position: absolute; left: -27px; top: 20px; width: 12px; height: 12px; background: var(--surface); border: 3px solid var(--agent); border-radius: 50%; }
+    .context-layer:nth-child(2)::before { border-color: var(--role); }
+    .context-layer:nth-child(3)::before { border-color: var(--tool); }
+    .context-layer:nth-child(4)::before { border-color: var(--harness); }
+    .context-layer:nth-child(5)::before { border-color: var(--human); }
+    .context-layer strong, .context-layer span { display: block; }
+    .context-layer span { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .scenario { padding: 13px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+    .scenario strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .scenario p { margin: 0; color: var(--muted); font-size: 12px; }
+    .context-code { min-width: 0; max-width: 100%; margin: 12px 0 0; padding: 14px; overflow-x: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: pre; }
+    .do-not-share { margin-top: 14px; padding: 14px 16px; background: var(--harness-soft); border-left: 4px solid var(--harness); }
+    .do-not-share strong { color: var(--harness); }
+    .benchmark-note { margin-top: 22px; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 22px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
+    .swatch { width: 12px; height: 12px; border-radius: 2px; }
+    .swatch.agent { background: var(--agent); }
+    .swatch.human { background: var(--human); }
+    .swatch.role { background: var(--role); }
+    .swatch.tool { background: var(--tool); }
+    .swatch.harness { background: var(--harness); }
+
+    .segmented {
+      display: inline-flex;
+      flex-wrap: wrap;
+      padding: 3px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .segmented button {
+      min-height: 36px;
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+    .flow { position: relative; }
+    .flow::before {
+      content: "";
+      position: absolute;
+      top: 30px;
+      bottom: 30px;
+      left: 25px;
+      width: 2px;
+      background: var(--line-strong);
+    }
+    .stage {
+      position: relative;
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .stage-index {
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      background: var(--text);
+      color: var(--page);
+      border: 4px solid var(--page);
+      border-radius: 50%;
+      font-weight: 700;
+    }
+    .stage-body {
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+    }
+    .stage-head { padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .stage-head h3 { margin: 0; }
+    .stage-head p { margin: 4px 0 0; color: var(--muted); }
+    .lanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .lane { min-width: 0; padding: 16px 18px; border-right: 1px solid var(--line); transition: opacity 160ms ease, background 160ms ease; }
+    .lane:last-child { border-right: 0; }
+    .lane-title { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+    .lane p { margin: 0; color: var(--muted); font-size: 14px; }
+    .lane ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; }
+    .lane-agent { background: var(--agent-soft); }
+    .lane-agent .lane-title { color: var(--agent); }
+    .lane-role { background: var(--role-soft); }
+    .lane-role .lane-title { color: var(--role); }
+    .lane-tool { background: var(--tool-soft); }
+    .lane-tool .lane-title { color: var(--tool); }
+    .lane-human { background: var(--human-soft); }
+    .lane-human .lane-title { color: var(--human); }
+    .gate, .human-task {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 6px;
+      border: 1px solid color-mix(in srgb, var(--human) 45%, transparent);
+      border-radius: 4px;
+      color: var(--human);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    body[data-focus="human"] .lane:not(.lane-human),
+    body[data-focus="agent"] .lane:not(.lane-agent),
+    body[data-focus="role"] .lane:not(.lane-role),
+    body[data-focus="tool"] .lane:not(.lane-tool) { opacity: .24; }
+    body[data-focus="all"] .lane { opacity: 1; }
+
+    .state-list { width: min(820px, 100%); margin: 0 auto; }
+    .state-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 20px;
+      padding: 0 0 28px 30px;
+    }
+    .state-item::before { content: ""; position: absolute; left: 7px; top: 12px; bottom: -4px; width: 2px; background: var(--line); }
+    .state-item:last-child::before { display: none; }
+    .state-item::after { content: ""; position: absolute; left: 0; top: 7px; width: 16px; height: 16px; background: var(--surface); border: 4px solid var(--agent); border-radius: 50%; }
+    .state-name { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; }
+    .state-proof { color: var(--muted); }
+    .state-proof strong { color: var(--text); }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--muted); font-size: 12px; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: color-mix(in srgb, var(--agent-soft) 36%, transparent); }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+
+    .status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .status.direct { background: var(--tool-soft); color: var(--tool); }
+    .status.compose { background: var(--human-soft); color: var(--human); }
+    .status.missing { background: var(--harness-soft); color: var(--harness); }
+    .role-row[hidden] { display: none !important; }
+
+    .contract-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .contract { padding: 20px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+    .contract.agent { border-top: 4px solid var(--agent); }
+    .contract.human { border-top: 4px solid var(--human); }
+    .contract.harness { border-top: 4px solid var(--harness); }
+    .contract.tool { border-top: 4px solid var(--tool); }
+    .contract ul { margin: 0; padding-left: 19px; color: var(--muted); }
+
+    details { border-top: 1px solid var(--line); }
+    details:first-child { border-top: 0; }
+    summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
+    details p, details ul { color: var(--muted); }
+
+    .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .source-panel { padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+    .source-panel ul { margin: 0; padding-left: 19px; color: var(--muted); }
+
+    .footer { padding: 28px 0 48px; color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 900px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .topnav { width: 100%; }
+      .decision-grid, .metric-grid, .principle-grid { grid-template-columns: 1fr; }
+      .team-model { grid-template-columns: 1fr 1fr; }
+      .stage-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .stage-tab:nth-child(4) { border-right: 0; }
+      .workspace { grid-template-columns: 1fr; }
+      .chat-panel { border-right: 0; border-bottom: 1px solid var(--line); }
+      .chat-stream { max-height: 460px; }
+      .canvas-space { height: 620px; }
+      .lanes { grid-template-columns: 1fr 1fr; }
+      .lane:nth-child(2) { border-right: 0; }
+      .lane:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .contract-grid, .source-grid { grid-template-columns: 1fr; }
+      .context-layout { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .inner { width: min(100% - 24px, 1180px); }
+      .band { padding: 42px 0; }
+      .band { scroll-margin-top: 146px; }
+      h1 { font-size: 32px; }
+      h2 { font-size: 24px; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .flow::before { left: 19px; }
+      .stage { grid-template-columns: 40px minmax(0, 1fr); gap: 10px; }
+      .stage-index { width: 40px; height: 40px; border-width: 3px; }
+      .lanes { grid-template-columns: 1fr; }
+      .lane { border-right: 0; border-bottom: 1px solid var(--line); }
+      .lane:last-child { border-bottom: 0; }
+      .state-item { grid-template-columns: 1fr; gap: 5px; }
+      .segmented { width: 100%; }
+      .segmented button { flex: 1 1 auto; }
+      .topnav { flex-wrap: wrap; overflow: visible; }
+      .topnav a { padding: 5px 8px; }
+      .team-model { grid-template-columns: 1fr; }
+      .prototype-head { align-items: flex-start; flex-direction: column; }
+      .stage-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stage-tab, .stage-tab:nth-child(4) { border-right: 1px solid var(--line); }
+      .stage-tab:nth-child(even) { border-right: 0; }
+      .chat-stream { max-height: 500px; }
+      .gate-actions .action-button { flex: 1 1 calc(50% - 7px); }
+      .preview-drawer { width: 100%; }
+      .canvas-space { height: 560px; }
+      .scenario-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      .topbar, .segmented { display: none; }
+      .band { break-inside: avoid; padding: 26px 0; }
+      .stage-body, .contract, .decision, .metric { box-shadow: none; }
+      body { background: #fff; color: #111; }
+    }
+  </style>
+</head>
+<body data-focus="all">
+  <header class="topbar">
+    <div class="brand">产品工厂 Agent</div>
+    <nav class="topnav" aria-label="文档导航">
+      <a href="#decision">核心裁决</a>
+      <a href="#context">共享上下文</a>
+      <a href="#prototype">交互原型</a>
+      <a href="#flow">生产流程</a>
+      <a href="#states">状态机</a>
+      <a href="#roles">岗位注册表</a>
+      <a href="#skills">Skill 注册表</a>
+      <a href="#sources">资料审计</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="band" id="decision">
+      <div class="inner">
+        <span class="eyebrow">Internal Product Design / v0.2</span>
+        <h1>从一句产品想法，到一条可运行、可验收、可部署的 AI MVP</h1>
+        <p class="lead">产品工厂是企业内部提效 Agent，不是开发平台。它以一个主 Agent 统一对人负责，按阶段加载角色与 Skill，并在不可替代的业务决策、验收、费用和外部发布处把控制权交还给人。</p>
+
+        <div class="decision-grid">
+          <article class="decision must">
+            <strong>Harness 必须做</strong>
+            <p>因为产品工厂是跨数天、跨角色、会调工具且会改变外部世界的 Agent。没有状态、权限、人工闸和验收证据，它就只是 Prompt 合集。</p>
+          </article>
+          <article class="decision scope">
+            <strong>只做最小可执行 Harness</strong>
+            <p>第一版不需要自研多 Agent 框架。一个主 Agent，加能力注册表、项目状态文件、工具策略、审核闸和审计日志即可。</p>
+          </article>
+          <article class="decision form">
+            <strong>角色不等于 Agent</strong>
+            <p>17 个岗位是责任视角，Skill 是可执行方法，工具才是行动能力。只有需要独立上下文、并行或对抗审核时，才起独立 Agent。</p>
+          </article>
+        </div>
+
+        <div class="metric-grid" style="margin-top:14px">
+          <div class="metric"><span class="value">4</span><span class="label">核心 Agent 角色</span></div>
+          <div class="metric"><span class="value">7</span><span class="label">用户可见生产阶段</span></div>
+          <div class="metric"><span class="value">5 + 2</span><span class="label">必审 + 条件性人工闸</span></div>
+        </div>
+
+        <div class="notice">
+          <strong>资料审计结论：</strong>
+          公开 17 岗位体系与本地“14 身份库”不是同一套编号和文件。不能把两者直接合并后宣称已完整实现。下方注册表已按“可直接提取 / 可组合补齐 / 缺失待建”标注。
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="context">
+      <div class="inner">
+        <div class="section-head">
+          <div>
+            <h2>共享上下文：共享已批准事实，不共享整段脑内过程</h2>
+            <p class="section-copy">新子 Agent 入群时，主 Agent 不应把所有群聊、所有文档和所有密钥一次性塞过去。正确做法是为每次任务生成一份有版本、有权限和有退出标准的 Context Pack。</p>
+          </div>
+        </div>
+
+        <div class="context-layout">
+          <div class="context-stack" aria-label="共享上下文五层模型">
+            <div class="context-layer"><strong>L1 项目公共事实</strong><span>项目 Brief、目标、已批准决定、范围、术语表、当前版本和风险等级。所有参与者可读。</span></div>
+            <div class="context-layer"><strong>L2 当前阶段上下文</strong><span>本阶段的输入产物、退出证据、人工闸、未解问题和上游依赖。仅活跃团队可读。</span></div>
+            <div class="context-layer"><strong>L3 子 Agent 任务包</strong><span>具体任务、必读文档引用、允许的 Skill/工具、输出 Schema、预算、超时和不可做事项。</span></div>
+            <div class="context-layer"><strong>L4 私有工作区</strong><span>子 Agent 的临时草稿、候选分析和中间失败。不共享给其他 Agent，也不展示隐藏思维链。</span></div>
+            <div class="context-layer"><strong>L5 可审计交接包</strong><span>最终产物、证据、假设、未解问题、工具调用摘要和建议状态变更。经主 Agent/Reviewer 校验后才合并回项目上下文。</span></div>
+          </div>
+
+          <div>
+            <h3>哪些情况必须共享上下文？</h3>
+            <div class="scenario-grid">
+              <div class="scenario"><strong>新 Agent 入群</strong><p>AI PM、Builder 或 Reviewer 刚加入项目，需知道已批准事实、自己的责任和交付边界。</p></div>
+              <div class="scenario"><strong>上下游交接</strong><p>AI PM 把 PRD 交给 Builder，或 Builder 把可运行产物交给 Reviewer。</p></div>
+              <div class="scenario"><strong>并行任务合流</strong><p>调研、合规、财务等分支必须基于同一版 Brief，最后由主 Agent 合并冲突。</p></div>
+              <div class="scenario"><strong>人工决定变更</strong><p>用户修改范围、验收标准或安全边界后，所有活跃 Agent 必须切换到新 context_version。</p></div>
+              <div class="scenario"><strong>缺陷与线上反馈</strong><p>为了定位问题，Reviewer/Builder 需读取产品版本、上游需求、部署记录和反馈证据。</p></div>
+              <div class="scenario"><strong>新版本分支</strong><p>v1.0 已上线，新反馈建立 v1.1 分支；继承已批准主干，但不改写历史节点。</p></div>
+            </div>
+
+            <pre class="context-code">context_pack:
+  project_id: pf_sales_review
+  context_version: 3
+  objective_ref: project-brief@1.0
+  approved_decisions: [G0, G1, G2]
+  stage: solution_design
+  task: "产出技术适配声明"
+  required_inputs: [prd@1.0, mrd@1.0]
+  deliverable_schema: tech-adaptation@1
+  allowed_capabilities: [repo_read, terminal, tech_stack_skill]
+  forbidden: [deploy, billing_resource_create, scope_change]
+  open_questions: [audio_data_residency]
+  secret_refs: [MODEL_KEY_REF]</pre>
+          </div>
+        </div>
+
+        <div class="do-not-share"><strong>不应共享：</strong> 隐藏思维链、密钥原值、与当前任务无关的长群聊、未批准草稿当作事实、超出最小权限的个人/企业敏感数据。</div>
+
+        <div class="benchmark-note">
+          <h3>AIGC 画布模式参考与本产品裁决</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>官方来源</th><th>可见模式</th><th>可借鉴</th><th>不直接照搬</th></tr></thead>
+              <tbody>
+                <tr><td><a href="https://flora.ai/" target="_blank" rel="noreferrer">FLORA Canvas</a></td><td>无限方向探索，成熟路径可封装为可复用 Technique。</td><td>保留生成分支，把已验证流程升级为模板。</td><td>产品工厂不是媒体创作工具，不需要以图像为主节点。</td></tr>
+                <tr><td><a href="https://www.magnific.com/spaces" target="_blank" rel="noreferrer">Magnific Spaces</a></td><td>无限画布 + 节点 + 可执行步骤 + 模板复用 + 团队反馈。</td><td>节点显示输入/结果，工作流可复用，反馈直接附着在产物上。</td><td>用户不应手动连接大量工程节点；主 Agent 维护图结构。</td></tr>
+                <tr><td><a href="https://www.recraft.ai/studio" target="_blank" rel="noreferrer">Recraft Studio</a> / <a href="https://www.krea.ai/" target="_blank" rel="noreferrer">Krea</a></td><td>单画布、自然语言编辑、实时生成与资产管理；Krea 增加 Nodes/Apps。</td><td>对话负责指令，画布负责资产、版本和空间关系。</td><td>不把所有生产操作都做成画布控件，避免用户承担编排。</td></tr>
+                <tr><td><a href="https://docs.comfy.org/basic-concepts/workflow" target="_blank" rel="noreferrer">ComfyUI Workflow</a></td><td>节点输入/输出、类型连线、运行/错误状态、子图与局部执行。</td><td>明确依赖关系、节点状态、阶段子图和只重跑受影响分支。</td><td>不把技术组件暴露给非技术用户；节点表示产物和决策，不是底层算子。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="prototype">
+      <div class="inner">
+        <div class="section-head">
+          <div>
+            <h2>双栏交互原型：团队群聊 + 产物画布</h2>
+            <p class="section-copy">用户只与一个持续负责的主 Agent 对话。主 Agent 在阶段内自主调用 Skill、工具或邀请专业 Agent 入群；右侧画布持续沉淀证据、文档、原型、代码和审核结果。</p>
+          </div>
+        </div>
+
+        <div class="team-model" aria-label="四个核心 Agent 角色">
+          <div class="team-role"><strong>主 Agent｜Factory Lead</strong><span>全程在场：对齐、编排、状态、人工闸与交付责任。</span></div>
+          <div class="team-role"><strong>AI PM｜Product Lead</strong><span>按需入群：需求验证、BRD、MRD、PRD 和范围管理。</span></div>
+          <div class="team-role"><strong>Builder｜Build Lead</strong><span>按需入群：交互、技术适配、代码、测试修复和部署。</span></div>
+          <div class="team-role"><strong>Reviewer｜Independent QA</strong><span>独立入群：红队文档、模型冒烟、浏览器 QA 与放行。</span></div>
+        </div>
+
+        <div class="notice" style="margin:0 0 18px">
+          <strong>17 岗位如何收敛：</strong>
+          调研、法务、财务、UI、Prompt、数据、部署、运营等不再默认作为独立 Agent，而是上述 4 个 Agent 按阶段调用的能力包。只有复杂 UI、高风险合规或并行研究需要独立上下文时，才临时升格为可见 Agent。
+        </div>
+
+        <div class="prototype-frame" aria-label="产品工厂 Agent 七阶段交互原型">
+          <div class="prototype-head">
+            <div class="project-identity"><strong>销售录音复盘 Agent</strong><span>示例项目 · 7 天 MVP · project_pf_demo</span></div>
+            <div class="stage-counter" id="prototype-stage-counter">阶段 1 / 7</div>
+          </div>
+          <div class="stage-tabs" id="prototype-stage-tabs" role="group" aria-label="切换生产阶段"></div>
+
+          <div class="workspace">
+            <section class="chat-panel" aria-label="项目团队群聊">
+              <div class="team-presence" id="team-presence"></div>
+              <div class="chat-stream" id="chat-stream" aria-live="polite"></div>
+              <form class="composer" id="chat-composer"><input id="chat-input" type="text" placeholder="在项目群中发消息" aria-label="项目群消息"><button type="submit">发送</button></form>
+              <div class="gate-panel">
+                <strong id="gate-title">G0 项目对齐闸</strong>
+                <p id="gate-copy">请确认目标用户、核心任务和交付边界。</p>
+                <div class="gate-actions">
+                  <button type="button" class="action-button primary" id="approve-gate">批准并继续</button>
+                  <button type="button" class="action-button" id="request-change">请求修改</button>
+                  <button type="button" class="action-button" id="pause-project">暂停项目</button>
+                  <button type="button" class="action-button" id="simulate-feedback" hidden>模拟上线反馈</button>
+                </div>
+                <div class="gate-status" id="gate-status" aria-live="polite"></div>
+              </div>
+            </section>
+
+            <section class="canvas-panel" aria-label="项目产物画布">
+              <div class="canvas-toolbar">
+                <div class="canvas-label" id="canvas-label">项目对齐画布</div>
+                <div class="zoom-tools" aria-label="画布缩放">
+                  <button type="button" id="zoom-out" title="缩小" aria-label="缩小画布">−</button>
+                  <span class="zoom-value" id="zoom-value">100%</span>
+                  <button type="button" id="zoom-in" title="放大" aria-label="放大画布">+</button>
+                  <button type="button" id="zoom-reset" title="重置缩放" aria-label="重置画布缩放">↺</button>
+                </div>
+              </div>
+              <div class="canvas-space" id="canvas-space">
+                <div class="canvas-world" id="canvas-world">
+                  <svg class="canvas-edges" id="canvas-edges" aria-hidden="true"></svg>
+                  <div id="artifact-layer"></div>
+                </div>
+              </div>
+              <aside class="preview-drawer" id="preview-drawer" aria-label="Markdown 文档预览">
+                <div class="preview-head"><strong id="preview-title">文档预览</strong><button type="button" class="icon-button" id="close-preview" title="关闭预览" aria-label="关闭文档预览">×</button></div>
+                <pre class="preview-body" id="preview-body"></pre>
+                <div class="preview-actions"><button type="button" class="action-button primary" id="download-md">下载 .md</button><button type="button" class="action-button" id="open-url" hidden>打开网址</button></div>
+              </aside>
+            </section>
+          </div>
+        </div>
+        <p class="prototype-note">这是流程与信息架构原型，右侧文档为可点击、可下载的示例 Markdown。正式产品中，文档由后端产物存储和版本系统管理，画布只展示真实产物状态。</p>
+      </div>
+    </section>
+
+    <section class="band" id="flow">
+      <div class="inner">
+        <div class="section-head">
+          <div>
+            <h2>内部执行流：7 个用户阶段，10 个系统工作包</h2>
+            <p class="section-copy">上方产品界面对用户收敛为 7 个阶段；Harness 内部仍保留 10 个工作包，用于精确管理证据、技术、验收、运营和知识回写。每个工作包都显示 Agent、Skill、工具和人工边界。</p>
+          </div>
+          <div class="segmented" role="group" aria-label="流程视角筛选">
+            <button type="button" data-focus="all" aria-pressed="true">全部</button>
+            <button type="button" data-focus="human" aria-pressed="false">人工接入</button>
+            <button type="button" data-focus="agent" aria-pressed="false">Agent 自主</button>
+            <button type="button" data-focus="role" aria-pressed="false">角色 / Skill</button>
+            <button type="button" data-focus="tool" aria-pressed="false">工具 / Harness</button>
+          </div>
+        </div>
+
+        <div class="legend" aria-label="图例">
+          <span class="legend-item"><span class="swatch agent"></span>Agent 自主决策</span>
+          <span class="legend-item"><span class="swatch role"></span>角色与 Skill</span>
+          <span class="legend-item"><span class="swatch tool"></span>工具调用与确定性 Harness</span>
+          <span class="legend-item"><span class="swatch human"></span>人工操作或审核</span>
+        </div>
+
+        <div class="flow">
+          <article class="stage">
+            <div class="stage-index">0</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>想法进件与智能分诊</h3><p>把“我想做一个 XX”转成可评审的项目提案。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>识别项目类型与时间档</li><li>发现会改变范围的信息缺口</li><li>生成首版项目卡</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R01 AI 产品经理<br><code>prd-writer</code> 的需求澄清能力</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>读取用户资料、项目目录、范本；创建 project_id、时间预算与初始状态。</p></div>
+                <div class="lane lane-human"><span class="gate">G0 必须</span><span class="lane-title">人工接入</span><p>确认产品工厂理解的目标用户、核心任务和期望结果。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">1</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>问题与用户证据</h3><p>验证真问题，不用一份漂亮原型代替需求证据。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>制定可证伪的调研计划</li><li>搜索竞品、用户原声和替代行为</li><li>对支持与反对证据分开归类</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R22 客户研究 + R04 数据采集<br><code>product-research</code></p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>浏览器、搜索、连接器、文件解析；强制保存原始来源、时间和引用索引。</p></div>
+                <div class="lane lane-human"><span class="human-task">人工任务</span><span class="lane-title">人工接入</span><p>提供内部业务语境、用户访问权；需要真人访谈时由人授权或亲自执行。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">2</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>商业与方向决策</h3><p>把市场信号、成本、合规与反方论据压缩成 Go / Hold / Kill 建议。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>构造最强反方论据</li><li>识别关键假设与最小验证</li><li>给出单一倾向性结论</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R01 + R13 财务/商业化 + R11 法务<br><code>product-strategy-docs</code></p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>证据索引完整性检查；无数据时禁止生成伪精确市场、付费和成本结论。</p></div>
+                <div class="lane lane-human"><span class="gate">G1 必须</span><span class="lane-title">人工接入</span><p>决定继续投入、补证据或停止。Agent 可以建议，不能代替组织承担投入决策。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">3</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>产品定义与 MVP 冻结</h3><p>把已验证问题转成唯一核心价值、纵向切片和可操作验收标准。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>输出做/不做/新增门槛</li><li>生成 PRD、交互骨架和状态矩阵</li><li>识别假阳性指标和失败兜底</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R01 + R02 UI + R20 Prompt<br><code>prd-writer</code> + <code>pm-doc-writer</code></p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>文档模板、原型、历史项目；检查核心价值唯一、验收可操作、范围无越界。</p></div>
+                <div class="lane lane-human"><span class="gate">G2 必须</span><span class="lane-title">人工接入</span><p>冻结 MVP 范围和业务验收标准。后续新功能必须回到证据门槛。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">4</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>技术适配与开工准入</h3><p>依据三份工程手册生成技术适配声明，但不机械套技术栈。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>选择后端先行或纵向切片</li><li>应用默认方案与按需模块</li><li>生成阶段技术开发文档</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R03 全栈 + R11 法务 + R20 Prompt<br>三份工程手册</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>仓库、环境、依赖、密钥状态、端口与安全检查；偏离默认必须留痕。</p></div>
+                <div class="lane lane-human"><span class="gate">G3 条件性</span><span class="lane-title">人工接入</span><p>只在新增费用、外部平台、敏感数据、迁移或改变交付终端时审批。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">5</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>第一条真实纵向切片</h3><p>完成“真实输入 → Agent 处理 → 持久化 → 用户可见结果”，不先铺满页面。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>拆分当前阶段任务</li><li>写代码、测试并修复普通错误</li><li>在预算、步数和超时内重试</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R03 + R02 + R20<br>终极开发者流程 + UI 规范</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>文件写入、终端、Git、模型 API、浏览器；高风险动作、外部发送和费用由策略阻断。</p></div>
+                <div class="lane lane-human"><span class="lane-title">人工接入</span><p>默认不介入具体编码。只在需求歧义、不可逆操作、超预算或 Agent 连续失败时接管。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">6</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>独立质量审核与业务验收</h3><p>执行者不能用同一份上下文自证完成。Reviewer 必须根据证据放行。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>独立读取 PRD 与验收标准</li><li>生成按严重度排序的缺陷单</li><li>未过闸自动打回阶段 5</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R06 Reviewer + R01<br><code>ego-browser</code> 真实页面验收</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>Lint、类型、单测、构建、安全扫描、真实模型冒烟、桌面/移动浏览器闭环。</p></div>
+                <div class="lane lane-human"><span class="gate">G4 必须</span><span class="lane-title">人工接入</span><p>判断结果是否真正解决业务问题，并明确接受或拒绝已知问题。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">7</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>上线准备与发布</h3><p>将本地可用的 MVP 变成可访问、可登录、数据可恢复、出错可追查的产品。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>生成上线方案与费用影响</li><li>做部署前自检和发布排错</li><li>验证登录、隔离、备份和监控</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R03 + R11<br><code>vefaas</code> 部署 Skill</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>云 CLI、Secret、对象存储、数据库、日志；任何密钥不入对话、仓库或前端。</p></div>
+                <div class="lane lane-human"><span class="gate">G5 必须</span><span class="lane-title">人工接入</span><p>注册/实名、授权最小云权限、确认费用、完成必须本人操作，并批准正式发布。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">8</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>上线验证、运营与反馈</h3><p>判断是真实使用信号，还是一次性发布热度。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>聚合产品指标、故障与反馈</li><li>区分事实、推断和建议</li><li>识别细分人群与迭代候选</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R05 运营 + R12 增长 + R21/R23 客户关系<br>数据分析与营销身份</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>结构化日志、产品分析、工单、访谈笔记；禁止无假设的指标堆积。</p></div>
+                <div class="lane lane-human"><span class="gate">G6 必须</span><span class="lane-title">人工接入</span><p>决定继续迭代、扩大测试、回滚、转向或停止。新方向必须回到阶段 1。</p></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage">
+            <div class="stage-index">9</div>
+            <div class="stage-body">
+              <header class="stage-head"><h3>项目复盘与 Harness 进化</h3><p>失败和成功都留痕，但单次经验不能直接升级成全局规则。</p></header>
+              <div class="lanes">
+                <div class="lane lane-agent"><span class="lane-title">AGENT 自主</span><ul><li>从原始证据提取候选经验</li><li>检查重复、冲突和适用边界</li><li>提出岗位、Skill、模板或策略升级建议</li></ul></div>
+                <div class="lane lane-role"><span class="lane-title">角色 / SKILL</span><p>R07 CKO + R06 Reviewer<br><code>skill-creator</code> 仅用于审批后封装</p></div>
+                <div class="lane lane-tool"><span class="lane-title">工具 / HARNESS</span><p>事件日志、测试结果、Git 历史、知识库；成熟度闸：观察 → 草案 → 全局规则。</p></div>
+                <div class="lane lane-human"><span class="gate">G7 必须</span><span class="lane-title">人工接入</span><p>批准是否修改全局 Harness、岗位、Skill 或模板。未批准只保留为项目经验。</p></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="states">
+      <div class="inner">
+        <div class="section-head">
+          <div><h2>项目状态机</h2><p class="section-copy">状态不是文案，而是 Harness 的强制事实。每次转移必须记录执行者、证据、时间、成本和审批者。</p></div>
+        </div>
+        <div class="state-list">
+          <div class="state-item"><div class="state-name">idea_intake</div><div class="state-proof"><strong>退出证据：</strong>人工确认的项目卡、时间预算和初始边界。</div></div>
+          <div class="state-item"><div class="state-name">evidence_required</div><div class="state-proof"><strong>退出证据：</strong>可追溯的用户问题、现有替代行为、支持与反对信号。</div></div>
+          <div class="state-item"><div class="state-name">business_review</div><div class="state-proof"><strong>退出证据：</strong>G1 决定记录：Go / Hold / Kill，以及结论依赖的关键假设。</div></div>
+          <div class="state-item"><div class="state-name">scope_locked</div><div class="state-proof"><strong>退出证据：</strong>已批准 PRD、做/不做范围、核心纵向切片和验收标准。</div></div>
+          <div class="state-item"><div class="state-name">tech_ready</div><div class="state-proof"><strong>退出证据：</strong>技术适配声明、阶段开发文档、环境检查和必要审批。</div></div>
+          <div class="state-item"><div class="state-name">building</div><div class="state-proof"><strong>退出证据：</strong>可启动的纵向切片、代码变更、自动测试和未完成项。</div></div>
+          <div class="state-item"><div class="state-name">quality_review</div><div class="state-proof"><strong>退出证据：</strong>独立 Reviewer 报告、真实模型冒烟和浏览器验收全部通过。</div></div>
+          <div class="state-item"><div class="state-name">acceptance</div><div class="state-proof"><strong>退出证据：</strong>G4 业务验收结果和明确接受的已知问题。</div></div>
+          <div class="state-item"><div class="state-name">deploy_ready</div><div class="state-proof"><strong>退出证据：</strong>费用、权限、密钥、备份、监控和回滚均已审批。</div></div>
+          <div class="state-item"><div class="state-name">deployed</div><div class="state-proof"><strong>退出证据：</strong>真实网址可用，登录、隔离、恢复、文件和监控链路通过。</div></div>
+          <div class="state-item"><div class="state-name">learning_review</div><div class="state-proof"><strong>退出证据：</strong>迭代/回滚/停止决定，候选经验与原始证据关联。</div></div>
+          <div class="state-item"><div class="state-name">closed</div><div class="state-proof"><strong>最终证据：</strong>项目归档，全局规则变更已批准或明确拒绝。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="roles">
+      <div class="inner">
+        <div class="section-head">
+          <div><h2>17 岗位能力注册表</h2><p class="section-copy">状态是对“当前本地资料能否直接封装”的判断，不是对岗位价值的打分。</p></div>
+          <div class="segmented" role="group" aria-label="岗位状态筛选">
+            <button type="button" data-role-filter="all" aria-pressed="true">全部</button>
+            <button type="button" data-role-filter="direct" aria-pressed="false">可直接提取</button>
+            <button type="button" data-role-filter="compose" aria-pressed="false">组合补齐</button>
+            <button type="button" data-role-filter="missing" aria-pressed="false">缺失待建</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID / 岗位</th><th>当前状态</th><th>可用本地来源</th><th>在产品工厂中的责任</th><th>人工边界</th></tr></thead>
+            <tbody>
+              <tr class="role-row" data-status="compose"><td><strong>R01 AI 产品经理</strong></td><td><span class="status compose">组合补齐</span></td><td>Prompt 优化专家 AI PM 版 + AI 产品文档规范 + PRD Skills</td><td>分诊、问题定义、MVP 范围、PRD、验收标准</td><td>不替人决定业务优先级</td></tr>
+              <tr class="role-row" data-status="direct"><td><strong>R02 交互 UI 设计师</strong></td><td><span class="status direct">可直接提取</span></td><td>APP 交互 UI 设计师 + 前端技术栈手册</td><td>用户流、页面状态、原型、设计 Token、移动端验收</td><td>视觉方向和核心交互由人确认</td></tr>
+              <tr class="role-row" data-status="direct"><td><strong>R03 全栈工程师</strong></td><td><span class="status direct">可直接提取</span></td><td>终极开发者 + 三份工程手册</td><td>技术适配、实现、测试、部署、监控与回滚</td><td>不自主扩大产品范围或云费用</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R04 数据扒取部</strong></td><td><span class="status compose">组合补齐</span></td><td>数据分析师/增长黑客 + product-research + 浏览器</td><td>公开数据采集、信源分级、引用留痕和资料去重</td><td>需登录、反爬、个人数据时要人授权</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R05 运营部</strong></td><td><span class="status compose">组合补齐</span></td><td>一人营销操盘手</td><td>冷启动、渠道、内容计划和反馈运营</td><td>对外发布和联系用户必须审批</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R06 质量 Reviewer</strong></td><td><span class="status compose">组合补齐</span></td><td>AI PM 文档 Review + 工程手册的测试闸 + 浏览器 QA</td><td>独立证据审核、缺陷分级、放行或打回</td><td>不代替业务负责人做最终验收</td></tr>
+              <tr class="role-row" data-status="missing"><td><strong>R07 首席知识官 CKO</strong></td><td><span class="status missing">缺失待建</span></td><td>只有身份库和 itawjh 教程中的概念描述</td><td>证据化复盘、知识生命周期、成熟度闸和全局回写</td><td>修改全局方法论必须人工批准</td></tr>
+              <tr class="role-row" data-status="direct"><td><strong>R11 法务顾问</strong></td><td><span class="status direct">可直接提取</span></td><td>法务合规顾问</td><td>数据、AIGC、知识产权、付费与上架风险分级</td><td>高风险事项需执业律师或企业法务确认</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R12 增长经理</strong></td><td><span class="status compose">组合补齐</span></td><td>数据分析师/增长黑客 + 一人营销操盘手</td><td>北极星、漏斗、留存、实验和增长循环</td><td>无样本量和基线时不得宣称显著增长</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R13 财务经理</strong></td><td><span class="status compose">组合补齐</span></td><td>商业化顾问（强于定价和单位经济，非完整财务角色）</td><td>成本预算、单位经济、定价假设和现金流风险</td><td>无真实数据不得生成确定收入承诺</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R17 内容创作者</strong></td><td><span class="status compose">组合补齐</span></td><td>一人营销操盘手 + Prompt 优化专家</td><td>产品教育、上线内容、使用指南和渠道改写</td><td>对外内容、事实数据和宣称要审批</td></tr>
+              <tr class="role-row" data-status="missing"><td><strong>R18 视频编导</strong></td><td><span class="status missing">缺失待建</span></td><td>本地目录无对应岗位文件</td><td>视频脚本、分镜、产物规格与视频验收</td><td>真实人像、声音、版权素材需人授权</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R19 教育专家</strong></td><td><span class="status compose">组合补齐</span></td><td>教育内容/PPT 提示词 + 教学课件专精</td><td>教学目标、认知负荷、课程结构和学习效果验收</td><td>专业学科正确性由领域专家确认</td></tr>
+              <tr class="role-row" data-status="direct"><td><strong>R20 Prompt 工程师</strong></td><td><span class="status direct">可直接提取</span></td><td>Prompt 优化专家 + AI PM 版</td><td>场景路由、结构输出、反例、模型边界与评测</td><td>Prompt 不能代替权限、状态机或确定性校验</td></tr>
+              <tr class="role-row" data-status="missing"><td><strong>R21 在线客服</strong></td><td><span class="status missing">缺失待建</span></td><td>本地目录无对应岗位文件</td><td>首次响应、FAQ、问题分诊与人工升级</td><td>投诉、退款、法律争议和高风险客户必须转人</td></tr>
+              <tr class="role-row" data-status="compose"><td><strong>R22 客户研究员</strong></td><td><span class="status compose">组合补齐</span></td><td>AI PM 用户研究模式 + product-research；ADHD 研究员只可作垂直插件</td><td>招募、访谈、JTBD、洞察、机会与后续验证</td><td>AI 不能伪造真人访谈和付费意愿</td></tr>
+              <tr class="role-row" data-status="missing"><td><strong>R23 客户支持</strong></td><td><span class="status missing">缺失待建</span></td><td>本地目录无对应岗位文件</td><td>售后、NPS、故障升级、产品反馈闭环</td><td>补偿、严重故障和承诺变更需人批准</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="skills">
+      <div class="inner">
+        <div class="section-head"><div><h2>Skill 与工具能力注册表</h2><p class="section-copy">原则是“调用或包装，不复制”。同一 Skill 可服务多个岗位，同一岗位也可按阶段调用多个 Skill。</p></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>能力 ID</th><th>现有 Skill / 资料</th><th>默认责任岗位</th><th>工具</th><th>Agent 自主边界</th><th>退出证据</th></tr></thead>
+            <tbody>
+              <tr><td><code>CAP-01</code> 进件分诊</td><td>AI PM Domain Router + <code>prd-writer</code></td><td>R01</td><td>文件读取、项目模板</td><td>可识别类型和缺口，不可自定业务目标</td><td>已确认项目卡</td></tr>
+              <tr><td><code>CAP-02</code> 市场/用研</td><td><code>product-research</code></td><td>R04 + R22</td><td>浏览器、搜索、连接器</td><td>可自主搜索和聚类，不可伪造原声</td><td>可回溯证据索引</td></tr>
+              <tr><td><code>CAP-03</code> 方向评估</td><td><code>product-strategy-docs</code></td><td>R01 + R13 + R11</td><td>市场数据、成本模型</td><td>可提 Go/Hold/Kill，不可替人投入</td><td>G1 决定</td></tr>
+              <tr><td><code>CAP-04</code> 产品定义</td><td><code>prd-writer</code> + <code>pm-doc-writer</code></td><td>R01 + R02</td><td>文档、原型、流程图</td><td>可自主生成和红队扫描，不可冻结范围</td><td>G2 范围与验收</td></tr>
+              <tr><td><code>CAP-05</code> Agent/Prompt 规格</td><td>Prompt 优化专家 + <code>skill-creator</code></td><td>R20</td><td>Schema、评测集、版本库</td><td>可生成候选 Prompt/Skill，不可自主安装全局规则</td><td>评测通过 + G7</td></tr>
+              <tr><td><code>CAP-06</code> UI 交付</td><td>APP UI 角色 + 前端手册</td><td>R02</td><td>前端代码、浏览器、截图</td><td>可实现已确认的交互，不可发明范围外功能</td><td>桌面/移动真实预览</td></tr>
+              <tr><td><code>CAP-07</code> 工程实现</td><td>终极开发者 + 技术栈手册</td><td>R03</td><td>文件、终端、Git、模型 API</td><td>可在范围和预算内实现与修复</td><td>可运行纵向切片</td></tr>
+              <tr><td><code>CAP-08</code> 独立 QA</td><td>Review 模式 + <code>ego-browser</code></td><td>R06</td><td>测试、浏览器、安全扫描</td><td>可自动打回，不可代替业务验收</td><td>独立证据报告</td></tr>
+              <tr><td><code>CAP-09</code> 上线部署</td><td><code>vefaas</code> + 部署手册</td><td>R03 + R11</td><td>云 CLI、Secret、存储、日志</td><td>可自检和排错，计费/权限/发布要人批准</td><td>真实上线验收</td></tr>
+              <tr><td><code>CAP-10</code> 运营学习</td><td>数据分析 + 营销角色</td><td>R05 + R12</td><td>监控、埋点、反馈</td><td>可识别异常和候选动作，不可无实验宣称因果</td><td>G6 迭代决定</td></tr>
+              <tr><td><code>CAP-11</code> 文档产物</td><td><code>documents</code> / <code>pdf</code> / <code>presentations</code> / <code>spreadsheets</code></td><td>R17 + R19</td><td>文档渲染与视觉 QA</td><td>可根据已确认内容生成产物</td><td>渲染检查 + 内容审批</td></tr>
+              <tr><td><code>CAP-12</code> 知识进化</td><td>待建 CKO + <code>skill-creator</code></td><td>R07</td><td>Git、事件日志、知识库</td><td>只能提候选变更，不能默认回写全局</td><td>G7 方法论审批</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="contracts">
+      <div class="inner">
+        <div class="section-head"><div><h2>决策权与执行权合同</h2><p class="section-copy">这四类权限必须同时存在。仅在 Prompt 中写“请谨慎”不构成系统控制。</p></div></div>
+        <div class="contract-grid">
+          <article class="contract agent"><h3>Agent 可自主</h3><ul><li>阶段内的路由、规划和任务拆分</li><li>在白名单内调用角色、Skill 与工具</li><li>可逆的文档/代码修改</li><li>预算和次数内的重试与缺陷修复</li></ul></article>
+          <article class="contract human"><h3>人必须决策</h3><ul><li>业务目标、Go/Hold/Kill 与 MVP 范围</li><li>业务结果验收和已知问题接受</li><li>费用、敏感数据、外部发送和正式发布</li><li>修改全局 Harness、角色、Skill 和组织规则</li></ul></article>
+          <article class="contract harness"><h3>Harness 强制</h3><ul><li>项目状态与退出证据</li><li>工具权限、参数校验、超时、步数和成本</li><li>人工闸持久化与未审批阻断</li><li>审计日志、证据链、回滚与密钥隔离</li></ul></article>
+          <article class="contract tool"><h3>工具才能行动</h3><ul><li>浏览器才能访问真实页面和登录状态</li><li>终端、文件和 Git 才能产生可复现代码</li><li>真实模型 API 才能完成 Agent 效果冒烟</li><li>云 CLI 和 Secret 才能完成可追查部署</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="sources">
+      <div class="inner">
+        <div class="section-head"><div><h2>提示词目录审计与提取规则</h2><p class="section-copy">只提取可执行方法、边界、Workflow、输出契约和评测标准。不提取无法验证的大厂履历、过度承诺和人设式语气。</p></div></div>
+        <div class="source-grid">
+          <article class="source-panel">
+            <h3>进入通用内核</h3>
+            <ul>
+              <li><strong>身份库使用说明：</strong>Solo / Duet / Relay / Debate 模式；改造为阶段路由规则。</li>
+              <li><strong>AI 产品文档规范：</strong>来源、版本、跨文档一致性和非作者终审。</li>
+              <li><strong>Prompt 优化专家 AI PM 版：</strong>Domain Router、三阶段评审、AI Canvas、模型边界和 Review 模式。</li>
+              <li><strong>终极开发者：</strong>分阶段交付、不跳步、可运行中间产物和阶段点头。</li>
+              <li><strong>UI / 数据 / 法务 / 商业化 / 营销：</strong>分别封装为角色能力，不全局常驻。</li>
+            </ul>
+          </article>
+          <article class="source-panel">
+            <h3>仅作垂直插件</h3>
+            <ul>
+              <li>ADHD 用户研究员：只服务神经多样性用户项目，不冒充通用 R22。</li>
+              <li>教育课件、论文、学术视觉、高考志愿：只在对应项目类型中按需加载。</li>
+              <li>Figma 和即梦教程：是工具参考，不是岗位。</li>
+              <li>会议纪要和图表绘制：是辅助能力，不参与项目决策。</li>
+              <li>HRBP：第一版产品工厂不需要，留作未来企业组织插件。</li>
+            </ul>
+          </article>
+        </div>
+
+        <div style="margin-top:24px">
+          <details open>
+            <summary>必须修复的资料问题</summary>
+            <ul>
+              <li><code>AI产品文档规范.md</code> 首行存在明显乱码/误输入，封装前必须清洗。</li>
+              <li>身份库说明自称 14 身份，并明确标注 AI 产品经理与品牌 IP 文件缺失；不可宣称已完整覆盖 17 岗。</li>
+              <li>多份 Prompt 内的年限、大厂经历和业绩无法验证；只可作风格设定，不能当作能力证据。</li>
+              <li>商业化和数据角色偏好具体数字，但无真实样本时会制造伪精确；必须由证据闸拦截。</li>
+              <li>法务角色引用法规必须标注日期并在发布前查验官方有效版本。</li>
+            </ul>
+          </details>
+          <details>
+            <summary>最小 Harness 文件契约（后续实现建议）</summary>
+            <ul>
+              <li><code>project.yaml</code>：目标、用户、时间、范围、预算与当前负责人。</li>
+              <li><code>state.json</code>：当前状态、进入时间、退出条件与阻塞原因。</li>
+              <li><code>capabilities.yaml</code>：能力 ID、角色、Skill、输入/输出 Schema、工具和风险等级。</li>
+              <li><code>policies.yaml</code>：工具白名单、预算、最大步数、超时、密钥和审批策略。</li>
+              <li><code>gates/</code>：G0-G7 的审批记录、审批人、影响、时间和附件证据。</li>
+              <li><code>artifacts/</code>：调研、PRD、原型、代码、测试、部署和复盘产物。</li>
+              <li><code>audit/events.jsonl</code>：每次路由、工具调用、成本、重试、错误、状态迁移和人工决策。</li>
+            </ul>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="inner">产品工厂 Agent 内部设计文档 · 2026-08-20 · 所有市场、收入与效率结论在得到真实项目数据前均为待验证假设。</div>
+  </footer>
+
+  <script>
+    (() => {
+      const makeMd = (title, lines) => [`# ${title}`, "", ...lines].join("\n");
+      const stages = [
+        {
+          label: "项目对齐",
+          canvas: "项目对齐画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"]],
+          messages: [
+            {type: "user", name: "用户", text: "我要做一个销售录音复盘 Agent，7 天内做出 MVP。"},
+            {type: "lead", name: "主 Agent", text: "我先对齐产品边界。当前缺少三项会改变方案的信息：谁使用、输入什么、什么结果算有用。"},
+            {type: "user", name: "用户", text: "一线销售上传会后录音；输出问题、优点和下次改进建议；销售主管负责验收。"},
+            {type: "lead", name: "主 Agent", text: "已形成项目卡：第一版只做会后文件上传与复盘，不做实时提示、团队管理或自动发送。请审核 G0。"}
+          ],
+          gate: {title: "G0 项目对齐闸（必审）", copy: "确认目标用户、核心任务、时间预算与明确不做。", primary: "批准并进入需求验证"},
+          artifacts: [
+            {title: "Project Brief.md", kind: "doc", x: 90, y: 120, state: "待审核", waiting: true, note: "用户、问题、结果与边界", content: makeMd("销售录音复盘 Agent · Project Brief", ["## 目标用户", "一线销售；销售主管负责验收。", "", "## 核心任务", "上传会后录音，获得可执行复盘。", "", "## 明确不做", "- 实时话术提示", "- 销售团队管理", "- 自动对外发送"])},
+            {title: "成功标准.md", kind: "gate-artifact", x: 390, y: 270, state: "待审核", waiting: true, note: "业务负责人可操作验收", content: makeMd("成功标准", ["1. 能上传一段真实销售录音。", "2. 能看到有证据的优点、问题和改进建议。", "3. 刷新后任务和结果仍然存在。", "4. 销售主管可判断输出是否值得采纳。"])},
+            {title: "范围边界.md", kind: "doc", x: 700, y: 120, state: "已起草", note: "MVP 做/不做与新增门槛", content: makeMd("MVP 范围边界", ["## 做", "录音上传、转写、结构化复盘、历史记录。", "", "## 不做", "实时对话、CRM 整合、销售排名、自动外发。"])}
+          ]
+        },
+        {
+          label: "需求验证 / BRD",
+          canvas: "证据与商业判断画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["AI PM", "pm"], ["Reviewer", "reviewer"]],
+          messages: [
+            {type: "narration", text: "旁白 · 主 Agent 将 AI PM 和 Reviewer 拉入了项目群聊"},
+            {type: "lead", name: "主 Agent", text: "我已为两位新成员生成 Context Pack v2：包含已批准 Project Brief、MVP 边界、调研任务、可用工具和各自的输出契约。"},
+            {type: "pm", name: "AI PM", text: "大家好，我是 AI PM。我主要负责需求验证、用户/市场证据、BRD、MRD、PRD 和范围管理。当你对用户、需求或功能取舍有疑问时，可以直接 @AI PM。本轮我先验证问题，不假设“AI 复盘一定有需求”。"},
+            {type: "reviewer", name: "Reviewer", text: "我是独立 Reviewer。我不帮执行者证明自己正确，只负责检查证据、反方论据、逻辑和风险。对文档是否可放行有问题时，可以直接 @Reviewer。"},
+            {type: "tool", name: "product-research", text: "工具调用完成：公开信息检索、竞品路径归类、原始来源索引和反向证据清单（示例）。"},
+            {type: "pm", name: "AI PM", text: "BRD 已生成。当前最大风险是：组织真正痛点可能是主管没时间辅导，而不是销售不会复盘。"},
+            {type: "reviewer", name: "Reviewer", text: "反证检查：有部分证据仍是公开资料，未替代企业内部真实访谈。BRD 可作为小范围 MVP 依据，不支持大规模投入。"}
+          ],
+          gate: {title: "G1 商业决策闸（必审）", copy: "基于原始证据选择 Go / 补证据 / Kill，不以文档完整度代替决策。", primary: "Go，进入 MRD / PRD"},
+          artifacts: [
+            {title: "Evidence Index.md", kind: "doc", x: 70, y: 100, state: "已建索引", note: "支持、反对与待核信号", content: makeMd("Evidence Index", ["## 支持证据", "- [示例] 销售会后复盘存在稳定工作流。", "", "## 反对证据", "- [示例] 用户可能不愿上传敏感客户对话。", "", "## 待核", "- 企业内部访谈与录音授权机制。"])},
+            {title: "BRD.md", kind: "doc", x: 380, y: 260, state: "待审核", waiting: true, note: "业务机会、风险与 Go 条件", content: makeMd("销售录音复盘 Agent · BRD", ["## 业务问题", "主管辅导容量有限，销售难以在会后得到一致的复盘。", "", "## 当前判断", "有条件 Go：先验证文件上传后的结构化复盘，不做实时销售助手。", "", "## 翻转条件", "若真实销售拒绝上传或主管不采纳输出，应停止或转向。"])},
+            {title: "Red Team Review.md", kind: "review", x: 700, y: 95, state: "已完成", note: "最强反方、证据缺口和风险", content: makeMd("BRD Red Team Review", ["## P0 缺口", "尚无企业内部原声，不得把公开资料当作内部付费意愿。", "", "## 建议", "仅批准可回退的 MVP 投入，同时补充真实用户访谈。"])}
+          ]
+        },
+        {
+          label: "MRD / PRD",
+          canvas: "市场需求与产品定义画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["AI PM", "pm"], ["Reviewer", "reviewer"]],
+          messages: [
+            {type: "lead", name: "主 Agent", text: "G1 已通过。AI PM 开始把证据转成 MRD 和 PRD；不会把上阶段的待核假设写成事实。"},
+            {type: "pm", name: "AI PM", text: "MRD 将锁定用户、场景、现有方案和需求优先级；PRD 只定义一条核心闭环和可操作验收。"},
+            {type: "tool", name: "prd-writer", text: "Skill 调用完成：JTBD、AI 功能 Canvas、范围矩阵、状态矩阵、边界场景和反指标。"},
+            {type: "reviewer", name: "Reviewer", text: "文档交叉审核完成：MRD 的目标人群与 PRD 功能边界一致；实时辅导、CRM 和管理看板已明确排除。"},
+            {type: "lead", name: "主 Agent", text: "MRD、PRD 和 Review 已放到右侧画布。请审核后冻结 MVP；未批准不会进入技术设计。"}
+          ],
+          gate: {title: "G2 MVP 范围闸（必审）", copy: "审核 MRD / PRD，冻结做、不做、验收标准和反指标。", primary: "批准并冻结 MVP"},
+          artifacts: [
+            {title: "MRD.md", kind: "doc", x: 80, y: 110, state: "待审核", waiting: true, note: "人群、场景、需求与现有方案", content: makeMd("销售录音复盘 Agent · MRD", ["## 核心人群", "需要频繁复盘客户会议，但缺少稳定主管辅导的一线销售。", "", "## 核心需求", "从原始对话中快速得到有证据、可执行的改进建议。", "", "## 待验证", "用户是否愿意上传敏感录音，主管是否认可结果。"])},
+            {title: "PRD.md", kind: "doc", x: 385, y: 245, state: "待审核", waiting: true, note: "核心闭环、状态、异常与验收", content: makeMd("销售录音复盘 Agent · PRD", ["## 核心闭环", "上传录音 → 转写 → 生成复盘 → 查看证据 → 保存历史。", "", "## Agent 输出", "- 做得好的地方及原文证据", "- 需要改进的地方及原文证据", "- 下次可执行动作", "", "## 反指标", "- 无原文证据的笼统建议", "- 录音或转写串号"])},
+            {title: "Document Review.md", kind: "review", x: 700, y: 105, state: "已完成", note: "事实、逻辑、范围和风险检查", content: makeMd("MRD / PRD Review", ["## 结论", "修改后可冻结。", "", "## P0", "需在 PRD 中明确录音授权、数据隔离和删除机制。", "", "## P1", "将“复盘质量”拆成可人工评审的清晰度、证据性和可执行性。"])}
+          ]
+        },
+        {
+          label: "方案与技术",
+          canvas: "交互与技术适配画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["AI PM", "pm"], ["Builder", "builder"], ["Reviewer", "reviewer"]],
+          messages: [
+            {type: "narration", text: "旁白 · 主 Agent 将 Builder 拉入了项目群聊"},
+            {type: "lead", name: "主 Agent", text: "MVP 已冻结。我已向 Builder 共享 Context Pack v4：PRD v1.0、MRD v1.0、G0-G2 决定、敏感数据待确认项和禁止改变范围的约束。"},
+            {type: "builder", name: "Builder", text: "大家好，我是 Builder。我负责交互实现、技术适配、代码、测试修复和部署。架构、接口、性能、安全和工程错误可以直接 @Builder。本轮选择纵向切片，默认 FastAPI + Next.js，长任务持久化。"},
+            {type: "tool", name: "技术适配", text: "已读取三份工程手册，检查密钥、存储、长任务、前端状态和真实模型验收底线。"},
+            {type: "builder", name: "Builder", text: "技术适配声明、用户流和 API 契约已生成。当前不引入微服务或实时音视频。"},
+            {type: "reviewer", name: "Reviewer", text: "材料检查通过。如使用真实客户录音，数据存储与云模型传输会触发 G3 条件性审核。"}
+          ],
+          gate: {title: "G3 成本/安全/架构闸（条件性）", copy: "只在新增费用、外部平台、敏感数据或重大架构偏离时需要人审批。", primary: "批准例外并开工"},
+          artifacts: [
+            {title: "User Flow.md", kind: "doc", x: 80, y: 110, state: "已完成", note: "上传、运行、等待、成功与恢复", content: makeMd("User Flow", ["1. 用户上传录音并确认授权。", "2. 后端创建持久化任务。", "3. 页面展示真实队列/运行状态。", "4. 完成后显示复盘和原文证据。", "5. 刷新页面后通过 task_id 恢复。"])},
+            {title: "Tech Adaptation.md", kind: "code", x: 385, y: 255, state: "待条件审核", waiting: true, note: "开发路径、按需模块与偏离", content: makeMd("Tech Adaptation", ["## 开发路径", "纵向切片。", "", "## 默认方案", "- Python / FastAPI", "- Next.js / TypeScript", "- 持久化任务状态", "- 录音对象存储", "", "## 条件性审核", "真实客户录音上传云模型的数据边界。"])},
+            {title: "API Contract.md", kind: "code", x: 700, y: 100, state: "已起草", note: "任务、状态、产物、错误和幂等", content: makeMd("API Contract", ["- POST /api/v1/reviews", "- GET /api/v1/tasks/{task_id}", "- GET /api/v1/reviews/{review_id}", "", "所有长任务使用 task_id，状态只以后端为准，重复提交使用幂等键。"])}
+          ]
+        },
+        {
+          label: "MVP 开发",
+          canvas: "实现与进度画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["Builder", "builder"]],
+          messages: [
+            {type: "lead", name: "主 Agent", text: "范围和技术契约已锁定。Builder 进入自主执行窗口；常规代码决策不要求用户逐项点头。"},
+            {type: "builder", name: "Builder", text: "我将先实现一条真实闭环：录音上传、任务状态、转写与复盘、结果预览、刷新恢复。"},
+            {type: "tool", name: "工程工具", text: "文件、终端、Git 和测试工具运行中；当前只允许可逆代码修改，外部发布和费用动作仍被阻断。"},
+            {type: "builder", name: "Builder", text: "第一条纵向切片已可运行。Mock 自动测试已通过；真实模型效果留给独立审核阶段。"}
+          ],
+          gate: {title: "自主执行窗口（无固定人工闸）", copy: "只在需求歧义、超成本、不可逆操作或 Agent 连续失败时暂停并请求人接管。", primary: "查看独立审核"},
+          artifacts: [
+            {title: "Build Board.md", kind: "code", x: 70, y: 110, state: "实现中", note: "纵向切片、阻塞项和已知偏离", content: makeMd("Build Board", ["- [x] 上传与格式校验", "- [x] 持久化 task 状态", "- [x] 转写与复盘服务适配层", "- [x] 结果预览与刷新恢复", "- [ ] 真实模型冒烟", "- [ ] 移动端真实预览"])},
+            {title: "Running Preview", kind: "code", x: 385, y: 255, state: "可运行", note: "真实输入到可见结果的纵向切片", content: makeMd("Running Preview", ["开发环境：本地可运行", "", "核心路径：", "上传录音 → 查看任务进度 → 预览复盘 → 刷新恢复。", "", "注：真实模型结果尚未放行。"])},
+            {title: "task_service.py", kind: "code", x: 700, y: 100, state: "已实现", note: "任务幂等创建与持久化状态", content: ["async def create_review(command: CreateReview, user: User) -> Review:", "    existing = await reviews.find_by_idempotency_key(", "        user_id=user.id,", "        key=command.idempotency_key,", "    )", "    if existing:", "        return existing", "", "    review = Review.queued(user_id=user.id, source=command.source)", "    await reviews.save(review)", "    await task_runner.enqueue(review.id)", "    return review"].join("\n")},
+            {title: "Mock Test Report.md", kind: "review", x: 700, y: 100, state: "已通过", note: "业务逻辑、状态、解析和错误路径", content: makeMd("Mock Test Report", ["## 已通过", "- 上传参数和格式校验", "- 任务状态转移", "- 模型结构输出解析", "- 失败和有限重试", "- 重复提交防护", "", "## 不能证明", "Mock 不能证明真实模型质量、延迟和网络失败。"])}
+          ]
+        },
+        {
+          label: "独立 QA / 验收",
+          canvas: "质量证据与业务验收画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["Builder", "builder"], ["Reviewer", "reviewer"]],
+          messages: [
+            {type: "narration", text: "旁白 · 主 Agent 将一个新的独立 Reviewer 会话拉入了群聊"},
+            {type: "lead", name: "主 Agent", text: "开发阶段已结束。Reviewer 获得 Context Pack v6：只含已批准 PRD、验收标准、真实产物、测试入口和工具权限，不继承 Builder 的“已完成”判断。"},
+            {type: "reviewer", name: "Reviewer", text: "大家好，我是本轮独立 Reviewer。我负责代码闸、真实模型冒烟、桌面/移动浏览器 QA、数据隔离和恢复测试。发现质量问题可以直接 @Reviewer；我可打回产物，但不代替你做业务验收。"},
+            {type: "tool", name: "QA 工具", text: "已运行：Lint、类型、测试、生产构建、真实模型冒烟、浏览器预览与任务恢复（示例）。"},
+            {type: "reviewer", name: "Reviewer", text: "工程闸通过；仍有一项业务问题需人判断：“改进建议是否真正有助于销售”无法靠自动测试确定。"},
+            {type: "lead", name: "主 Agent", text: "QA Report、真实模型样本和已知问题已放入画布。请业务负责人执行 G4 最终 MVP 验收。"}
+          ],
+          gate: {title: "G4 MVP 业务验收闸（必审）", copy: "人工判断产品是否解决业务问题，并明确接受或拒绝已知问题。", primary: "验收通过，进入发布"},
+          artifacts: [
+            {title: "QA Report.md", kind: "review", x: 70, y: 100, state: "已完成", note: "工程、模型、浏览器和数据证据", content: makeMd("QA Report", ["## 自动闸", "Lint / 类型 / 测试 / 构建：通过（示例）。", "", "## 真实模型冒烟", "真实输入 → 模型 → 持久化 → 页面可见结果：已跑通（示例）。", "", "## 人工待验", "复盘的证据性和可执行性。"])},
+            {title: "Model Smoke Samples.md", kind: "review", x: 385, y: 260, state: "待业务审核", waiting: true, note: "真实输入、模型版本、延迟和结果", content: makeMd("Model Smoke Samples", ["## 记录要求", "- 真实输入样本 ID", "- 模型与 Prompt 版本", "- 首字/整体延迟", "- 结构首次合规与重试次数", "- 人工评分：清晰度、证据性、可执行性"])},
+            {title: "Known Issues.md", kind: "gate-artifact", x: 700, y: 100, state: "待接受", waiting: true, note: "影响、临时处理与后续计划", content: makeMd("Known Issues", ["## P1", "长录音在网络中断后需手动重传。", "", "## 影响", "不阻断小范围 MVP，但需在页面明确告知文件限制。", "", "## 后续", "上线后进入分片上传候选，需要真实失败数据才升级。"])}
+          ]
+        },
+        {
+          label: "发布 / 交接",
+          canvas: "上线、交接与学习画布",
+          participants: [["用户", "user"], ["主 Agent", "lead"], ["Builder", "builder"], ["Reviewer", "reviewer"]],
+          messages: [
+            {type: "lead", name: "主 Agent", text: "G4 已通过。Builder 负责部署准备，Reviewer 将独立验证上线链路；任何费用、密钥、权限和正式发布均等待用户批准。"},
+            {type: "builder", name: "Builder", text: "上线方案已就绪：前后端应用、Secret、对象存储、持久化数据、结构化日志、错误监控和回滚方案。"},
+            {type: "tool", name: "vefaas", text: "部署工具当前处于待授权状态；未获得 G5 前不创建计费资源，不发布。"},
+            {type: "reviewer", name: "Reviewer", text: "发布后将验证：HTTPS、登录、用户隔离、文件、数据恢复、错误告警和核心业务闭环。"},
+            {type: "lead", name: "主 Agent", text: "项目交接包已准备。项目结束后只会生成 Harness 改进候选；若要修改全局规则，还需 G6 条件性审批。"}
+          ],
+          gate: {title: "G5 发布闸（必审） / G6 全局回写（条件性）", copy: "G5 批准费用、权限和正式发布；只有要修改产品工厂全局 Harness 时才触发 G6。", primary: "批准正式发布"},
+          artifacts: [
+            {title: "Release Checklist.md", kind: "gate-artifact", x: 70, y: 100, state: "待审核", waiting: true, note: "费用、权限、密钥、备份和回滚", content: makeMd("Release Checklist", ["- [ ] 用户已确认计费资源", "- [ ] 云权限遵守最小权限", "- [ ] 密钥仅存在受控 Secret", "- [ ] 数据备份和恢复已演练", "- [ ] 回滚方案已验证", "- [ ] 上线后核心闭环验收人已明确"])} ,
+            {title: "Deployment Record.md", kind: "code", x: 385, y: 255, state: "待发布", waiting: true, note: "版本、地址、时间、执行者和回滚点", content: makeMd("Deployment Record", ["状态：待 G5 批准", "", "发布后记录：", "- Git commit / 应用版本", "- 公网地址", "- 发布执行者与时间", "- 环境变量键名（不含值）", "- 回滚版本与操作结果"])} ,
+            {title: "Production URL", kind: "link", x: 700, y: 100, state: "待发布", waiting: true, note: "正式入口、版本和上线验证", url: "https://example.com/product-factory-demo", content: makeMd("Production URL", ["示例地址：https://example.com/product-factory-demo", "", "正式产品中该节点会关联真实部署记录、版本、监控和回滚点。"])} ,
+            {title: "Handoff.md", kind: "doc", x: 700, y: 100, state: "已准备", note: "启动、验证、监控、已知问题与下一步", content: makeMd("Project Handoff", ["## 交付物", "- 已批准 PRD", "- 可运行代码与锁定依赖", "- QA 与真实模型冒烟报告", "- 部署、监控和回滚方法", "- 已知问题与产品负责人接受记录", "", "## 下一步", "从真实用户使用和业务采纳中收集证据，不根据一次发布热度宣称产品成立。"])}
+          ]
+        }
+      ];
+
+      const stageTabs = document.getElementById("prototype-stage-tabs");
+      const stageCounter = document.getElementById("prototype-stage-counter");
+      const teamPresence = document.getElementById("team-presence");
+      const chatStream = document.getElementById("chat-stream");
+      const gateTitle = document.getElementById("gate-title");
+      const gateCopy = document.getElementById("gate-copy");
+      const gateStatus = document.getElementById("gate-status");
+      const approveGate = document.getElementById("approve-gate");
+      const requestChange = document.getElementById("request-change");
+      const pauseProject = document.getElementById("pause-project");
+      const canvasLabel = document.getElementById("canvas-label");
+      const canvasSpace = document.getElementById("canvas-space");
+      const canvasWorld = document.getElementById("canvas-world");
+      const artifactLayer = document.getElementById("artifact-layer");
+      const edgeLayer = document.getElementById("canvas-edges");
+      const previewDrawer = document.getElementById("preview-drawer");
+      const previewTitle = document.getElementById("preview-title");
+      const previewBody = document.getElementById("preview-body");
+      const downloadMd = document.getElementById("download-md");
+      const openUrl = document.getElementById("open-url");
+      const simulateFeedback = document.getElementById("simulate-feedback");
+      const chatComposer = document.getElementById("chat-composer");
+      const chatInput = document.getElementById("chat-input");
+      let activeStage = 0;
+      let activeArtifact = null;
+      let canvasZoom = 1;
+      let feedbackAdded = false;
+      let releaseApproved = false;
+
+      const roleLabels = {user: "我", lead: "主", pm: "PM", builder: "建", reviewer: "审"};
+
+      function appendMessage(message) {
+        if (message.type === "narration") {
+          const narration = document.createElement("div");
+          narration.className = "narration";
+          narration.textContent = message.text;
+          chatStream.appendChild(narration);
+          return;
+        }
+        if (message.type === "tool") {
+          const event = document.createElement("div");
+          event.className = "tool-event";
+          const mark = document.createElement("span");
+          mark.className = "tool-mark";
+          mark.textContent = "工具";
+          const copy = document.createElement("span");
+          copy.textContent = `${message.name} · ${message.text}`;
+          event.append(mark, copy);
+          chatStream.appendChild(event);
+          return;
+        }
+        const item = document.createElement("article");
+        item.className = `message ${message.type}`;
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = roleLabels[message.type] || "AI";
+        const content = document.createElement("div");
+        const meta = document.createElement("div");
+        meta.className = "message-meta";
+        const name = document.createElement("strong");
+        name.textContent = message.name;
+        const time = document.createElement("time");
+        time.textContent = "刚刚";
+        meta.append(name, time);
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = message.text;
+        content.append(meta, bubble);
+        item.append(avatar, content);
+        chatStream.appendChild(item);
+      }
+
+      function layoutArtifacts(index) {
+        return stages.slice(0, index + 1).map((stage, stageIndex) => ({
+          stageIndex,
+          nodes: stage.artifacts.map((artifact, artifactIndex) => ({
+            ...artifact,
+            stageIndex,
+            x: 80 + stageIndex * 300,
+            y: 100 + artifactIndex * 170
+          }))
+        }));
+      }
+
+      function addLine(ns, from, to, mode) {
+        const line = document.createElementNS(ns, "line");
+        if (mode === "branch") {
+          line.setAttribute("x1", String(from.x + 105));
+          line.setAttribute("y1", String(from.y + 118));
+          line.setAttribute("x2", String(to.x + 105));
+          line.setAttribute("y2", String(to.y));
+        } else {
+          line.setAttribute("x1", String(from.x + 210));
+          line.setAttribute("y1", String(from.y + 58));
+          line.setAttribute("x2", String(to.x));
+          line.setAttribute("y2", String(to.y + 58));
+        }
+        edgeLayer.appendChild(line);
+      }
+
+      function drawEdges(groups) {
+        edgeLayer.innerHTML = "";
+        const ns = "http://www.w3.org/2000/svg";
+        groups.forEach((group, groupIndex) => {
+          const root = group.nodes[0];
+          group.nodes.slice(1).forEach((node) => addLine(ns, root, node, "branch"));
+          if (groupIndex < groups.length - 1) addLine(ns, root, groups[groupIndex + 1].nodes[0], "trunk");
+        });
+      }
+
+      function artifactKindLabel(artifact) {
+        if (artifact.kind === "code") return "BUILD / SPEC";
+        if (artifact.kind === "review") return "REVIEW";
+        if (artifact.kind === "link") return "LIVE URL";
+        if (artifact.kind === "feedback") return "FEEDBACK";
+        return "MARKDOWN";
+      }
+
+      function renderCanvas(index) {
+        const groups = layoutArtifacts(index);
+        const flat = groups.flatMap((group) => group.nodes);
+        const maxNodes = Math.max(...groups.map((group) => group.nodes.length));
+        const worldWidth = Math.max(1120, 140 + groups.length * 300);
+        const worldHeight = Math.max(720, 130 + maxNodes * 170);
+        canvasWorld.style.width = `${worldWidth}px`;
+        canvasWorld.style.height = `${worldHeight}px`;
+        edgeLayer.setAttribute("width", String(worldWidth));
+        edgeLayer.setAttribute("height", String(worldHeight));
+        edgeLayer.style.width = `${worldWidth}px`;
+        edgeLayer.style.height = `${worldHeight}px`;
+        artifactLayer.innerHTML = "";
+        flat.forEach((artifact) => {
+          const node = document.createElement("button");
+          node.type = "button";
+          node.className = `artifact-node ${artifact.kind} ${artifact.stageIndex < index ? "past" : "active-stage"}`;
+          node.style.left = `${artifact.x}px`;
+          node.style.top = `${artifact.y}px`;
+          const kind = document.createElement("span");
+          kind.className = "artifact-kind";
+          kind.textContent = artifactKindLabel(artifact);
+          const state = document.createElement("span");
+          state.className = `artifact-state${artifact.waiting ? " waiting" : ""}`;
+          state.textContent = artifact.state;
+          const title = document.createElement("strong");
+          title.textContent = artifact.title;
+          const note = document.createElement("span");
+          note.textContent = artifact.note;
+          node.append(kind, state, title, note);
+          node.addEventListener("click", () => openArtifact(artifact));
+          artifactLayer.appendChild(node);
+        });
+        drawEdges(groups);
+        canvasSpace.scrollTo({left: Math.max(0, (80 + index * 300) * canvasZoom - 40), top: 0});
+      }
+
+      function openArtifact(artifact) {
+        activeArtifact = artifact;
+        previewTitle.textContent = artifact.title;
+        previewBody.textContent = artifact.content;
+        previewDrawer.classList.add("open");
+        downloadMd.hidden = artifact.kind === "link";
+        downloadMd.disabled = artifact.kind === "link";
+        const suffix = artifact.title.includes(".") ? `.${artifact.title.split(".").pop()}` : ".md";
+        downloadMd.textContent = `下载 ${suffix}`;
+        openUrl.hidden = !artifact.url;
+      }
+
+      function renderStage(index) {
+        activeStage = index;
+        const stage = stages[index];
+        stageCounter.textContent = `阶段 ${index + 1} / ${stages.length}`;
+        canvasLabel.textContent = `累计项目 DAG · ${stage.canvas}`;
+        gateTitle.textContent = stage.gate.title;
+        gateCopy.textContent = stage.gate.copy;
+        approveGate.textContent = stage.gate.primary;
+        gateStatus.textContent = "";
+        previewDrawer.classList.remove("open");
+        activeArtifact = null;
+        downloadMd.hidden = false;
+        downloadMd.disabled = true;
+        openUrl.hidden = true;
+        simulateFeedback.hidden = index !== stages.length - 1;
+
+        stageTabs.innerHTML = "";
+        stages.forEach((item, stageIndex) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "stage-tab";
+          button.setAttribute("aria-pressed", String(stageIndex === index));
+          const number = document.createElement("span");
+          number.textContent = `0${stageIndex + 1}`;
+          const label = document.createElement("strong");
+          label.textContent = item.label;
+          button.append(number, label);
+          button.addEventListener("click", () => renderStage(stageIndex));
+          stageTabs.appendChild(button);
+        });
+
+        teamPresence.innerHTML = "";
+        stage.participants.forEach(([name]) => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "participant";
+          item.title = `@${name}`;
+          const dot = document.createElement("span");
+          dot.className = "presence-dot";
+          item.append(dot, document.createTextNode(name));
+          item.addEventListener("click", () => {
+            chatInput.value = `${chatInput.value}${chatInput.value ? " " : ""}@${name} `;
+            chatInput.focus();
+          });
+          teamPresence.appendChild(item);
+        });
+
+        chatStream.innerHTML = "";
+        stage.messages.forEach(appendMessage);
+        chatStream.scrollTop = chatStream.scrollHeight;
+
+        renderCanvas(index);
+      }
+
+      approveGate.addEventListener("click", () => {
+        if (activeStage < stages.length - 1) {
+          const next = activeStage + 1;
+          renderStage(next);
+          gateStatus.textContent = "已批准，进入下一阶段。";
+        } else {
+          releaseApproved = true;
+          const liveNode = stages[stages.length - 1].artifacts.find((artifact) => artifact.kind === "link");
+          if (liveNode) {
+            liveNode.state = "已上线";
+            liveNode.waiting = false;
+          }
+          renderStage(stages.length - 1);
+          gateStatus.textContent = "G5 已批准，示例线上节点已生成。现在可模拟用户反馈。";
+        }
+      });
+      requestChange.addEventListener("click", () => {
+        gateStatus.textContent = "已退回当前阶段；修改意见将记入闸口审计日志。";
+      });
+      pauseProject.addEventListener("click", () => {
+        gateStatus.textContent = "项目已暂停，当前状态和所有产物保留。";
+      });
+      chatComposer.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+        appendMessage({type: "user", name: "用户", text});
+        chatInput.value = "";
+        chatStream.scrollTop = chatStream.scrollHeight;
+      });
+      document.getElementById("close-preview").addEventListener("click", () => previewDrawer.classList.remove("open"));
+      downloadMd.addEventListener("click", () => {
+        if (!activeArtifact) return;
+        const blob = new Blob([activeArtifact.content], {type: "text/markdown;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = activeArtifact.title.includes(".") ? activeArtifact.title : `${activeArtifact.title}.md`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      openUrl.addEventListener("click", () => {
+        if (activeArtifact?.url) window.open(activeArtifact.url, "_blank", "noopener,noreferrer");
+      });
+      simulateFeedback.addEventListener("click", () => {
+        if (!releaseApproved) {
+          gateStatus.textContent = "请先通过 G5 发布闸，再模拟线上用户反馈。";
+          return;
+        }
+        if (!feedbackAdded) {
+          feedbackAdded = true;
+          const finalStage = stages[stages.length - 1];
+          finalStage.messages.push(
+            {type: "narration", text: "旁白 · 用户在原项目群中提交了一条上线问题"},
+            {type: "user", name: "用户", text: "@Builder 生产环境上传较长录音时会中断，重试后任务重复了。"},
+            {type: "lead", name: "主 Agent", text: "已将反馈分类为线上缺陷，关联 Production URL、Deployment Record、PRD 与任务幂等规则。我已创建 v1.1 迭代分支，只重跑上传/任务创建/恢复相关节点。"},
+            {type: "builder", name: "Builder", text: "我已读取线上版本、反馈证据、对应 PRD 和幂等契约。下一步先复现，不直接重写整个上传模块。"}
+          );
+          finalStage.artifacts.push(
+            {title: "Feedback #001", kind: "feedback", state: "待复现", waiting: true, note: "长录音中断后重复任务", content: makeMd("Feedback #001", ["## 现象", "生产环境上传较长录音时中断，重试后产生重复任务。", "", "## 分类", "线上缺陷；涉及上传恢复、幂等键和任务查询。", "", "## 待补证据", "request_id、文件大小、网络状态、重试时间和对应日志。"])},
+            {title: "Iteration v1.1.md", kind: "doc", state: "新分支", note: "复现、修复、局部回归与再发布", content: makeMd("Iteration v1.1", ["1. 用真实日志复现问题。", "2. 确认上传中断与重复任务的责任边界。", "3. 修复幂等与恢复路径。", "4. 只运行受影响分支的测试、Reviewer 与发布闸。", "5. 保留 v1.0 历史节点，不改写上线记录。"])}
+          );
+        }
+        renderStage(stages.length - 1);
+        gateStatus.textContent = "已从线上版本生成 Feedback #001 和 v1.1 迭代分支。";
+      });
+      function setZoom(next) {
+        canvasZoom = Math.max(.7, Math.min(1.3, next));
+        canvasWorld.style.transform = `scale(${canvasZoom})`;
+        document.getElementById("zoom-value").textContent = `${Math.round(canvasZoom * 100)}%`;
+      }
+      document.getElementById("zoom-out").addEventListener("click", () => setZoom(canvasZoom - .1));
+      document.getElementById("zoom-in").addEventListener("click", () => setZoom(canvasZoom + .1));
+      document.getElementById("zoom-reset").addEventListener("click", () => setZoom(1));
+      renderStage(0);
+
+      const focusButtons = document.querySelectorAll('button[data-focus]');
+      focusButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          document.body.dataset.focus = button.dataset.focus;
+          focusButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        });
+      });
+
+      const filterButtons = document.querySelectorAll('button[data-role-filter]');
+      const roleRows = document.querySelectorAll('.role-row');
+      filterButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const filter = button.dataset.roleFilter;
+          roleRows.forEach((row) => {
+            const shouldHide = filter !== 'all' && row.dataset.status !== filter;
+            row.hidden = shouldHide;
+            row.style.display = shouldHide ? 'none' : '';
+          });
+          filterButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>D5 真实 Agent Runtime 进度与问题台账</title>
+  <style>
+    :root{color-scheme:light;--bg:#f5f7fb;--panel:#fff;--ink:#162035;--muted:#61708a;--line:#dbe2ee;--ok:#087a55;--warn:#9b5c00;--bad:#b42318;--accent:#3157d5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}a{color:var(--accent)}header,main,footer{width:min(1120px,calc(100% - 32px));margin:auto}header{padding:64px 0 30px}.eyebrow{font-weight:800;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}h1{font-size:clamp(34px,6vw,62px);line-height:1.08;margin:10px 0 18px}h2{font-size:22px;margin:0 0 14px}h3{font-size:17px;margin:20px 0 8px}.lead{font-size:19px;max-width:900px;color:var(--muted)}.status{display:inline-block;padding:8px 12px;border:1px solid #f1c881;border-radius:999px;background:#fff7e8;color:var(--warn);font-weight:800}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px;margin:0 0 16px;box-shadow:0 8px 25px rgba(30,50,90,.05)}.wide{grid-column:1/-1}.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800}.pass{background:#e7f7f1;color:var(--ok)}.partial{background:#fff3d9;color:var(--warn)}.block{background:#ffebe9;color:var(--bad)}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}th{color:var(--muted)}code{overflow-wrap:anywhere}ul,ol{padding-left:22px}li+li{margin-top:7px}.metric{font-size:28px;font-weight:850}.muted{color:var(--muted)}footer{padding:20px 0 50px;color:var(--muted)}@media(max-width:760px){header{padding-top:36px}.grid{grid-template-columns:1fr}.panel{padding:18px;overflow:auto}table{min-width:680px}}
+  </style>
+</head>
+<body>
+<header><div class="eyebrow">Product Factory · D5 · 2026-08-22</div><h1>真实 Agent Runtime<br>进度与问题台账</h1><p class="lead">隔离 fixture 已真实贯通 AI PM Permission/checkpoint、博查、Evidence/MRD 落库、Reviewer Red Team Review 和 G1 open。G1 未代批，项目仍为 mrd / Context v2；产品项目仍在 G0。</p><span class="status">部分通过 · 不可宣称 D5 / Builder / MVP / 内测完成</span></header>
+<main>
+  <section class="grid">
+    <article class="panel"><div class="metric">25 / 25</div><h2>Agent / Provider 定向测试</h2><p class="muted">含脱敏 schema feedback、EvidenceRef 溯源、Permission ask/deny、有限 Tool 重试和 checkpoint 恢复。</p></article>
+    <article class="panel"><div class="metric">42 / 42</div><h2>PostgreSQL 集成测试</h2><p class="muted">完整 API/并发/恢复套件 42/42；migration 为 <code>20260822_0004 (head)</code>。</p></article>
+    <article class="panel wide"><h2>Runtime 已实现</h2><ul><li>4 个冻结 Agent 注册；D5 激活 Factory Lead、AI PM、Reviewer，Builder 只注册且禁止执行。</li><li>LangGraph 节点为 <code>model → policy → finish</code>，支持 maxTurns、有限 retry、timeout、结构化输出与 <code>allow/ask/deny</code>。</li><li>LangGraph 原生 interrupt 用于 Permission 暂停/继续；checkpoint 受控存储并以 SHA-256 绑定 PostgreSQL RunStep。</li><li>Journal 显式记录 <code>runtime_start → model → checkpoint</code>；未知外部副作用未对账时拒绝恢复。</li><li>Runtime 仅创建 Task/Run/RunStep/Event，不执行 Gate 批准或 Project 业务状态转移。</li></ul></article>
+  </section>
+
+  <section class="panel"><h2>DeepSeek 真实冒烟矩阵</h2><table><thead><tr><th>项目</th><th>结果</th><th>脱敏证据</th></tr></thead><tbody>
+    <tr><td>认证/网络</td><td><span class="pill pass">通过</span></td><td>中国大陆官方 <code>https://api.deepseek.com</code>；Key 仅通过 <code>DEEPSEEK_API_KEY</code> SecretRef</td></tr>
+    <tr><td>模型</td><td><span class="pill pass">已观察</span></td><td>请求 <code>deepseek-chat</code>；响应 <code>deepseek-v4-flash</code></td></tr>
+    <tr><td>SSE / Tool Calls / JSON Schema</td><td><span class="pill pass">通过</span></td><td>多 delta、强制函数调用、本地 <code>extra=forbid</code> 校验</td></tr>
+    <tr><td>中文长文档</td><td><span class="pill pass">通过</span></td><td>13,391 字；仅保存长度、哈希与 Token</td></tr>
+    <tr><td>超时 / context-too-long</td><td><span class="pill pass">通过</span></td><td>1 ms deadline；约 1,050,044 Token 被 Provider 拒绝并正确分类</td></tr>
+    <tr><td>Token / 费用</td><td><span class="pill partial">部分</span></td><td>Token 可用；Provider 不返回 cost，Runtime 不伪造费用</td></tr>
+    <tr><td>真实 HTTP 429</td><td><span class="pill partial">未观察</span></td><td>未发送请求洪泛；429/Retry-After 及有限重试只有单测证据</td></tr>
+  </tbody></table><p><a href="./d5-deepseek-smoke-2026-08-22.json">DeepSeek 脱敏 JSON 证据</a></p></section>
+
+  <section class="grid">
+    <article class="panel"><h2>Factory Lead</h2><p><span class="pill pass">真实运行成功</span></p><p>Run <code>31b66776-37aa-4392-838f-109436f147f5</code><br>1 turn · 0 retry · 2,761 Token<br>观察模型 <code>deepseek-v4-flash</code></p></article>
+    <article class="panel"><h2>Reviewer</h2><p><span class="pill pass">真实运行成功</span></p><p>Run <code>63f6db0b-5e98-4f3f-adef-f2f5a6a1b2ac</code><br>1 turn · 0 retry · 2,067 Token<br>观察模型 <code>deepseek-v4-flash</code></p></article>
+    <article class="panel wide"><h2>Run/Step/checkpoint/cursor 证据</h2><p>两个 Run 均有 <code>runtime_start → model → checkpoint</code>，记录输出和 checkpoint SHA-256，不持久化 Prompt 或模型输出正文。cursor 可恢复 4 个 Run 事件，最后 sequence 17。<a href="./d5-runtime-smoke-2026-08-22.json">查看 Runtime 脱敏 JSON 证据</a>。</p></article>
+  </section>
+
+  <section class="panel"><h2>Context Pack 内容边界</h2><div class="grid"><div><h3>允许</h3><ul><li>当前 Project/Context/Stage 匹配且已批准的 Pack</li><li>Pack 元数据、任务、Capability/禁止动作/预算</li><li>已批准 Project Brief/产物</li><li>Reviewer 另通道只读精确绑定的 <code>draft/waiting_reviewer</code> candidates，不冒充 approved</li></ul></div><div><h3>禁止</h3><ul><li>整段群聊、隐藏思维链、无关草稿</li><li>无关产物和 Secret 原值</li><li>敏感 policy 字段或秘钥样输入</li><li>脱敏证据不保存 Prompt、搜索正文或模型正文</li></ul></div></div></section>
+
+  <section class="panel"><h2>AI PM → Reviewer → G1 真实纵向证据</h2><ul><li>前一次成功 AI PM Run <code>9847aaf8…</code>：1 次博查、3 次有界模型尝试（2 次 schema retry）、10 个 EvidenceRef，13,544 Token。</li><li>Evidence Index/MRD v1 由 DefinitionSubmission 原子落库，仍为 draft。Reviewer Run <code>5e91b4c1…</code> 经 1 次 retry 返回 <code>pass_with_known_issues</code>。</li><li>Red Team Review v1 已持久，G1 <code>fb894599…</code> 已 open 但未决定；项目未进入 PRD。</li><li><a href="../contracts/d5-review-candidate-contract-2026-08-22.html">查看协作契约</a></li></ul></section>
+  <section class="panel"><h2>末次隔离复跑与验证</h2><ul><li>AI PM <code>c64d328c…</code>：1 次博查、1 次 schema retry；Reviewer <code>daa10b4d…</code>：0 tools、1 次 schema retry。</li><li>Red Team Review 已落库；G1 <code>e30b1bb0…</code> open 但未决定；fixture 仍为 mrd；Event sequence 连续到 26。</li><li><code>pnpm check</code>：Web 6/6、Python 52/52；在线 PostgreSQL 42/42；Alembic <code>20260822_0004 (head)</code>。</li><li>保留 1 条 Starlette 弃用警告。第一次受限运行的 31 failed / 40 errors 均因系统禁止访问本机 PostgreSQL；允许访问后全部通过。</li><li><a href="./d5-ai-pm-research-smoke-2026-08-22.json">最新脱敏 JSON</a></li></ul></section>
+  <section class="panel"><h2>未完成与 fail-closed</h2><ol><li>产品项目仍保持 <code>alignment / Context v1</code> 等待用户 G0；fixture G0/G1 不代替产品批准。</li><li>一次 Reviewer reject 正确进入 changes_requested；三个 AI PM Run 在有界尝试后以 <code>DEEPSEEK_SCHEMA_INVALID</code> 交还且未落 Artifact。</li><li>真实博查 429、账单/费用和来源质量人工评审尚未观察。</li><li>Builder 在 D5 禁用；Codex CLI 仍仅有只读版本检查。</li></ol></section>
+
+  <section class="panel"><h2>并行任务对齐</h2><ul><li><strong>后端：</strong>Gate/Project 状态继续由确定性服务执行。启动事件契约为 <code>project.created → agent.joined → context.pack_created</code>，后续 sequence 连续。</li><li><strong>待解契约：</strong>真实公开搜索 Adapter 至少返回 query、URL、title、发布/抓取时间、引用摘要和来源哈希。</li><li><strong>前端：</strong>本线未修改 <code>apps/web/**</code>；Runtime cursor Event 可消费，完整 AG-UI 长连接/恢复交互仍未验收。</li></ul></section>
+</main>
+<footer><a href="./d5-agent-runtime-progress-2026-08-22.md">Markdown 完整版</a> · D5 Agent Runtime · 2026-08-22 已检查 1440×900 / 390×844，无页面级横向溢出</footer>
+</body>
+</html>

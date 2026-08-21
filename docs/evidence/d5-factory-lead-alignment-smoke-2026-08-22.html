@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>D5 Factory Lead 项目对齐真实冒烟证据</title>
+  <style>
+    :root{color-scheme:dark;--bg:#08111f;--panel:#101d31;--line:#29405f;--text:#edf5ff;--muted:#a9b9ce;--ok:#5ee2a0;--warn:#ffc86b;--blue:#74b7ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#17365b 0,transparent 34%),var(--bg);color:var(--text);font:15px/1.65 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{width:min(1100px,calc(100% - 32px));margin:auto;padding:42px 0 64px}a{color:var(--blue)}h1{font-size:clamp(28px,5vw,48px);line-height:1.12;margin:8px 0 14px}h2{font-size:22px;margin:34px 0 14px}.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase}.lead{max-width:820px;color:var(--muted);font-size:17px}.badge{display:inline-flex;border:1px solid #347356;background:#153b2c;color:var(--ok);border-radius:999px;padding:5px 11px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}.card{background:linear-gradient(145deg,#13243b,#0d1829);border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}.card strong{display:block;font-size:25px;color:var(--ok)}.card span{color:var(--muted)}.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px}.step{min-height:130px}.step b{color:var(--blue)}.arrow{color:var(--warn);font-size:24px}table{width:100%;border-collapse:collapse;background:#0d192a;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:table}th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--blue);background:#14263d}tr:last-child td{border:0}code{background:#07101c;border:1px solid #253a55;border-radius:6px;padding:2px 6px;overflow-wrap:anywhere}.note{border-left:4px solid var(--warn);background:#2b2316;padding:14px 16px;border-radius:8px;color:#ffe7b8}.ok{border-left-color:var(--ok);background:#112c23;color:#c9ffe3}ul,ol{padding-left:22px}.muted{color:var(--muted)}footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted)}:focus-visible{outline:3px solid var(--warn);outline-offset:3px}@media(max-width:760px){main{width:min(100% - 22px,1100px);padding-top:26px}.grid{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);justify-self:center}.step{min-height:auto}table{display:block;overflow-x:auto;white-space:nowrap}h2{margin-top:28px}}
+  </style>
+</head>
+<body>
+<main>
+  <a href="../handoff.html">← 返回阶段交接</a>
+  <p class="eyebrow">D5 / Real model evidence / 2026-08-22</p>
+  <span class="badge">到达 waiting_g0</span>
+  <h1>Factory Lead 项目对齐真实冒烟</h1>
+  <p class="lead">真实 DeepSeek 完成“模糊输入 → 3 个澄清 → Project Brief v1 → 打开 G0”。模型没有推进业务状态：项目仍为 <code>alignment / Context v1</code>，G0 未批准。</p>
+
+  <section class="grid" aria-label="关键结果">
+    <div class="card"><strong>2 轮</strong><span>均为 1 turn / 0 retry</span></div>
+    <div class="card"><strong>6,633</strong><span>总 Token；费用字段为空</span></div>
+    <div class="card"><strong>38 / 38</strong><span>PostgreSQL 在线测试通过</span></div>
+  </section>
+
+  <h2>纵向链路</h2>
+  <section class="flow" aria-label="Factory Lead flow">
+    <div class="card step"><b>1 · 模糊输入</b><p>启动包只绑定当前 ContextVersion，不伪造已批准 Brief。</p></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="card step"><b>2 · 澄清</b><p>真实模型提出 3 个结构化问题，回答与 Context v1 幂等绑定。</p></div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="card step"><b>3 · Brief / G0</b><p>模型提交 Brief 候选；确定性服务创建 v1 并打开 G0，等待用户。</p></div>
+  </section>
+
+  <h2>最终运行元数据</h2>
+  <table>
+    <thead><tr><th>项目</th><th>第 1 轮</th><th>第 2 轮</th></tr></thead>
+    <tbody>
+      <tr><td>结果</td><td><code>clarification_required</code></td><td><code>waiting_g0</code></td></tr>
+      <tr><td>模型</td><td>deepseek-chat → deepseek-v4-flash</td><td>deepseek-chat → deepseek-v4-flash</td></tr>
+      <tr><td>turn / retry</td><td>1 / 0</td><td>1 / 0</td></tr>
+      <tr><td>Token</td><td>2,774</td><td>3,859</td></tr>
+      <tr><td>延迟</td><td>3,928.28 ms</td><td>6,199.38 ms</td></tr>
+      <tr><td>产物</td><td>3 个澄清</td><td>Brief v1 + open G0</td></tr>
+    </tbody>
+  </table>
+
+  <h2>确定性契约</h2>
+  <ul>
+    <li><code>factory_lead_invocations</code> 以项目和幂等键唯一约束，在模型调用前占位。</li>
+    <li>API：<code>POST /api/v1/agent-runtime/projects/{project_id}/factory-lead/alignment-runs</code>。</li>
+    <li>事件：<code>factory_lead.invocation.*</code>、<code>clarification.answered</code>，以及既有 Run、Message、Brief、Gate 事件。</li>
+    <li>Gate/Transition 若由模型提供仍校验；是否打开 G0 由控制面固定规则决定。</li>
+  </ul>
+  <p class="note ok">migration <code>0003 → 0002 → 0003</code> 往返成功；并发双击测试证明同一幂等键只触发一次模型调用。</p>
+
+  <h2>过程失败（未隐藏）</h2>
+  <ol>
+    <li>旧 PostgreSQL 进程无响应且占用共享内存；确认只有 idle 会话后 fast shutdown，再在沙箱外正常启动。</li>
+    <li>第一版把 Brief、Gate、Transition 的联动责任错误交给模型，导致 <code>DEEPSEEK_SCHEMA_INVALID</code>。</li>
+    <li>一次合法 Brief 的顶层问题被错误二次落成待答澄清，返回 <code>CLARIFICATION_ANSWERS_REQUIRED</code>。</li>
+    <li>修复后由控制面根据 Brief 固定打开 G0；最终两轮均 0 retry，且没有代批。</li>
+  </ol>
+
+  <h2>边界与未完成</h2>
+  <p class="note">这不是完整 D5 或 4 Agent 验收。AI PM 仍因缺少真实、可审计的 <code>web_research</code> Adapter 而 fail closed；真实 429、费用映射和模型路由差异仍未关闭。SSE 仍是 snapshot/reconnect foundation，短轮询明确为降级。</p>
+  <p class="muted">证据项目：<code>2a3c38e1-9704-4f83-a096-84cb5a5025e7</code>。本页面不包含密钥、Prompt、用户输入正文或模型输出正文；产品数据库仍按业务契约保存用户可见消息、澄清和 Brief。</p>
+  <footer>产品工厂 Agent · D5 Factory Lead alignment evidence</footer>
+</main>
+</body>
+</html>

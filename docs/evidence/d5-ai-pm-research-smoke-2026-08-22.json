@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-08-21T19:41:50.292988+00:00",
+  "fixture_only": true,
+  "fixture_g0_is_not_product_approval": true,
+  "provider": "bocha",
+  "secret_ref": "BOCHA_API_KEY",
+  "prompts_recorded": false,
+  "search_bodies_recorded": false,
+  "model_outputs_recorded": false,
+  "project_id": "0058f764-8e43-4274-82f5-be80a859d0f2",
+  "run_id": "c64d328c-4ae1-4f05-8482-32d16b8f7a84",
+  "permission_request_id": "f5f27b88-1ec0-403d-9b69-c71bc73210e1",
+  "initial_state": "waiting_human",
+  "final_state": "succeeded",
+  "turns_used": 2,
+  "retries_used": 1,
+  "research_retries_used": 0,
+  "tool_calls_used": 1,
+  "requested_model": "deepseek-chat",
+  "observed_model": "deepseek-v4-flash",
+  "usage": {
+    "prompt_tokens": 7727,
+    "completion_tokens": 5547,
+    "total_tokens": 13274,
+    "prompt_cache_hit_tokens": 7552,
+    "prompt_cache_miss_tokens": 175,
+    "estimated_cost_cny": null
+  },
+  "checkpoint_hash_before": "ef3799b8abfd10c35f710e417cfea39333e61b7921bba6f15d0cd4ac58b54cd0",
+  "checkpoint_hash_after": "5a04e275e4e7c919ea90e53037ec94add2c808e914973379b883bdcfeeb74dad",
+  "output_sha256": "6b99e598e2b7608081bd840f64ae4d780f3691be3757be2b24e6d44505037877",
+  "artifact_proposal_count": 2,
+  "artifact_proposal_kinds": ["evidence_index", "mrd"],
+  "evidence_ref_count": 10,
+  "evidence_ref_sha256": [
+    "7ae48d4fabb353c2038195230985825d37cc5bd3d82f82efb64f3862faa36758",
+    "443b684d8ee7dfe669b0118e48e41ba4f256fb2cdc598ded6df5b8bdac4ccd1c",
+    "9a7bb1cb8a7a41bb6186bc3b54309be2ad82c58ee8613e5adab521eb073eaa60",
+    "34dc67532905891a2cac872b7815a44297c330e68a1ea1b01ccdf56100240911",
+    "c89a6a91d5727ca8f5ecb2dc523f2f2c8ccf0f2d2fe1b0f11f3761da4b26e285",
+    "823c30283f42015c54012d3c9d7d8784f26b620f36aa44b6aa4b1ca817e52db1",
+    "fa94e68e87caab43b50b49d34798d635e9136d038c199dd6eb04c3899662a85b",
+    "ae0db083045d68fb2ddc38c58c00ff51a4fe6ed41a7b54e1fe81600b8eb65f19",
+    "9e46614fbee29b65983f61b1c21fb197e6effac32ca82cbda8024dc878a3be5c",
+    "a64495deed0384443d21ad850068fb34c7e38fc9c3c487488c0128827b070822"
+  ],
+  "journal": [
+    {"step_index": 0, "step_type": "runtime_start", "state": "completed", "idempotency_key": null, "output_ref": null, "external_effect_confirmed": false},
+    {"step_index": 1, "step_type": "checkpoint", "state": "completed", "idempotency_key": "checkpoint:ef3799b8abfd10c35f710e417cfea39333e61b7921bba6f15d0cd4ac58b54cd0", "output_ref": ".runtime-checkpoints/c64d328c-4ae1-4f05-8482-32d16b8f7a84/ef3799b8abfd10c35f710e417cfea39333e61b7921bba6f15d0cd4ac58b54cd0.json", "external_effect_confirmed": true},
+    {"step_index": 2, "step_type": "tool", "state": "completed", "idempotency_key": "web_research:c64d328c-4ae1-4f05-8482-32d16b8f7a84:1", "output_ref": "evidence-set://d0ed45c13f479158ec9dbec67808bf825487a27fb487ea42b367ec11cc77ecc6", "external_effect_confirmed": true},
+    {"step_index": 3, "step_type": "model", "state": "failed", "idempotency_key": null, "output_ref": null, "external_effect_confirmed": false},
+    {"step_index": 4, "step_type": "model", "state": "completed", "idempotency_key": null, "output_ref": "model://deepseek-v4-flash", "external_effect_confirmed": false},
+    {"step_index": 5, "step_type": "checkpoint", "state": "completed", "idempotency_key": "checkpoint:5a04e275e4e7c919ea90e53037ec94add2c808e914973379b883bdcfeeb74dad", "output_ref": ".runtime-checkpoints/c64d328c-4ae1-4f05-8482-32d16b8f7a84/5a04e275e4e7c919ea90e53037ec94add2c808e914973379b883bdcfeeb74dad.json", "external_effect_confirmed": true}
+  ],
+  "event_types": [
+    "project.created", "agent.joined", "context.pack_created", "project_brief.created", "gate.opened", "context.updated", "gate.decided", "project.state_changed", "project_brief.approved", "context.pack_created", "agent.joined", "run.started", "permission.opened", "run.waiting", "permission.decided", "run.completed", "artifact.created", "artifact.created", "context.pack_created", "agent.joined", "definition.submitted", "run.started", "run.completed", "artifact.created", "gate.opened", "definition.reviewed"
+  ],
+  "last_event_sequence": 26,
+  "definition_submission": {
+    "submission_id": "35bc4586-eee5-4d8f-9e67-df86145c114d",
+    "status_before_review": "waiting_reviewer",
+    "evidence_set_hash": "d0ed45c13f479158ec9dbec67808bf825487a27fb487ea42b367ec11cc77ecc6",
+    "reviewer_context_pack_id": "3b01fe69-26e5-4b35-a1ee-edc1e63e8eb7",
+    "artifact_refs": [
+      {"artifact_id": "06e516da-af3f-4cd1-bdfc-c3418ac825a6", "version": 1, "kind": "evidence_index", "context_version": 2, "approval_status": "draft", "content_hash": "f129ccc590bb02b36aa23383401b2a2575790a9b1d775c7f520933e9c2c15b7c"},
+      {"artifact_id": "2ad76ae0-47f4-4ec7-a869-74ccfb26b7a3", "version": 1, "kind": "mrd", "context_version": 2, "approval_status": "draft", "content_hash": "add2b654a246ec9dd3491fa7bd2f96e08fcd45804a0bb86547383f2d8cb767ac"}
+    ],
+    "review_candidate_count": 2,
+    "review_candidate_content_recorded": false
+  },
+  "reviewer": {
+    "run_id": "daa10b4d-f657-4215-80a1-64aca91e3efc",
+    "state": "succeeded",
+    "turns_used": 2,
+    "retries_used": 1,
+    "tool_calls_used": 0,
+    "requested_model": "deepseek-chat",
+    "observed_model": "deepseek-v4-flash",
+    "usage": {"prompt_tokens": 7634, "completion_tokens": 3813, "total_tokens": 11447, "prompt_cache_hit_tokens": 7424, "prompt_cache_miss_tokens": 210, "estimated_cost_cny": null},
+    "output_sha256": "dd857e0a2289102739ea3f191e2db0dbdfdd7e599ff15ee40b3af3b9c9a451c4",
+    "checkpoint_hash": "3e69fc57edccaa9231da23ad982db3be106ad9af63994fc433356694a8050348",
+    "journal": [
+      {"step_index": 0, "step_type": "runtime_start", "state": "completed", "output_ref": null},
+      {"step_index": 1, "step_type": "model", "state": "failed", "output_ref": null},
+      {"step_index": 2, "step_type": "model", "state": "completed", "output_ref": "model://deepseek-v4-flash"},
+      {"step_index": 3, "step_type": "checkpoint", "state": "completed", "output_ref": ".runtime-checkpoints/daa10b4d-f657-4215-80a1-64aca91e3efc/3e69fc57edccaa9231da23ad982db3be106ad9af63994fc433356694a8050348.json"}
+    ]
+  },
+  "definition_review": {
+    "review_id": "483cedfa-1434-497e-923f-e995d1bc0999",
+    "verdict": "pass_with_known_issues",
+    "status": "waiting_g1",
+    "red_team_review": {"artifact_id": "bf8a4cd3-fa2e-4072-98d5-d8ca035d8259", "version": 1, "kind": "red_team_review", "context_version": 2, "approval_status": "draft", "content_hash": "5cff18b37a2f741be370309f71b2366125cd0e2e7c2d63bee0aea1c0e073c18d"}
+  },
+  "g1_opened": true,
+  "g1_decided": false,
+  "project_state": "mrd",
+  "open_gate_ids": ["e30b1bb0-1db6-46ed-8f93-31341d2277c7"]
+}

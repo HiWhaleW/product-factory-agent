@@ -1,0 +1,139 @@
+{
+  "date": "2026-08-22",
+  "browser": {
+    "name": "ego-browser / ego-lite",
+    "task_space_id": 101,
+    "viewport_desktop": [1440, 900],
+    "viewport_mobile": [390, 844]
+  },
+  "sources": {
+    "workspace_approved": "docs/evidence/workspace-hifi-approved.png",
+    "annotation_remove_meta": "docs/evidence/workspace-annotation-remove-meta-2026-08-22.png",
+    "annotation_font_plus_2": "docs/evidence/workspace-annotation-font-plus2-2026-08-22.png",
+    "interaction_baseline": "产品工厂Agent_Harness表.html"
+  },
+  "desktop_1440x900": {
+    "page": { "width": 1440, "height": 900, "scroll_width": 1440, "scroll_height": 900, "body_overflow": "hidden" },
+    "workspace_rect": { "x": 32, "y": 62, "width": 1376, "height": 838 },
+    "grid_rect": { "x": 32, "y": 229, "width": 1376, "height": 659 },
+    "chat_width": 521.36,
+    "dag_width": 850.64,
+    "ratio": [37.9, 62.1],
+    "stage_count": 12,
+    "stage_row_tops": [119, 172],
+    "removed_top_info_present": [false, false, false],
+    "canvas_title": "项目对齐 V1.0",
+    "computed_font_px": {
+      "brand": 24,
+      "navigation": 16,
+      "project_title": 17,
+      "stage": 14,
+      "participant": 12,
+      "message": 13,
+      "event": 12,
+      "gate_title": 18,
+      "dag_title": 18,
+      "artifact_node_title": 17,
+      "canvas_note": 11
+    },
+    "console_app_error_count": 0
+  },
+  "mobile_390x844": {
+    "page": { "width": 390, "height": 844, "scroll_width": 390, "scroll_height": 844, "body_overflow": "hidden" },
+    "workspace_rect": { "x": 6, "y": 58, "width": 378, "height": 786 },
+    "stage_count": 12,
+    "stage_row_tops": [100, 147],
+    "switch": "chat -> artifacts -> chat passed",
+    "canvas_title": "项目对齐 V1.0",
+    "artifact_canvas_rect": { "x": 8, "y": 284, "width": 374, "height": 552 },
+    "artifact_node_bounds": [[72.5, 438.2, 75.6, 85.5], [169.25, 363.5, 75.6, 85.5], [286.25, 392.75, 75.6, 85.5]],
+    "nodes_within_canvas": true,
+    "minimap": "hidden on mobile",
+    "preview_width": 374,
+    "computed_font_px": {
+      "project_title": 13,
+      "stage": 10,
+      "stage_number": 9,
+      "tab": 13,
+      "tab_count": 11,
+      "participants_title": 14,
+      "participant": 10,
+      "avatar": 10,
+      "message": 13,
+      "gate_title": 16,
+      "composer": 12,
+      "send_button": 12,
+      "dag_title": 15,
+      "preview_header": 12,
+      "preview_title": 24,
+      "preview_meta": 13,
+      "preview_body": 12,
+      "preview_note": 12
+    },
+    "console_app_error_count": 0
+  },
+  "interactions": {
+    "chat": {
+      "result": "passed",
+      "persisted_text": "前端字号调整 QA：真实群聊输入与持久化验证。"
+    },
+    "gate": {
+      "result": "partial",
+      "tested": "empty-reason 退回修改 blocked with inline validation",
+      "validation": "退回、暂停或终止必须填写理由。",
+      "project_state_mutated": false,
+      "not_tested": "irreversible successful Gate decision"
+    },
+    "artifact_drag": {
+      "result": "passed",
+      "pointer": "ego-lite CDP Input.dispatchMouseEvent",
+      "screen_delta": { "x": 70, "y": 35 },
+      "business_graph_mutated": false
+    },
+    "artifact_preview": {
+      "result": "passed",
+      "title": "项目对齐简报",
+      "desktop_open": true,
+      "mobile_open_close": "passed"
+    },
+    "permission": {
+      "result": "not_tested",
+      "reason": "no real open PermissionRequest in current project"
+    }
+  },
+  "data_truth": {
+    "control_plane": "real FastAPI/PostgreSQL records",
+    "current_project_agents_joined": false,
+    "current_message_and_artifact_origin": "manual or explicitly marked D4 control-plane sample",
+    "real_model_generated": false,
+    "runtime_smoke_is_not_current_chat_integration": true
+  },
+  "checks": {
+    "eslint": "passed",
+    "typescript": "passed",
+    "vitest": "6 passed",
+    "production_build": "passed",
+    "design_qa_html": {
+      "desktop_horizontal_overflow": false,
+      "mobile_horizontal_overflow": false,
+      "broken_images": 0,
+      "displayed_result": "blocked"
+    }
+  },
+  "visual_capture": {
+    "status": "blocked",
+    "attempts": [
+      "captureScreenshot helper returned Unknown helper",
+      "CDP Page.captureScreenshot timed out twice",
+      "CDP Page.startScreencast returned no frames"
+    ],
+    "post_change_screenshot": null,
+    "historical_comparison_warning": "existing comparison predates this font and information-hierarchy revision"
+  },
+  "integration_gaps": [
+    "Artifact graph API does not expose owner/agent label or created_at; frontend does not fabricate them",
+    "No real open PermissionRequest exists for a safe UI decision test",
+    "A successful irreversible Gate decision was not submitted against the shared G0 record"
+  ],
+  "design_qa": "blocked"
+}

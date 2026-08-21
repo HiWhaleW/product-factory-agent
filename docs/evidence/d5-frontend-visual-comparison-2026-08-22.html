@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>产品工厂前端源稿与实现对照</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #242321; color: #fbf8f4; font-family: ui-monospace, "PingFang SC", monospace; }
+    main { display: grid; grid-template-rows: 1fr 1fr; gap: 8px; width: 100vw; height: 100vh; padding: 8px; }
+    section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; }
+    figure { display: grid; grid-template-rows: 24px minmax(0, 1fr); min-width: 0; min-height: 0; margin: 0; border: 1px solid #fbf8f4; background: #f4efea; }
+    figcaption { padding: 4px 8px; background: #242321; color: #fbf8f4; font-size: 12px; font-weight: 700; }
+    img { display: block; width: 100%; height: 100%; object-fit: contain; background: #f4efea; }
+  </style>
+</head>
+<body>
+  <main>
+    <section aria-label="首页对照">
+      <figure><figcaption>首页 · 用户确认源稿</figcaption><img alt="首页确认源稿" src="homepage-hifi-v3-review.png" /></figure>
+      <figure><figcaption>首页 · Next.js 真实实现 1440×900</figcaption><img alt="首页真实实现" src="homepage-implementation-1440x900-v4.png" /></figure>
+    </section>
+    <section aria-label="工作区对照">
+      <figure><figcaption>功能页 · 用户确认源稿</figcaption><img alt="功能页确认源稿" src="workspace-hifi-approved.png" /></figure>
+      <figure><figcaption>功能页 · Next.js 真实实现 1440×900</figcaption><img alt="功能页真实实现" src="workspace-implementation-1440x900-v5.png" /></figure>
+    </section>
+  </main>
+</body>
+</html>

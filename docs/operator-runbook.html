@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>产品工厂 Agent · 开发运维交接</title>
+  <style>
+    :root{--p:#f4f6f5;--s:#fff;--t:#17201d;--m:#596661;--l:#cbd4d0;--b:#1f65a6;--g:#13705b;--a:#9a5b00;font:16px/1.58 Inter,"PingFang SC",system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--p);color:var(--t)}a{color:var(--b)}.in{width:min(1080px,calc(100% - 40px));margin:auto}.band{padding:44px 0;border-bottom:1px solid var(--l)}h1{font-size:clamp(34px,5vw,52px)}.note,.card{padding:15px;border:1px solid var(--l);background:var(--s)}.note{border-left:5px solid var(--a);background:#fff8e9}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.card{border-top:4px solid var(--g);min-width:0}.card.wait{border-top-color:var(--a)}.card span{display:block;color:var(--m);font-size:12px}.cmd{padding:16px;overflow:auto;background:#17201d;color:#edf2ef;font:13px/1.7 ui-monospace,monospace}code{overflow-wrap:anywhere}footer{padding:24px 0;color:var(--m);font-size:12px}@media(max-width:700px){.in{width:calc(100% - 24px)}.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <section class="band"><div class="in"><small>OPERATOR RUNBOOK · D5</small><h1>确定性链路可检查，完整 D5 尚未通过</h1><div class="note">PostgreSQL 0004、DeepSeek/博查 Runtime 和隔离 AI PM→Reviewer→G1 open 已验证；真实产品 G0/G1、Builder 和部署仍未完成。</div></div></section>
+  <section class="band"><div class="in"><h2>环境事实</h2><div class="grid">
+    <div class="card"><strong>PostgreSQL</strong><span>16.15、migration 0004、在线集成 42/42。</span></div>
+    <div class="card"><strong>DeepSeek / 博查</strong><span>真实渠道、Schema、超时与 Permission/checkpoint 已有脱敏证据。</span></div>
+    <div class="card"><strong>隔离纵向链路</strong><span>AI PM、Evidence/MRD、Reviewer、Red Team Review、G1 open 已贯通。</span></div>
+    <div class="card"><strong>Python</strong><span>uv 管理 3.12.13；Python 52/52。</span></div>
+    <div class="card"><strong>Web</strong><span>Web 测试 6/6；本线未修改 apps/web。</span></div>
+    <div class="card wait"><strong>待完成</strong><span>真实产品 G0/G1、完整 AG-UI 恢复、Builder 与发布。</span></div>
+  </div></div></section>
+  <section class="band"><div class="in"><h2>可重复命令</h2><pre class="cmd">env UV_CACHE_DIR=.uv-cache uv sync --locked
+pnpm check
+pnpm test:api:integration
+env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current
+pnpm dev</pre><p>Key 只在后端 <code>.env</code> / SecretRef 中配置，不进入聊天、文档、Git、Artifact、Context Pack 或日志。</p></div></section>
+  <section class="band"><div class="in"><h2>末次验证与问题记录</h2><div class="grid">
+    <div class="card"><strong>检查通过</strong><span>Web 6/6、Python 52/52、PostgreSQL 42/42、Alembic 0004 head。</span></div>
+    <div class="card"><strong>保留警告</strong><span>1 条 Starlette/httpx 弃用警告。</span></div>
+    <div class="card wait"><strong>受限运行失败</strong><span>第一次在线测试 31 failed / 40 errors，原因是系统禁止访问本机 PostgreSQL；允许访问后全部通过。</span></div>
+  </div><p><a href="./operator-runbook.md">完整 Markdown</a> · <a href="./contracts/d5-review-candidate-contract-2026-08-22.html">Reviewer/G1 契约</a></p></div></section>
+</main>
+<footer><div class="in">Operator Runbook · 2026-08-22 更新 · 已检查 1440×900 / 390×844，横向溢出 0</div></footer>
+</body>
+</html>

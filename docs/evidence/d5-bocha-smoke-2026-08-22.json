@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-08-21T18:41:27.574686Z",
+  "provider": "bocha",
+  "endpoint": "https://api.bochaai.com/v1/web-search",
+  "secret_ref": "BOCHA_API_KEY",
+  "secret_present": true,
+  "query_recorded": false,
+  "response_bodies_recorded": false,
+  "provider_error_bodies_recorded": false,
+  "result_count": 10,
+  "total_estimated_matches_present": true,
+  "provider_request_id_present": true,
+  "field_presence": {
+    "title": 10,
+    "url": 10,
+    "site_name": 10,
+    "snippet": 10,
+    "summary": 10,
+    "date_published": 10
+  },
+  "domains": [
+    "k.sina.com.cn",
+    "news.china.com",
+    "report.iresearch.cn",
+    "t.cj.sina.com.cn",
+    "www.baogao.com",
+    "www.cet.com.cn",
+    "www.chyxx.com",
+    "www.fxbaogao.com",
+    "www.sohu.com"
+  ],
+  "url_sha256": [
+    "7a41dfc9b6834e764896b6628788a05cf8707da7c65ba522b82c682a71227a45",
+    "24f1eb7e9dab1e7f9cf010d4f5506639586b27adf0d27738ddd088aad7f1b2d4",
+    "9e493d4b4d1674df059cc45cf1010ffc2985de1d6ce6431a82c4da9c1872edb3",
+    "56a9be3a4b492fa20d1d108bb38a60bd9af923f8e3b0d9e7ee5c08f5205365ac",
+    "31aa073be0d6f075f784793bea061fc229fb3320872a0283a7f5897f181b97ce",
+    "80523d0b7a85a0b234fa0614d0ada3712b748f3b6385f16fa7fc4d93e4fac1a7",
+    "b9363d13a22d4e19bf65d4f029c9405c7e8f229dfe79b9414ea3c272e0a57c76",
+    "13e0c6ed5dee154bc2adc5a8d1322dbe485320573576e4b9af121bdc9c1c837f",
+    "31781b5e6cf52dca3c36d7477966e010a4d4afa66d5be8fe0943716861f5223a",
+    "8f83b96d04f7c4958198adbcef39c41b871fa5efdc3a1009345efe0810122afa"
+  ],
+  "evidence_ref_sha256": [
+    "f3d60e59c4c21d41c737f4e0a131923847e97a65224fd975be019aa0eff52020",
+    "49cc29e24e0fe88265cdc20fe9af9b5b76b6bbfb1c12561aed76b5547b07d19d",
+    "7a24c6d0a6413ad02881acbc72f1f6624f3f57260c8f08ec77bfac0a7b8b1048",
+    "335a0fec01efe4d760318fd69fc450736e6ea4522dd45468141def59a93770a5",
+    "d98b0b514d820615b31ecb91b5fd7190e53818179b0d26e7befe3a28b8ed16c3",
+    "9c3f3b7685ebf6c37e8a332f0691aa5747d4589d12183f7d067d50a49891e1a0",
+    "5d3b65db585df2ac386118e6f61e94aa477d2d2f3f9e4826565df7c5df3ef25b",
+    "8621e22cd212d154195971ab522ca06fb49433ec74b1106c5c9b6663a8ab0eb9",
+    "c0e7f5270d2f197b679f175c953b521185b55a598500e697e51a414752452016",
+    "963fe7cabc4e0cacda420b28fcf5d1657956a4cdbe5d5e55bfa65195593554c0"
+  ],
+  "response_sha256": "f68547fb1cfb0e3e313971926b1c05a75d2978851a8fe44225c47154fea3e704",
+  "usage_or_cost_metadata_present": false,
+  "evidence_ref_stable": true,
+  "cases": [
+    {
+      "name": "authentication_network_chinese_schema",
+      "status": "pass",
+      "latency_ms": 288,
+      "error_code": null,
+      "note": "Official endpoint accepted the SecretRef; the Chinese query returned a response accepted by the strict local schema."
+    },
+    {
+      "name": "evidence_ref_stability",
+      "status": "pass",
+      "latency_ms": 0,
+      "error_code": null,
+      "note": "EvidenceRef was recomputed locally from each returned URL."
+    },
+    {
+      "name": "short_timeout",
+      "status": "pass",
+      "latency_ms": 20,
+      "error_code": "BOCHA_TIMEOUT",
+      "note": "A real request with a 1 ms client timeout failed closed as typed timeout."
+    },
+    {
+      "name": "rate_limit_429",
+      "status": "not_observed",
+      "latency_ms": 0,
+      "error_code": null,
+      "note": "No request flood was performed to manufacture a provider rate limit."
+    },
+    {
+      "name": "usage_cost_metadata",
+      "status": "not_observed",
+      "latency_ms": 0,
+      "error_code": null,
+      "note": "The standardized Web Search response exposes no token or cost fields; billing must be reconciled outside the response contract."
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-08-22T01:24:22+08:00",
+  "provider": "deepseek",
+  "configured_model": "deepseek-chat",
+  "observed_response_model": "deepseek-v4-flash",
+  "base_url_origin": "https://api.deepseek.com",
+  "secret_ref": "DEEPSEEK_API_KEY",
+  "secret_present": true,
+  "prompts_recorded": false,
+  "outputs_recorded": false,
+  "estimated_cost_cny_available": false,
+  "cases": [
+    {
+      "name": "authentication_network",
+      "status": "pass",
+      "latency_ms": 771,
+      "response_sha256": "565339bc4d33d72817b583024112eb7f5cdf3e5eef0252d6ec1b9c9a94e12bb3",
+      "output_chars": 2,
+      "prompt_tokens": 8,
+      "completion_tokens": 1,
+      "total_tokens": 9
+    },
+    {
+      "name": "streaming",
+      "status": "pass",
+      "latency_ms": 878,
+      "response_sha256": "a09c9aecd58520017b64903b0a0362aa6aae2fa1e5a13dcc94576e4844a78b53",
+      "output_chars": 50,
+      "prompt_tokens": 12,
+      "completion_tokens": 33,
+      "total_tokens": 45
+    },
+    {
+      "name": "tool_calling",
+      "status": "pass",
+      "latency_ms": 876,
+      "prompt_tokens": 318,
+      "completion_tokens": 58,
+      "total_tokens": 376,
+      "assertion": "required function call returned a JSON object with exactly the declared keys"
+    },
+    {
+      "name": "json_schema",
+      "status": "pass",
+      "latency_ms": 1401,
+      "response_sha256": "78d56b252356cbf1dae70cfb220e095e97860950f538f57f25b1d4fe87327f67",
+      "output_chars": 155,
+      "prompt_tokens": 57,
+      "completion_tokens": 69,
+      "total_tokens": 126,
+      "assertion": "JSON mode output passed strict local Pydantic validation with extra fields forbidden"
+    },
+    {
+      "name": "chinese_long_document",
+      "status": "pass",
+      "latency_ms": 849,
+      "input_chars": 13391,
+      "response_sha256": "5f3e6856847eafa8faa2cca1e4e1483b08d3219607e71c745b643ae79911f8fc",
+      "output_chars": 79,
+      "prompt_tokens": 8302,
+      "completion_tokens": 51,
+      "total_tokens": 8353
+    },
+    {
+      "name": "timeout",
+      "status": "pass",
+      "latency_ms": 13,
+      "error_code": "DEEPSEEK_TIMEOUT",
+      "assertion": "real request with a 1 ms deadline failed closed"
+    },
+    {
+      "name": "context_too_long",
+      "status": "pass",
+      "latency_ms": 3883,
+      "input_chars": 2100080,
+      "estimated_input_tokens": 1050044,
+      "error_code": "DEEPSEEK_CONTEXT_TOO_LONG",
+      "assertion": "provider rejected the oversized request; payload and response body were not persisted"
+    },
+    {
+      "name": "rate_limit",
+      "status": "not_observed",
+      "assertion": "HTTP 429 and Retry-After classification passed unit tests; no request flood was sent"
+    }
+  ]
+}
