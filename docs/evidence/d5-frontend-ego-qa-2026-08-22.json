@@ -112,7 +112,13 @@
       },
       "hover": {
         "brand_clip_path": "inset(0px)",
-        "avatar_and_event_rule": "black frame and shadow only on hover or focus-within"
+        "avatar_border": "rgb(36, 35, 33)",
+        "avatar_box_shadow": "rgb(36, 35, 33) 2px 2px 0px 0px",
+        "avatar_image_clip_path": "inset(0px)"
+      },
+      "focus_within": {
+        "gate_card": true,
+        "gate_icon_clip_path": "inset(0px)"
       },
       "console_app_error_count": 0
     }

@@ -59,7 +59,7 @@
 - **Artifact 拖动：通过。** ego-lite CDP 真实指针事件将节点移动约 `70×35px`；只改变 React Flow 本地位置，没有修改业务 Graph。
 - **Artifact 预览：通过。** 桌面和移动均可打开“项目对齐简报”预览并关闭；内容继续从受控 Artifact API 读取。
 - **移动切换：通过。** 群聊和产物面板互斥显示，页面不滚动。
-- **图片 hover：通过。** ego-lite 在桌面真实 hover 品牌图标，计算样式由 `inset(2px)` 变为 `inset(0)`；头像、事件和 Gate 图标使用同一默认隐藏 / hover-focus 显示规则，控制台错误为 `0`。
+- **图片 hover / focus：通过。** ego-lite 在桌面真实 hover 品牌和可见消息头像：头像变为黑色边框、`2px 2px` 硬阴影，图片由 `inset(2px)` 变为 `inset(0)`；真实聚焦 Gate 输入框后卡片满足 `:focus-within`，Gate 图标也变为 `inset(0)`。控制台错误为 `0`。
 - **Permission：未测成功态。** 当前项目没有开放 PermissionRequest，未伪造测试数据。
 
 ## 数据与 Agent 真实性
