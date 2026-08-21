@@ -3,6 +3,7 @@
   "browser": {
     "name": "ego-browser / ego-lite",
     "task_space_id": 101,
+    "image_hover_task_space_id": 105,
     "viewport_desktop": [1440, 900],
     "viewport_mobile": [390, 844]
   },
@@ -99,6 +100,21 @@
     "permission": {
       "result": "not_tested",
       "reason": "no real open PermissionRequest in current project"
+    },
+    "image_border_hover": {
+      "result": "passed",
+      "default": {
+        "brand_clip_path": "inset(2px)",
+        "avatar_border": "transparent",
+        "avatar_box_shadow": "none",
+        "event_clip_path": "inset(2px)",
+        "event_box_shadow": "none"
+      },
+      "hover": {
+        "brand_clip_path": "inset(0px)",
+        "avatar_and_event_rule": "black frame and shadow only on hover or focus-within"
+      },
+      "console_app_error_count": 0
     }
   },
   "data_truth": {

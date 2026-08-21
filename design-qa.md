@@ -8,6 +8,7 @@
 
 - 附件 1 的两项修改已实现：项目标题右侧的“项目阶段 / Context v1 / 数据库实时投影 / Agent 未接入”信息组已删除；Artifact 画布提示改为真实项目阶段和 Context 版本生成的“项目对齐 V1.0”。
 - 附件 2 对应的项目工作区字号已整体提高 `2px`；桌面与移动端的显式响应式覆盖均已同步，未改变冻结交互。
+- 图片静止态黑框已移除：品牌、用户头像、事件和 Gate 图标默认使用透明边界并裁掉 PNG 外框，只有 hover 或键盘 focus-within 时恢复黑色轮廓；图标内部线条和 Artifact 文档图形不被误裁。
 - 真实 ego-lite DOM、布局、字体与交互核验通过；桌面 `1440×900` 和移动 `390×844` 均无页面级滚动，应用控制台错误为 `0`。
 - 本轮 post-change 原生截图未取得：`captureScreenshot` helper 不可用，CDP `Page.captureScreenshot` 两次超时，`Page.startScreencast` 未返回帧。因此本轮不能完成同屏截图式视觉比较，最终结论保持 `blocked`，不以 DOM 指标冒充视觉完成。
 
@@ -25,6 +26,7 @@
 - `workspace-client.tsx` → `artifact-dag.tsx`：传递动态画布标题 `${projectStageLabel(project.state)} V${project.context_version}.0`，没有静态伪造阶段。
 - `globals.css`：桌面项目标题、阶段、参与者、群聊、事件、Gate、Permission、输入框、Artifact 节点、预览抽屉、按钮和说明文字均增加 `2px`。
 - `globals.css`：移动端项目标题、阶段编号与名称、参与者、头像、Gate 标题、输入区、移动切换、画布标题和抽屉标题条同步增加 `2px`；删除已失效的 `.project-meta` 与隐藏画布说明规则。
+- `globals.css`：图片外框改为交互态显示；`design-qa.html` 的附件图片也改为默认透明边框、hover/focus 才显示黑框。
 
 ## ego-lite 浏览器证据
 
@@ -38,6 +40,7 @@
 - 顶部四项信息文本均不存在；画布标题为“项目对齐 V1.0”。
 - 关键计算字号：品牌 `24px`、导航 `16px`、项目标题 `17px`、阶段 `14px`、参与者 `12px`、消息 `13px`、Gate 标题 `18px`、DAG 标题 `18px`、节点标题 `17px`。
 - 应用控制台错误：`0`。
+- 图片默认计算样式：品牌和事件图标 `clip-path: inset(2px)`，头像外框为透明且 `box-shadow: none`；品牌真实 hover 后变为 `clip-path: inset(0)`，黑框仅在交互态出现。
 
 ### 移动 390×844
 
@@ -56,6 +59,7 @@
 - **Artifact 拖动：通过。** ego-lite CDP 真实指针事件将节点移动约 `70×35px`；只改变 React Flow 本地位置，没有修改业务 Graph。
 - **Artifact 预览：通过。** 桌面和移动均可打开“项目对齐简报”预览并关闭；内容继续从受控 Artifact API 读取。
 - **移动切换：通过。** 群聊和产物面板互斥显示，页面不滚动。
+- **图片 hover：通过。** ego-lite 在桌面真实 hover 品牌图标，计算样式由 `inset(2px)` 变为 `inset(0)`；头像、事件和 Gate 图标使用同一默认隐藏 / hover-focus 显示规则，控制台错误为 `0`。
 - **Permission：未测成功态。** 当前项目没有开放 PermissionRequest，未伪造测试数据。
 
 ## 数据与 Agent 真实性
@@ -70,7 +74,7 @@
 - **Fonts and typography：代码与计算样式已核验；截图比较 blocked。** 本轮所有目标字号均增加 `2px`，未发现 DOM 裁切；缺少 post-change 原生截图，无法完成最终字形、抗锯齿与视觉密度比较。
 - **Spacing and layout rhythm：通过。** `38/62`、`6×2`、页面无滚动、移动切换均保持。
 - **Colors and tokens：未修改。** 沿用已确认的“纸上工场”色板和状态色。
-- **Image quality and icons：未修改。** Logo 与 UI 图标继续使用已确认资产。
+- **Image quality and icons：通过交互态核验。** Logo 与 UI 图标继续使用已确认资产；PNG 烘焙矩形外框在静止态被安全裁掉，hover/focus 时恢复，不改图标主体。
 - **Copy and content：通过。** 不需要用户理解的顶部技术信息已删除；画布标题来自真实业务状态。
 - **Responsiveness：通过。** 桌面和移动布局、内部滚动与抽屉宽度均通过 ego-lite DOM/交互核验。
 

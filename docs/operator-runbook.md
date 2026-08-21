@@ -14,7 +14,7 @@
 | uv | `PATH` / `0.12.1` | 可用 |
 | 项目 Python | `.venv` / `3.12.13` | 由 uv 管理；不用系统 Python 3.9.6 |
 | Docker | 未检测到 | 不阻塞 V1；V2 沙箱化再引入 |
-| Git | 已初始化，分支 `main` | 当前文件尚未创建基线 commit |
+| Git | 本地已初始化；GitHub 私有仓库与 `codex/initial-import` 已建立 | Draft PR `#1`，`main` 尚未合并 |
 
 ## 2. 当前可打开的静态产物
 

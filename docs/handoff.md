@@ -13,6 +13,10 @@
 
 交互事实必须单独说明：唯一权威视觉基线仍是根目录 `产品工厂Agent_Harness表.html`。当前 Web 已移除 `demoProject`，实现真实项目创建/列表、消息输入、参与者区、Event cursor 短轮询、React Flow Artifact DAG、受控内容预览/下载，以及 Gate/Permission 独立卡片。ego-lite 验证了 `1440×900` 双栏与 `390×844` 同屏切换，工作区无页面级滚动；但原生截图持续超时，根目录 `design-qa.md` 依规则保持 `blocked`，不宣称完整视觉忠实度验收通过。
 
+前端视觉补丁已在 2026-08-22 同步：工作区不需要用户理解的顶部技术信息已删除，画布标题使用真实阶段/Context 动态生成，工作区字号整体增加 `2px`；品牌、头像、事件和 Gate 图片默认不显示黑框，只在 hover / focus-within 时显示。上述修改已通过 ego-lite 计算样式和交互核验，原生截图阻塞仍保留。
+
+GitHub 私有仓库已建立：`https://github.com/HiWhaleW/product-factory-agent`。安全发布分支为 `codex/initial-import`，Draft PR 为 `https://github.com/HiWhaleW/product-factory-agent/pull/1`。远端提交不含 `.env`、Runtime、虚拟环境、依赖、构建缓存、工作区、本机 Alembic 配置、含本机来源路径的冻结/参考原文或大型本地 QA PNG/PDF；Markdown/HTML/JSON 证据摘要保留。
+
 ## 2. 已完成
 
 ### 产品与交互
