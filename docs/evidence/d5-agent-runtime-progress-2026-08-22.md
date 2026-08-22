@@ -1,7 +1,7 @@
 # D5 真实 Agent Runtime 进度与问题台账
 
 > 日期：2026-08-22  
-> 当前结论：隔离 fixture 已真实贯通 `G0 allow → AI PM Permission/checkpoint → 博查 → DeepSeek → Evidence/MRD → Reviewer → Red Team Review → G1 open`。G1 未代批，项目仍为 `mrd / Context v2`；真实产品项目仍在 G0 等待用户。
+> 当前结论：销售复盘 Agent 虚拟产品已真实跑通 G1，并由用户批准进入 `prd / Context v3`。首轮 Reviewer `reject` 后系统 fail-closed；修订 Evidence/MRD v2 后 Reviewer 以 `pass_with_known_issues` 通过。PRD Context Pack 已创建，Builder 未启动。
 
 ## 已完成
 
@@ -12,7 +12,7 @@
 - 实现 LangGraph 原生 `interrupt` 暂停/继续；最新 checkpoint 序列化到受控 `ARTIFACT_ROOT/.runtime-checkpoints`，SHA-256 记入 PostgreSQL `RunStep`，可在新 Service/新 `InMemorySaver` 恢复。
 - 实现 Run/Step Journal：`runtime_start`、每次模型尝试的 `model`、`checkpoint`。恢复前检查未知外部副作用，幂等键尚未对账时返回 `SIDE_EFFECT_RECONCILIATION_REQUIRED`。
 - Runtime 只创建 Task/Run/RunStep/Event，不批准 Gate，不推进项目业务状态；输出事件可持久化并通过 cursor 恢复。
-- Agent/Provider 定向套件 25/25 通过；PostgreSQL 全套集成测试 42/42 通过；migration 为 `20260822_0004 (head)`。最终 `pnpm check` 结果见本文末次验证记录。
+- Agent 套件 33/33 通过；PostgreSQL 全套集成测试 42/42 通过；migration 为 `20260822_0004 (head)`。最终 `pnpm check` 结果见本文末次验证记录。
 - 本台账、博查进度、根 README 和 handoff HTML 已使用真实浏览器检查 `1440×900` / `390×844`，均无页面级横向溢出；该结果不代表产品 Web 视觉验收。
 
 ## DeepSeek 真实冒烟
@@ -51,7 +51,7 @@
 - 最新隔离 AI PM Run `c64d328c…`：1 次博查、1 次 schema retry、10 个 EvidenceRef，最终成功。
 - 最新隔离 Reviewer Run `daa10b4d…`：0 tools、1 次 schema retry，最终 `pass_with_known_issues`。
 - Red Team Review 已落库；G1 `e30b1bb0…` 为 `open`、未决定；fixture 项目仍为 `mrd`；Event sequence 连续到 26。
-- `pnpm check`：Web 6/6、Python 52/52；42 项在线测试在普通检查中按设计跳过。
+- `pnpm check`：Web 6/6、Python 54/54；42 项在线测试在普通检查中按设计跳过。
 - `pnpm test:api:integration`：允许访问本机 PostgreSQL 后 42/42 通过。
 - Alembic：`20260822_0004 (head)`。
 - 保留 1 条 `StarletteDeprecationWarning`。第一次在受限环境运行在线测试出现 31 failed / 40 errors，根因均为系统禁止访问 `127.0.0.1:5432`；按允许方式重跑后全部通过，没有隐藏该失败。
@@ -63,17 +63,26 @@
 - 模型可见：Pack ID/项目/版本/阶段/接收 Agent、任务、Capability/禁止动作/预算、已批准 Project Brief/产物。Reviewer 额外只读取该 DefinitionSubmission 精确绑定的两个 `review_candidates`，它们明确标记为 `draft/waiting_reviewer`，不冒充 approved material。
 - 模型不可见：整段群聊、隐藏思维链、无关草稿/产物、Secret 原值。证据不保存 Prompt、搜索正文或模型正文。
 
+## 销售复盘 Agent 虚拟产品真实复跑
+
+- 项目 `2a3c38e1…` 的 G0 `b242ef80…` 已由用户批准；AI PM Context Pack 为 `33554516…`。
+- 首轮 AI PM `d07c8a13…` 使用 1 次博查、1 turn、10,367 Token；Reviewer `9b419c47…` 返回 `reject`，提交进入 `changes_requested`，G1 未打开。
+- 根因是公开搜索查询混入长任务指令，且证据与销售复盘直接关联度不足。Runtime 已改为支持首行 `Research query:`：博查只接收明确查询，后续指令只供模型使用；PermissionRequest 绑定实际查询 Hash。
+- 修订 AI PM `0df21c90…` 成功并生成 Evidence Index/MRD v2。首次 Reviewer `f5321d65…` 因 `DEEPSEEK_PROVIDER_ERROR` 交还用户，未开 G1；新 Reviewer Run `d6b2444e…` 不使用工具、1 turn、8,786 Token，返回 `pass_with_known_issues`。
+- Red Team Review v2 已落库；G1 `cec40b01…` 已由用户批准。确定性控制面依次产生 `context.updated → gate.decided → project.state_changed → context.pack_created`，Event sequence 连续到 63。项目为 `prd / Context v3`，PRD Context Pack `7e918f18…` 精确绑定 MRD v2、Evidence Index v2 和 Red Team Review v2。两项 P2 已知问题继续保留。
+- 脱敏证据：[`d5-sales-retrospective-product-flow-2026-08-22.json`](./d5-sales-retrospective-product-flow-2026-08-22.json)。
+
 ## 未完成、失败与 fail-closed 项
 
-1. 隔离 fixture 已贯通到 G1 open，但没有、也不应代批 G1；真实产品项目仍保持 `alignment / Context v1` 等待用户 G0。
+1. G1 已由用户批准，项目已进入 PRD；PRD Agent Run、确定性 PRD 持久化和 G2 尚未执行。
 2. 博查真实中文搜索、严格 Schema、稳定 EvidenceRef 与短超时已通过；真实 429、账单/费用字段和来源质量人工评审仍未完成。详见 [`d5-bocha-adapter-progress-2026-08-22.html`](./d5-bocha-adapter-progress-2026-08-22.html)。
-3. 真实 Reviewer 已运行，但其结论是隔离 smoke 上的 `pass_with_known_issues`，不代表来源质量人工审查或产品 G1 决定。
+3. 产品 Reviewer 已真实运行并返回 `pass_with_known_issues`；G1 批准不表示两项 P2 风险已消失。
 4. Tool Policy 可产生 PermissionRequest，但尚未注册的工具 Adapter 会返回 `TOOL_ADAPTER_UNAVAILABLE`，不会用 mock 继续。
 5. Builder 仅注册且 D5 禁用；Codex CLI 仍仅有只读版本检查。本轮不宣称 Builder、MVP、内部验收、种子用户内测或发布完成。
 
 ## 本轮最终验证
 
-- `pnpm check`：ESLint、TypeScript、Web 6/6、Ruff、Python 52 passed；PostgreSQL 42 项按设计在该命令中 skip。
+- `pnpm check`：ESLint、TypeScript、Web 6/6、Ruff、Python 54 passed；PostgreSQL 42 项按设计在该命令中 skip。
 - `pnpm test:api:integration`：真实 PostgreSQL 42/42；Alembic 当前 `20260822_0004 (head)`。
 - ego-browser 重新预览本 HTML 与 AI PM→Reviewer→G1 契约 HTML；`1440×900` 和 `390×844` 均为页面水平溢出 0。
 - 保留 Starlette `TestClient` / `httpx` 弃用警告，未降低验收或隐藏。

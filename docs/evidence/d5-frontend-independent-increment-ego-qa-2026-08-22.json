@@ -1,0 +1,84 @@
+{
+  "date": "2026-08-22",
+  "browser": "ego-browser / ego-lite",
+  "task_space": 116,
+  "production_url": "http://127.0.0.1:3100",
+  "scope": "frontend independent increment only",
+  "result": "passed_with_backend_data_and_visual_capture_gaps",
+  "browser_comment_sync_label_removal": {
+    "requested": true,
+    "removed_from_workspace": true,
+    "desktop_1440x900_present": false,
+    "comment_viewport_713x749_present": false,
+    "mobile_390x844_present": false,
+    "polling_interval_ms_unchanged": 2500
+  },
+  "project_sample": {
+    "name": "D3 双栏交互验收",
+    "usage": "frontend component regression only",
+    "not_d5_business_acceptance": true,
+    "gate_decision_submitted": false,
+    "message_submitted": false
+  },
+  "desktop_1440x900": {
+    "project_list_navigation": {"hash": "#projects", "active_element_id": "projects", "passed": true},
+    "header_popovers": {"closed_panel_widths": [0, 0, 0], "exclusive_open": true, "shortcut_focus": "帮助", "escape_focus": "帮助"},
+    "workspace": {
+      "chat_width": 411.59375,
+      "dag_width": 960.40625,
+      "ratio": "30/70",
+      "stage_count": 12,
+      "participants": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+      "body_scroll_height": 900,
+      "body_overflow": "hidden",
+      "title": "项目对齐 V1.0",
+      "node_badges": ["V1.0", "V1.0", "V1.0"],
+      "node_sizes": [[168, 190], [168, 190], [168, 190]],
+      "sync_transport": {"mode": "cursor short polling", "interval_ms": 2500, "user_visible_label": false}
+    },
+    "dag_filter": {"selected_stage": "mrd", "filtered_node_titles": ["市场需求文档"], "restored_node_count": 3, "business_graph_mutated": false},
+    "artifact_preview": {"artifact": "市场需求文档", "latest_version": 2, "persisted_versions_found": [2], "version_1_response": "not found", "fabricated_version_option": false, "content_loaded": true, "error": null},
+    "artifact_drag": {
+      "before": {"x": 554.59375, "y": 537, "transform": "translate(90px, 276px)"},
+      "after": {"x": 604.59375, "y": 562, "transform": "translate(140px, 301px)"},
+      "delta": {"x": 50, "y": 25},
+      "graph_api_unchanged": true
+    },
+    "gate_hover": {"before_and_after_rect_equal": true, "box_shadow": "none", "transform": "none"},
+    "participant_hover": {"border": "rgb(36, 35, 33)", "shadow": "rgb(36, 35, 33) -4px 4px 0px 0px", "transform": "matrix(1, 0, 0, 1, 4, -4)"}
+  },
+  "mobile_390x844": {
+    "body_scroll_width": 390,
+    "body_scroll_height": 844,
+    "stage_count": 12,
+    "participants": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+    "chat_artifact_switch_exclusive": true,
+    "artifact_toolbar_right": 215.3828125,
+    "minimap_display": "none",
+    "filtered_mrd_node_count": 1,
+    "preview_rect": {"x": 8, "y": 284, "width": 374, "height": 552, "right": 382, "bottom": 836},
+    "preview_error": null,
+    "settings_navigation": true,
+    "project_list_return": true,
+    "not_found_heading": "项目不存在",
+    "horizontal_overflow": false
+  },
+  "checks": {"pnpm_lint_web": "passed", "pnpm_typecheck": "passed", "pnpm_test_web": "3 files / 13 tests passed", "pnpm_build": "passed", "browser_event_errors": 0},
+  "not_tested": [
+    "PermissionRequest success state: no real open recoverable sample",
+    "irreversible Gate success state: no dedicated recoverable acceptance project",
+    "sales retrospective Agent G1 business flow: project not restored in current API",
+    "real historical version switching: current sample only has persisted v2"
+  ],
+  "backend_runtime_needs": [
+    "Restore sales retrospective Agent project with Evidence Index v2, MRD v2, Red Team Review v2 and G1",
+    "Return two G1 known issues with source linkage",
+    "Add artifact version index with version, status, created_at and created_by",
+    "Provide real Agent joined, run, task/tool, streaming and recovery events",
+    "Provide recoverable PermissionRequest and Gate acceptance samples",
+    "Provide project iteration_version if product iteration must differ from context_version",
+    "Provide Graph owner/agent and created_at fields",
+    "Provide login/session/me/logout contract when authentication work starts"
+  ],
+  "visual_capture": {"ego_page_capture_screenshot": "timed out", "old_screenshots_reused_as_current_evidence": false, "live_review_page_preserved": true}
+}

@@ -26,6 +26,8 @@ workspaces/
 # HTML and JSON evidence summaries remain publishable.
 docs/evidence/*.png
 docs/evidence/*.pdf
+docs/evidence/*.jpg
+docs/evidence/*.jpeg
 
 # Local-only provenance notes contain machine-specific source paths.
 产品工厂Agent/spec/Harness-Reference-Assessment.md

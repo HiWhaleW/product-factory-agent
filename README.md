@@ -56,7 +56,7 @@
 
 ## 正式接手必须完成的三件事
 
-1. **用 GitHub 插件/Connector 推送当前安全快照，禁止使用 `gh` CLI。** Connector 已核验私有仓库默认 `main`、`codex/initial-import`、open Draft PR #1 和 write 权限；推送前仍须再次核对 head、完成扫描，并使用 `force:false`。不得上传 `.env`、Runtime、依赖/缓存、Artifact/Workspace、本机路径和密钥。
+1. **GitHub 安全快照已完成。** Connector 已将 `codex/initial-import` 从精确父提交以 `force:false` 快进到 [`db39b5dd…`](https://github.com/HiWhaleW/product-factory-agent/commit/db39b5ddfa01e17477c99c6eaa512c5f23422c30)；[Draft PR #1](https://github.com/HiWhaleW/product-factory-agent/pull/1) 仍 open/draft。全程未使用 `gh` 或本地 Git push；上传/排除证据见 [安全快照记录](./docs/evidence/github-safe-snapshot-2026-08-23.html)。
 2. **Runtime / 后端并线已完成当前切片。** “销售复盘 Agent”已恢复到 Web 同源 PostgreSQL/API；Evidence Index v2、MRD v2、Red Team Review v2、历史 G1 两项 known issues、Artifact v1/v2、执行/恢复和 Session 契约可读。仍缺可回收 Gate/Permission 样本、认证强制执行与 AG-UI/SSE。
 3. **按 Gate 推进后续安排。** 先完成 GitHub 安全快照，再统一销售复盘项目真相源并做前端真实投影验收；随后完成 PRD Run、确定性 PRD 持久化和 G2。之后依次为方案/G3、技术栈/G4；G4 前不得启动 Builder。G4 后固定按后端开发 → 前端开发的独立 Task/Run/测试证据推进，再进入 MVP、内部验收/G5、种子内测、商业 BRD/G6、发布/交接和反馈迭代。
 

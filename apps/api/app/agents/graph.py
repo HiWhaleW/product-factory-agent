@@ -102,9 +102,10 @@ def build_agent_graph(
 
     def research_policy_node(state: RuntimeGraphState) -> RuntimeGraphState:
         pack = ApprovedContextPack.model_validate(state["context_pack"])
+        query = _research_query(state["user_input"])
         request = ToolRequest(
             tool_id="web_research",
-            parameters={"query_sha256": _hash_text(state["user_input"])},
+            parameters={"query_sha256": _hash_text(query)},
             side_effect="billable",
         )
         decision = evaluate_tool_policy(
@@ -168,7 +169,7 @@ def build_agent_graph(
             }
         try:
             response = await research_provider.search(
-                state["user_input"],
+                _research_query(state["user_input"]),
                 count=10,
                 freshness="noLimit",
                 summary=True,
@@ -439,6 +440,17 @@ GraphFactory = Callable[[ModelProvider, BaseCheckpointSaver | None], Any]
 
 def _hash_text(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _research_query(user_input: str) -> str:
+    """Select an explicit public-search query without sending task instructions to search."""
+    first_line, _, _ = user_input.partition("\n")
+    prefix = "Research query:"
+    if first_line.startswith(prefix):
+        query = first_line.removeprefix(prefix).strip()
+        if query:
+            return query
+    return user_input
 
 
 def _validate_evidence_provenance(

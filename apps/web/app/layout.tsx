@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
+
+import { GlobalHeader } from "@/app/global-header";
+import { OnboardingGuide } from "@/app/onboarding-guide";
 
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
@@ -17,17 +18,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="zh-CN">
       <body>
-        <header className="global-header">
-          <Link className="brand" href="/">
-            <Image alt="" aria-hidden="true" height={40} priority src="/workshop-mark.png" width={40} />
-            <span>{productName}</span>
-          </Link>
-          <nav aria-label="主导航">
-            <Link href="/">项目</Link>
-            <Link href="/settings">设置</Link>
-          </nav>
-        </header>
+        <GlobalHeader productName={productName} />
         {children}
+        <OnboardingGuide />
       </body>
     </html>
   );

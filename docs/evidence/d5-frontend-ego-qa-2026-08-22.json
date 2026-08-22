@@ -2,160 +2,198 @@
   "date": "2026-08-22",
   "browser": {
     "name": "ego-browser / ego-lite",
-    "task_space_id": 101,
-    "image_hover_task_space_id": 105,
-    "viewport_desktop": [1440, 900],
-    "viewport_mobile": [390, 844]
+    "task_space_id": 106,
+    "production_preview": "http://127.0.0.1:3100",
+    "viewport_desktop_css": [1440, 900],
+    "viewport_mobile_css": [390, 844]
   },
   "sources": {
-    "workspace_approved": "docs/evidence/workspace-hifi-approved.png",
-    "annotation_remove_meta": "docs/evidence/workspace-annotation-remove-meta-2026-08-22.png",
-    "annotation_font_plus_2": "docs/evidence/workspace-annotation-font-plus2-2026-08-22.png",
-    "interaction_baseline": "产品工厂Agent_Harness表.html"
+    "interaction_baseline": "产品工厂Agent_Harness表.html",
+    "approved_workspace": "docs/evidence/workspace-hifi-approved.png",
+    "gate_annotation": "docs/evidence/d5-gate-hover-annotation-2026-08-22.png",
+    "artifact_annotation": "docs/evidence/d5-artifact-hover-annotation-2026-08-22.png",
+    "participant_annotation": "docs/evidence/d5-participant-hover-annotation-2026-08-22.png",
+    "comparison_html": "docs/evidence/d5-hover-annotation-comparison-2026-08-22.html",
+    "comparison_image": "docs/evidence/d5-hover-annotation-comparison-2026-08-22.png"
   },
-  "desktop_1440x900": {
-    "page": { "width": 1440, "height": 900, "scroll_width": 1440, "scroll_height": 900, "body_overflow": "hidden" },
-    "workspace_rect": { "x": 32, "y": 62, "width": 1376, "height": 838 },
-    "grid_rect": { "x": 32, "y": 229, "width": 1376, "height": 659 },
-    "chat_width": 521.36,
-    "dag_width": 850.64,
-    "ratio": [37.9, 62.1],
-    "stage_count": 12,
-    "stage_row_tops": [119, 172],
-    "removed_top_info_present": [false, false, false],
-    "canvas_title": "项目对齐 V1.0",
-    "computed_font_px": {
-      "brand": 24,
-      "navigation": 16,
-      "project_title": 17,
-      "stage": 14,
-      "participant": 12,
-      "message": 13,
-      "event": 12,
-      "gate_title": 18,
-      "dag_title": 18,
-      "artifact_node_title": 17,
-      "canvas_note": 11
-    },
-    "console_app_error_count": 0
+  "normalization": {
+    "source_pixels": [2940, 1670],
+    "source_includes_browser_chrome": true,
+    "desktop_implementation_pixels": [2880, 1800],
+    "desktop_css_viewport": [1440, 900],
+    "desktop_capture_density": 2,
+    "mobile_implementation_pixels": [390, 844],
+    "mobile_css_viewport": [390, 844],
+    "mobile_capture_density": 1,
+    "method": "same-region and same-hover-state focused comparison; no false pixel-diff across browser chrome"
   },
-  "mobile_390x844": {
-    "page": { "width": 390, "height": 844, "scroll_width": 390, "scroll_height": 844, "body_overflow": "hidden" },
-    "workspace_rect": { "x": 6, "y": 58, "width": 378, "height": 786 },
-    "stage_count": 12,
-    "stage_row_tops": [100, 147],
-    "switch": "chat -> artifacts -> chat passed",
-    "canvas_title": "项目对齐 V1.0",
-    "artifact_canvas_rect": { "x": 8, "y": 284, "width": 374, "height": 552 },
-    "artifact_node_bounds": [[72.5, 438.2, 75.6, 85.5], [169.25, 363.5, 75.6, 85.5], [286.25, 392.75, 75.6, 85.5]],
-    "nodes_within_canvas": true,
-    "minimap": "hidden on mobile",
-    "preview_width": 374,
-    "computed_font_px": {
-      "project_title": 13,
-      "stage": 10,
-      "stage_number": 9,
-      "tab": 13,
-      "tab_count": 11,
-      "participants_title": 14,
-      "participant": 10,
-      "avatar": 10,
-      "message": 13,
-      "gate_title": 16,
-      "composer": 12,
-      "send_button": 12,
-      "dag_title": 15,
-      "preview_header": 12,
-      "preview_title": 24,
-      "preview_meta": 13,
-      "preview_body": 12,
-      "preview_note": 12
+  "implementation": {
+    "motion_tokens": {
+      "duration_ms": 120,
+      "easing": "ease-in-out",
+      "hover_transform": "translate(4px, -4px)",
+      "hover_shadow": "-4px 4px 0 rgb(36, 35, 33)"
     },
-    "console_app_error_count": 0
+    "gate_card": {
+      "persistent_thin_border": true,
+      "default_rect": [103, 375.6484375, 431.359375, 259],
+      "hover_rect": [103, 375.6484375, 431.359375, 259],
+      "default_box_shadow": "none",
+      "hover_box_shadow": "none",
+      "default_transform": "none",
+      "hover_transform": "none"
+    },
+    "gate_primary_button": {
+      "default_rect": [118.5, 579.1484375, 126.78125, 42],
+      "hover_rect": [122.5, 575.1484375, 126.78125, 42],
+      "hover_border": "2px rgb(36, 35, 33)",
+      "hover_box_shadow": "rgb(36, 35, 33) -4px 4px 0px 0px",
+      "hover_transform": "matrix(1, 0, 0, 1, 4, -4)"
+    },
+    "artifact_node": {
+      "css_size_px": [168, 190],
+      "persistent_side_border": "1px solid rgb(36, 35, 33)",
+      "default_rect": [664.359375, 537, 168, 190],
+      "hover_rect": [668.359375, 533, 168, 190],
+      "react_flow_transform_preserved": "matrix(1, 0, 0, 1, 90, 276)",
+      "hover_translate": "4px -4px",
+      "hover_box_shadow": "rgb(36, 35, 33) -4px 4px 0px 0px"
+    },
+    "participant_user": {
+      "visible_label": "我",
+      "actor_contract_changed": false,
+      "default_border": "transparent 1px",
+      "default_rect": [141.296875, 237.5, 50.2578125, 30],
+      "hover_rect": [145.296875, 233.5, 50.2578125, 30],
+      "hover_border": "1px rgb(36, 35, 33)",
+      "hover_box_shadow": "rgb(36, 35, 33) -4px 4px 0px 0px"
+    }
   },
-  "interactions": {
-    "chat": {
-      "result": "passed",
-      "persisted_text": "前端字号调整 QA：真实群聊输入与持久化验证。"
-    },
-    "gate": {
-      "result": "partial",
-      "tested": "empty-reason 退回修改 blocked with inline validation",
-      "validation": "退回、暂停或终止必须填写理由。",
-      "project_state_mutated": false,
-      "not_tested": "irreversible successful Gate decision"
-    },
+  "desktop_1440x900_production": {
+    "console_app_error_count": 0,
+    "gate_card_static_on_hover": true,
+    "gate_button_motion_passed": true,
+    "artifact_hover_motion_passed": true,
+    "participant_hover_motion_passed": true,
     "artifact_drag": {
       "result": "passed",
       "pointer": "ego-lite CDP Input.dispatchMouseEvent",
-      "screen_delta": { "x": 70, "y": 35 },
+      "screen_delta_px": [72, 44],
       "business_graph_mutated": false
     },
     "artifact_preview": {
       "result": "passed",
-      "title": "项目对齐简报",
-      "desktop_open": true,
-      "mobile_open_close": "passed"
+      "drawer_size_px": [420, 610],
+      "content_loaded": true
+    }
+  },
+  "mobile_390x844_production": {
+    "page": {
+      "inner_width": 390,
+      "inner_height": 844,
+      "body_scroll_height": 844,
+      "body_overflow": "hidden"
+    },
+    "switch_chat_to_artifact": "passed",
+    "chat_display_after_switch": "none",
+    "artifact_display_after_switch": "flex",
+    "visible_user_label": "我",
+    "artifact_preview": {
+      "result": "passed",
+      "drawer_size_px": [374, 552]
+    },
+    "not_found_error_state": {
+      "result": "passed",
+      "copy": "404 项目不存在 / 返回项目列表",
+      "console_app_error_count": 0
+    }
+  },
+  "integrated_navigation": {
+    "single_nextjs_application": true,
+    "entry_url": "http://127.0.0.1:3100/",
+    "desktop_path": [
+      "home",
+      "workspace via first real project link",
+      "home via brand",
+      "settings",
+      "home via project navigation"
+    ],
+    "mobile_path": [
+      "home",
+      "workspace via first real project link"
+    ],
+    "home_real_project_count": 4,
+    "workspace_stage_count": 12,
+    "workspace_chat_visible": true,
+    "workspace_dag_visible": true,
+    "settings_status_row_count": 6,
+    "secret_value_exposed": false,
+    "desktop_console_app_error_count": 0,
+    "mobile_console_app_error_count": 0
+  },
+  "screenshots": {
+    "desktop_default": "docs/evidence/d5-hover-default-production-desktop-1440x900-2026-08-22.png",
+    "desktop_gate_button_hover": "docs/evidence/d5-gate-button-hover-production-desktop-1440x900-2026-08-22.png",
+    "desktop_artifact_hover": "docs/evidence/d5-artifact-hover-production-desktop-1440x900-2026-08-22.png",
+    "desktop_participant_hover": "docs/evidence/d5-participant-hover-production-desktop-1440x900-2026-08-22.png",
+    "desktop_artifact_drag_preview": "docs/evidence/d5-artifact-drag-preview-production-desktop-1440x900-2026-08-22.png",
+    "mobile_artifact": "docs/evidence/d5-mobile-artifact-switch-production-390x844-2026-08-22.png",
+    "mobile_preview": "docs/evidence/d5-mobile-artifact-preview-production-390x844-2026-08-22.png",
+    "mobile_error": "docs/evidence/d5-mobile-error-state-production-390x844-2026-08-22.png"
+    ,
+    "integrated_home_desktop": "docs/evidence/d5-integrated-home-production-desktop-1440x900-2026-08-22.png",
+    "integrated_settings_desktop": "docs/evidence/d5-integrated-settings-production-desktop-1440x900-2026-08-22.png",
+    "integrated_home_mobile": "docs/evidence/d5-integrated-home-production-mobile-390x844-2026-08-22.png",
+    "integrated_workspace_mobile": "docs/evidence/d5-integrated-workspace-production-mobile-390x844-2026-08-22.png"
+  },
+  "interactions": {
+    "chat": {
+      "result": "existing_real-chain evidence retained",
+      "repeated_write_this_round": false
+    },
+    "gate": {
+      "visual_result": "passed",
+      "project_state_mutated": false,
+      "not_tested": "irreversible successful Gate decision"
     },
     "permission": {
       "result": "not_tested",
       "reason": "no real open PermissionRequest in current project"
-    },
-    "image_border_hover": {
-      "result": "passed",
-      "default": {
-        "brand_clip_path": "inset(2px)",
-        "avatar_border": "transparent",
-        "avatar_box_shadow": "none",
-        "event_clip_path": "inset(2px)",
-        "event_box_shadow": "none"
-      },
-      "hover": {
-        "brand_clip_path": "inset(0px)",
-        "avatar_border": "rgb(36, 35, 33)",
-        "avatar_box_shadow": "rgb(36, 35, 33) 2px 2px 0px 0px",
-        "avatar_image_clip_path": "inset(0px)"
-      },
-      "focus_within": {
-        "gate_card": true,
-        "gate_icon_clip_path": "inset(0px)"
-      },
-      "console_app_error_count": 0
     }
   },
   "data_truth": {
     "control_plane": "real FastAPI/PostgreSQL records",
     "current_project_agents_joined": false,
-    "current_message_and_artifact_origin": "manual or explicitly marked D4 control-plane sample",
+    "current_content_origin": "manual or explicitly marked D4 control-plane sample",
     "real_model_generated": false,
-    "runtime_smoke_is_not_current_chat_integration": true
+    "frontend_secret_value_exposed": false
   },
   "checks": {
     "eslint": "passed",
-    "typescript": "passed",
-    "vitest": "6 passed",
+    "typescript": "passed after serial rerun",
+    "vitest": "2 files / 6 tests passed",
     "production_build": "passed",
+    "source_and_implementation_same_comparison_input": true,
+    "comparison_broken_images": 0,
     "design_qa_html": {
       "desktop_horizontal_overflow": false,
       "mobile_horizontal_overflow": false,
       "broken_images": 0,
-      "displayed_result": "blocked"
+      "displayed_result": "passed"
     }
   },
-  "visual_capture": {
-    "status": "blocked",
-    "attempts": [
-      "captureScreenshot helper returned Unknown helper",
-      "CDP Page.captureScreenshot timed out twice",
-      "CDP Page.startScreencast returned no frames"
-    ],
-    "post_change_screenshot": null,
-    "historical_comparison_warning": "existing comparison predates this font and information-hierarchy revision"
+  "recorded_issue": {
+    "environment": "Next.js development server on :3000",
+    "trigger": "ego-lite synthetic mobile 404 navigation",
+    "message": "Performance.measure negative timestamp",
+    "production_reproduced": false,
+    "production_console_app_error_count": 0
   },
   "integration_gaps": [
-    "Artifact graph API does not expose owner/agent label or created_at; frontend does not fabricate them",
-    "No real open PermissionRequest exists for a safe UI decision test",
-    "A successful irreversible Gate decision was not submitted against the shared G0 record"
+    "No real open PermissionRequest exists for a safe UI success decision test",
+    "A successful irreversible Gate decision was not submitted against the shared G0 record",
+    "Current project chat does not yet have joined Runtime Agents",
+    "Artifact graph API does not expose owner/agent label or created_at; frontend does not fabricate them"
   ],
-  "design_qa": "blocked"
+  "design_qa": "passed"
 }

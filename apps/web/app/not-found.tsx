@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFoundPage() {
   return (
-    <main className="page-shell narrow">
+    <main className="page-shell narrow" id="main-content">
       <section className="error-panel">
         <p className="eyebrow">404</p>
         <h1>项目不存在</h1>

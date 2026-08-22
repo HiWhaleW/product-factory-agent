@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>D5 MotherDuck hover 对照</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;padding:20px;background:#f4efea;color:#242321;font:13px/1.5 "SFMono-Regular","PingFang SC",monospace}h1{margin:0 0 6px;font-size:22px}p{margin:0 0 16px;color:#5f5b56}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{padding:12px;background:#fbf8f4;border-top:6px solid #ffd71f}.card:nth-child(2){border-top-color:#63baf2}.card:nth-child(3){border-top-color:#ff7656}.card:nth-child(4){border-top-color:#40c7b0}h2{margin:0 0 8px;font-size:14px}img{display:block;width:100%;height:330px;object-fit:contain;background:#eee8e2}@media(max-width:760px){body{padding:10px}.grid{grid-template-columns:1fr}img{height:auto}}
+  </style>
+</head>
+<body>
+  <h1>造物工场 hover 动效对照</h1>
+  <p>最新标注 → MotherDuck 参考 → 实现默认态 → 实现 hover 态。只比较描边、位移、黑色承托和信息密度，不复制品牌结构。</p>
+  <div class="grid">
+    <section class="card"><h2>1. 用户最新标注：Gate 常驻细黑边</h2><img src="workspace-gate-border-annotation-2026-08-22.png" alt="用户对 Gate 卡细黑边的最新标注"></section>
+    <section class="card"><h2>2. MotherDuck：2px 描边 + 120ms 右上位移</h2><img src="motherduck-hover-state-reference-2026-08-22.jpg" alt="MotherDuck 按钮 hover 参考"></section>
+    <section class="card"><h2>3. 造物工场默认态：Gate 1.5px 常驻细边</h2><img src="workspace-motherduck-motion-default-2026-08-22.jpg" alt="造物工场默认状态"></section>
+    <section class="card"><h2>4. 造物工场 hover：4px 右上位移 + 左下黑色承托</h2><img src="workspace-motherduck-motion-gate-hover-2026-08-22.jpg" alt="造物工场 Gate hover 状态"></section>
+  </div>
+</body>
+</html>

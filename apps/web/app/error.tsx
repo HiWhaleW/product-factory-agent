@@ -8,7 +8,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <main className="page-shell narrow">
+    <main className="page-shell narrow" id="main-content">
       <section className="error-panel">
         <p className="eyebrow">REQUEST FAILED</p>
         <h1>页面暂时不可用</h1>

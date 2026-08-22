@@ -33,7 +33,7 @@ Authorization: Bearer <由 BOCHA_API_KEY SecretRef 解析>
 | `summary` | boolean | 否 | `true` |
 | `count` | integer | 否 | `10`，允许 1–50 |
 
-Runtime 在 AI PM / `mrd` / `CAP-02` 路径中当前使用 `count=10`、`freshness=noLimit`、`summary=true`。它不会把 Key、整段群聊或隐藏思维链放入请求。
+Runtime 在 AI PM / `mrd` / `CAP-02` 路径中当前使用 `count=10`、`freshness=noLimit`、`summary=true`。输入首行若为 `Research query: <query>`，只将该明确查询发给博查，后续任务指令仍只供模型使用；未提供前缀时兼容使用完整输入。PermissionRequest 绑定实际查询的 SHA-256。它不会把 Key、整段群聊或隐藏思维链放入请求。
 
 ## 3. Provider 返回与内部标准化返回
 

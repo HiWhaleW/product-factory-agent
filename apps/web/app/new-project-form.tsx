@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 
 import type { ApiError, Project } from "@/lib/contracts";
+import { localUser } from "@/lib/identity";
 
 export function NewProjectForm() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export function NewProjectForm() {
           "content-type": "application/json",
           "idempotency-key": attempt.current.key,
         },
-        body: JSON.stringify({ name: normalized, owner_user_id: "local-admin" }),
+        body: JSON.stringify({ name: normalized, owner_user_id: localUser.id }),
       });
       const body = (await response.json()) as Project & ApiError;
       if (!response.ok) throw new Error(body.error?.user_message ?? "项目创建失败，请重试。");

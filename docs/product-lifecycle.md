@@ -77,11 +77,12 @@ alignment → mrd → prd → solution_confirmation → tech_stack_confirmation
 
 不得把 D10 日期当成真实种子数据、商业模式或发布完成的证据。
 
-## 6. D3 当前实现边界
+## 6. 当前实现边界（2026-08-22）
 
-- 确定性状态迁移已经按上述顺序更新，并有“后端不得跳过前端直接到 MVP”的纯逻辑测试。
-- 简洁 mock UI 已显示 12 阶段、MRD 当前态、后端→前端开发子阶段和内测后 BRD。
-- `docs/evidence/` 中存在应用、生命周期和 Harness 的历史截图，但它们来自不同页面和不同 mock/原型版本，只能证明对应页面当时可见，不能证明权威交互符合性。
-- 当前没有一套可复现记录同时证明根目录权威原型与 D3 应用在桌面/移动端的交互符合性；该项保持未验证。
-- PostgreSQL 实例、真实 API 集成、DeepSeek、Codex Adapter、种子用户和正式发布仍未完成。
-- mock 只用于 D3-D4 可观察性，不能作为 G1-G6 或真实模型/用户验收证据。
+- 确定性控制面、PostgreSQL 16.15、FastAPI、Next.js、DeepSeek/博查 Adapter、有界 LangGraph Runtime、Run/Step/checkpoint、真实 API/Event 投影和 Artifact 安全内容已实现，并有在线集成/并发/恢复证据。
+- Web 已移除 `demoProject`，统一首页、项目工作区和设置页；当前桌面采用用户最新确认的约 `30/70` 双栏，移动采用“群聊 / 产物”同屏切换。生产模式 ego-lite 桌面/移动证据已归档，用户已确认当前前端无问题。
+- “销售复盘 Agent”已经过 G0/G1，当前为 `prd / Context v3`；Evidence Index v2、MRD v2、Red Team Review v2 和两项 known issues 已有独立真实证据，但仍需恢复到 Web 当前同源 API 做纵向投影验收。
+- 当前 `2500ms` cursor 短轮询是 AG-UI/SSE 未完成前的降级实现；可见提示标签已删除不代表 transport 完成。
+- 当前尚未完成 AI PM PRD Run、确定性 PRD 持久化、G2；G4 前不得启动 Builder。Codex Adapter 仍只有只读版本 smoke，没有完整 Builder 执行证据。
+- 当前尚未完成真实项目 4 Agent 群聊接入、可回收 Permission/Gate 联合样本、种子用户、商业 BRD/G6、部署和正式发布。
+- `docs/evidence/` 中的历史 mock/原型截图只能证明对应页面当时可见；不得用 mock、“D3 双栏交互验收”或其他任务线的独立证据冒充 D5 业务验收。

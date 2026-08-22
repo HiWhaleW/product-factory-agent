@@ -6,7 +6,7 @@ from app.adapters.bocha import BochaSearchResponse, BochaSearchResult, BochaTime
 from app.adapters.deepseek import DeepSeekResponse, DeepSeekSchemaError, DeepSeekUsage
 from app.agents.checkpoint import CheckpointArchive
 from app.agents.context import ApprovedContextPack, ContextBoundaryError
-from app.agents.graph import build_agent_graph
+from app.agents.graph import _research_query, build_agent_graph
 from app.agents.outputs import AiPmMrdOutput, ReviewerMrdOutput
 from app.agents.policy import ToolRequest, evaluate_tool_policy
 from app.agents.registry import AgentRegistryError, load_frozen_prompt, require_d5_agent
@@ -92,8 +92,10 @@ class FakeResearchProvider:
     def __init__(self, outputs):
         self.outputs = list(outputs)
         self.calls = 0
+        self.queries = []
 
     async def search(self, query, **kwargs):
+        self.queries.append(query)
         output = self.outputs[self.calls]
         self.calls += 1
         if isinstance(output, Exception):
@@ -483,6 +485,35 @@ def test_ai_pm_research_is_ask_then_runs_bocha_after_permission() -> None:
         f"bocha:web:{'a' * 64}"
     ]
     assert research.calls == model.calls == 1
+
+
+def test_ai_pm_uses_explicit_research_query_without_sending_task_instructions() -> None:
+    query = "official sales conversation intelligence transcript coaching CRM"
+    state = initial_state(research_pack())
+    state["user_input"] = f"Research query: {query}\n任务说明：生成 MRD，不得推进 Gate。"
+    model = FakeProvider([ai_pm_output()])
+    research = FakeResearchProvider([research_response()])
+    graph = build_agent_graph(model, research_provider=research)
+    config = {"configurable": {"thread_id": "ai-pm-explicit-query"}}
+
+    waiting = asyncio.run(graph.ainvoke(state, config))
+    assert waiting["__interrupt__"][0].value["parameters"]["query_sha256"] == _hash_for_test(
+        query
+    )
+
+    completed = asyncio.run(graph.ainvoke(Command(resume={"decision": "allow"}), config))
+    assert completed["status"] == "succeeded"
+    assert research.queries == [query]
+
+
+def _hash_for_test(value: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def test_research_query_falls_back_to_full_input() -> None:
+    assert _research_query("销售复盘 Agent") == "销售复盘 Agent"
 
 
 def test_ai_pm_research_permission_denial_never_calls_provider() -> None:

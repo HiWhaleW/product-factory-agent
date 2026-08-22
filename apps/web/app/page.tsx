@@ -1,16 +1,23 @@
-import Link from "next/link";
-
 import { NewProjectForm } from "@/app/new-project-form";
-import { getHealth, getProjects } from "@/lib/api";
-import { projectStageIndex, projectStageLabel } from "@/lib/stages";
+import { ProjectDashboard } from "@/app/project-dashboard";
+import { getGates, getHealth, getPermissions, getProjects } from "@/lib/api";
+import { projectAttention, type ProjectAttention } from "@/lib/home";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectListPage() {
   const [projects, health] = await Promise.all([getProjects(), getHealth()]);
+  const attention = await Promise.all(projects.map(async (project): Promise<ProjectAttention> => {
+    try {
+      const [gates, permissions] = await Promise.all([getGates(project.id), getPermissions(project.id)]);
+      return projectAttention(project.id, gates, permissions);
+    } catch {
+      return { projectId: project.id, items: [], unavailable: true };
+    }
+  }));
 
   return (
-    <main className="page-shell home-page">
+    <main className="page-shell home-page" id="main-content">
       <section className="home-hero">
         <p className="eyebrow">PRODUCT WORKSHOP / REAL CONTROL PLANE</p>
         <h1>从一个真实想法，建立可追溯的产品交付链</h1>
@@ -32,38 +39,7 @@ export default async function ProjectListPage() {
         </footer>
       </section>
 
-      <section aria-labelledby="projects-title" className="workshop-panel projects-panel">
-        <header className="workshop-panel-title">
-          <h2 id="projects-title">真实项目</h2>
-          <span>{projects.length} 个项目</span>
-        </header>
-        {projects.length ? (
-          <div className="project-list">
-            <div aria-hidden="true" className="project-table-head">
-              <span>项目名称</span><span>项目阶段</span><span>Context</span><span>数据库事实</span><span>操作</span>
-            </div>
-            {projects.map((project) => (
-              <article className="project-row" key={project.id}>
-                <div className="project-name-cell">
-                  <span aria-hidden="true" className="project-swatch" />
-                  <strong>{project.name}</strong>
-                </div>
-                <span className="stage-label"><b>{Math.max(1, projectStageIndex(project.state) + 1)}</b>{projectStageLabel(project.state)}</span>
-                <span>Context v{project.context_version}</span>
-                <span className="database-fact"><i aria-hidden="true" />已连接</span>
-                <Link className="primary-link" href={`/projects/${project.id}`}>
-                  继续项目
-                </Link>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <strong>还没有项目</strong>
-            <p>在上方输入一个真实想法。创建后进入项目对齐阶段，G0 前不会自动拉入 AI PM。</p>
-          </div>
-        )}
-      </section>
+      <ProjectDashboard attention={attention} projects={projects} />
     </main>
   );
 }

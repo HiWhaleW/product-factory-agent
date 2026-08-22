@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>产品工厂前端增量标注对照</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 320px; background: #f4efea; color: #242321; font-family: "SFMono-Regular", "PingFang SC", "Microsoft YaHei", monospace; }
+    body { padding: 18px; }
+    h1 { margin: 0 0 6px; font-size: 22px; }
+    .summary { margin: 0 0 14px; color: #5f5b56; font-size: 12px; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    figure { margin: 0; min-width: 0; border: 2px solid #242321; background: #fbf8f4; }
+    figcaption { min-height: 38px; padding: 9px 12px; border-bottom: 2px solid #242321; background: #242321; color: #fbf8f4; font-size: 12px; font-weight: 700; }
+    .frame { display: grid; place-items: center; height: 350px; overflow: hidden; background: #e9e3dd; }
+    img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    @media (max-width: 800px) {
+      body { padding: 10px; }
+      .comparison { grid-template-columns: 1fr; }
+      .frame { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>前端视觉增量：标注与生产实现同屏对照</h1>
+  <p class="summary">2026-08-22 · 参与者完整显示 / 3:7 双栏 / 阶段标题与节点版本 / MiniMap 无黑框 hover</p>
+  <section class="comparison" aria-label="参与者与布局对照">
+    <figure>
+      <figcaption>标注 1：参与者缺失与布局调整</figcaption>
+      <div class="frame"><img alt="参与者与布局标注" src="d5-participant-layout-annotation-2026-08-22.png" /></div>
+    </figure>
+    <figure>
+      <figcaption>生产实现：3:7、完整参与者、阶段标题与 Vx.0</figcaption>
+      <div class="frame"><img alt="桌面生产实现" src="d5-layout-30-70-production-desktop-1440x900-2026-08-22.png" /></div>
+    </figure>
+  </section>
+  <section class="comparison" aria-label="MiniMap hover 对照">
+    <figure>
+      <figcaption>标注 2：移除 MiniMap 黑框动效</figcaption>
+      <div class="frame"><img alt="MiniMap hover 标注" src="d5-minimap-hover-annotation-2026-08-22.png" /></div>
+    </figure>
+    <figure>
+      <figcaption>生产实现：MiniMap hover 无边框、阴影和位移</figcaption>
+      <div class="frame"><img alt="MiniMap 无黑框生产实现" src="d5-minimap-no-hover-frame-production-desktop-1440x900-2026-08-22.png" /></div>
+    </figure>
+  </section>
+</body>
+</html>

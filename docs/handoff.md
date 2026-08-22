@@ -15,7 +15,7 @@
 
 2026-08-22 已用 ego-lite 在生产模式完成桌面 `1440×900` 与移动 `390×844` 的统一导航和核心交互 QA，并归档真实截图与 JSON。当前确认稿中：桌面工作区为用户最新确认的约 `30/70` 双栏；12 阶段仍为 `6×2`，移动仍使用“群聊 / 产物”同屏切换；工作区顶部“事件同步：cursor 短轮询 · 降级方案”可见标签已删除；Gate/Permission 卡常驻细黑边但整卡不做 hover 位移，卡内按钮保留 MotherDuck 式动效；Artifact 节点固定 `168×190px`、常驻细黑边并保留 hover 承托；参与者默认无黑框、hover 出框，“用户”可见文案改为“我”。用户已明确当前前端没有问题，`design-qa.md` 为 `passed`；这只代表当前确认稿和已测试范围通过，不是视觉永久冻结或完整产品验收完成。底层 `2500ms` cursor 短轮询仍是 AG-UI/SSE 未完成前的降级方案，删除标签不代表传输层完成。
 
-GitHub 已通过 Connector 只读核验：私有仓库 `HiWhaleW/product-factory-agent` 默认分支为 `main`；`codex/initial-import` 存在；Draft PR #1 为 open；核验时 head 为 `36503fd9a69d80b4c286c9e92ec07e3446e66da1`，相对 main ahead 3 / behind 0；当前用户 `HiWhaleW` 有 admin/write 权限。全程未使用 `gh`。本地 `main` 仍是 unborn branch，远端安全快照更新必须继续使用 Connector、`force:false`，并先通过秘密/本机路径扫描。
+GitHub 安全快照已通过 Connector 完成：私有仓库 `HiWhaleW/product-factory-agent` 默认分支为 `main`；`codex/initial-import` 从精确父提交 `36503fd9…` 以 `force:false` 快进到实现提交 [`db39b5dd…`](https://github.com/HiWhaleW/product-factory-agent/commit/db39b5ddfa01e17477c99c6eaa512c5f23422c30)；[Draft PR #1](https://github.com/HiWhaleW/product-factory-agent/pull/1) 仍为 open/draft。全程未使用 `gh` 或本地 Git push。31 个上传文件、排除清单和扫描证据见 [Markdown](./evidence/github-safe-snapshot-2026-08-23.md) / [HTML](./evidence/github-safe-snapshot-2026-08-23.html)。
 
 ## 2. 已完成
 
@@ -123,7 +123,7 @@ GitHub 已通过 Connector 只读核验：私有仓库 `HiWhaleW/product-factory
 
 ### 5.3 后续开发安排
 
-1. 使用 GitHub 插件完成当前安全快照、远端分支和 PR 状态核验。
+1. [已完成] 使用 GitHub Connector 完成当前安全快照、远端分支和 PR 状态核验。
 2. [已完成] Runtime/后端统一当前项目真相源，把“销售复盘 Agent”恢复到 Web 同源 API。
 3. [已完成] 前端真实项目接入验收：Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues 和 Artifact v1/v2 版本索引。
 4. 完成 AI PM PRD Run、确定性 PRD 持久化和 G2 契约；G2 继续等待用户人工决定。

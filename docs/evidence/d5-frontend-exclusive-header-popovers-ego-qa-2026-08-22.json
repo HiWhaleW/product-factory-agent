@@ -1,0 +1,66 @@
+{
+  "recorded_at": "2026-08-22T22:00:00+08:00",
+  "scope": "exclusive global header popovers",
+  "source_annotation": "user red-box screenshot in current review turn",
+  "environment": {
+    "browser": "ego-browser / ego-lite",
+    "task_space_id": 116,
+    "mode": "Next.js production",
+    "url": "http://127.0.0.1:3100"
+  },
+  "behavior_contract": {
+    "menu_ids": ["notifications", "help", "identity"],
+    "maximum_simultaneously_open": 1,
+    "same_menu_click": "close",
+    "different_menu_click": "close previous and open requested",
+    "outside_pointer": "close",
+    "escape": "close",
+    "question_mark_shortcut": "open help only",
+    "navigation": "close"
+  },
+  "desktop_1440x900": {
+    "sequence": [
+      {"action": "initial", "open_count": 0, "open": []},
+      {"action": "click notification", "open_count": 1, "open": ["通知1"]},
+      {"action": "click help", "open_count": 1, "open": ["帮助"]},
+      {"action": "click identity", "open_count": 1, "open": ["我"]},
+      {"action": "click identity again", "open_count": 0, "open": []},
+      {"action": "click outside", "open_count": 0, "open": []},
+      {"action": "press question mark", "open_count": 1, "open": ["帮助"]},
+      {"action": "press Escape", "open_count": 0, "open": []}
+    ],
+    "horizontal_overflow": false,
+    "settings_navigation": {
+      "before_navigation_open_count": 1,
+      "after_navigation_open_count": 0,
+      "settings_heading": "配置状态",
+      "return_home_open_count": 0
+    }
+  },
+  "mobile_390x844": {
+    "sequence": [
+      {"action": "initial", "open_count": 0, "open": []},
+      {"action": "click notification", "open_count": 1, "open": ["通知1"], "panel": "370x139.3px"},
+      {"action": "click help", "open_count": 1, "open": ["帮助"], "panel": "370x167.5px"},
+      {"action": "click identity", "open_count": 1, "open": ["我"], "panel": "370x179.5px"},
+      {"action": "click outside below panel", "open_count": 0, "open": []}
+    ],
+    "horizontal_overflow": false,
+    "panel_left": 10,
+    "panel_right": 380
+  },
+  "data_boundary": {
+    "notification_contract_changed": false,
+    "help_contract_changed": false,
+    "identity_contract_changed": false,
+    "gate_decision_submitted": false,
+    "permission_decision_submitted": false
+  },
+  "quality_gates": {
+    "pnpm_lint_web": "passed",
+    "pnpm_typecheck": "passed",
+    "pnpm_test_web": "3 files / 12 tests passed",
+    "pnpm_build": "passed"
+  },
+  "result": "passed"
+}

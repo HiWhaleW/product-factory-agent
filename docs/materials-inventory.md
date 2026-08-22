@@ -1,6 +1,6 @@
 # 产品工厂 Agent - 素材全量索引
 
-> 盘点日期：2026-08-21  
+> 盘点日期：2026-08-22  
 > 状态含义：`权威` = 后续开发的契约；`参考` = 提供默认和方法；`原型` = 用于交互理解，不是代码基础；`交接` = 当前阶段事实。
 > HTML 阅读版：[materials-inventory.html](./materials-inventory.html)
 
@@ -14,9 +14,9 @@
 | [`docs/handoff.md`](./handoff.md) | 人类/接手者 | 交接 | 完成/未完成、决策、风险、开工顺序 |
 | [`docs/handoff.html`](./handoff.html) | 人类评审 | 交接 | 交接状态、素材、架构、Prompt 和 Roadmap 可视化 |
 | [`docs/HANDOFF_PROMPT.md`](./HANDOFF_PROMPT.md) | 下一位 Agent | 交接 | 可直接粘贴的交接提示词 |
-| [`docs/HANDOFF_PROMPT.html`](./HANDOFF_PROMPT.html) | 人类评审 | 交接 | D3–D4 收口与 D5 环境前置阅读版 |
+| [`docs/HANDOFF_PROMPT.html`](./HANDOFF_PROMPT.html) | 人类评审 | 交接 | 正式项目交接：GitHub 插件安全入库、Runtime/后端并线与后续 Gate 安排 |
 | [`docs/evidence/d3-d4-closure-2026-08-21.md`](./evidence/d3-d4-closure-2026-08-21.md) / [HTML](./evidence/d3-d4-closure-2026-08-21.html) | 开发/评审 | 工程证据 | D3–D4 退出命令、测试、ego-lite 交互和未完成边界 |
-| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 附件 7 项修改；原生截图阻塞，`final result: blocked` |
+| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 当前用户确认稿、统一导航、核心交互、桌面/移动生产截图与 JSON；`final result: passed`，仍允许后续视觉增量修改 |
 | [`docs/architecture.md`](./architecture.md) | 开发/架构 | 权威摘要 | 当前决策、系统边界、数据流和技术栈 |
 | [`docs/operator-runbook.md`](./operator-runbook.md) | 开发/运维 | 交接 | 环境、开工前置、未来运行和故障边界 |
 | [`docs/product-lifecycle.md`](./product-lifecycle.md) / [HTML](./product-lifecycle.html) | 全员 | 权威 | 12 阶段、后端→前端、G0-G6、D1-D10 与 B1-Bn 的唯一生命周期口径 |
@@ -54,7 +54,7 @@
 
 | 路径 | 状态 | 用途 |
 |---|---|---|
-| [`产品工厂Agent_Harness表.html`](../产品工厂Agent_Harness表.html) | 权威交互视觉基线 | 38/62 双栏、团队群聊、成员/输入/Gate、产物节点/连线/缩放/预览/下载/URL |
+| [`产品工厂Agent_Harness表.html`](../产品工厂Agent_Harness表.html) | 权威交互视觉基线 | 历史基线为 38/62；当前用户确认稿覆盖为约 30/70，但仍保持团队群聊、成员/输入/Gate、产物节点/连线/缩放/预览/下载/URL 交互范式 |
 | [`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html`](../产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html) | 生命周期适配投影 | 将 12 阶段、G0-G6、后端→前端与内测后 BRD 投影到既有交互；不得替代根目录视觉基线 |
 | [`产品工厂Agent/spec/index.html`](../产品工厂Agent/spec/index.html) | 权威可视化 | D1-D2 规格、Roadmap、通俗技术架构、RAG/Agent Loop/LangGraph 边界、开源复用、竞品、Prompt 和验收入口 |
 | [`产品工厂Agent/spec/Harness-Reference-Assessment.html`](../产品工厂Agent/spec/Harness-Reference-Assessment.html) | 权威可视化 | 标准 Harness 机制、双 DAG、6 项规格增量和不可照搬实现 |
@@ -82,14 +82,18 @@
 
 ## 7. 当前实现与仍未完成
 
-D3–D4 已实现：Git/monorepo、Python/前端 lockfile、Next.js/FastAPI、PostgreSQL 16.15、SQLAlchemy 控制面、Alembic migration、18 项在线集成/并发/恢复测试、带 cursor 的 API/Event 投影、React Flow Artifact DAG、Gate/Permission 卡、Artifact 安全内容/下载和单屏双栏工作区。
+D3–D4 与当前 D5 基础已实现：Git/monorepo、Python/前端 lockfile、Next.js/FastAPI、PostgreSQL 16.15、SQLAlchemy 控制面、Alembic `20260822_0004`、42 项在线集成/并发/恢复测试、DeepSeek/博查 Adapter、有界 LangGraph Runtime、带 cursor 的 API/Event 投影、React Flow Artifact DAG、Gate/Permission 卡、Artifact 安全内容/下载和单屏双栏工作区。
 
-当前可视数据是 PostgreSQL 真实投影，但 D4 样例 Artifact 明确声明为控制面验证数据，不是 DeepSeek 或真实 Agent 生成结果。SSE/AG-UI 当前使用规格允许的带 cursor 短轮询降级。
+当前可视数据是 PostgreSQL 真实投影，但当前旧项目中的消息和 D4 样例 Artifact 是人工写入或明确标记的控制面验证数据，不是 Runtime Agent 生成结果；4 个 Agent 仍未进入当前项目群聊。SSE/AG-UI 当前使用 `2500ms` cursor 短轮询降级；用户要求删除了工作区可见标签，不代表 transport 已完成。
+
+Git 本地当前为无 commit 的 `main`，安全项目文件均为 untracked；仅确认 `origin` 已配置。正式接手必须使用 GitHub 插件/Connector 核验远端并推送安全快照，不得使用 `gh` CLI、force push 或上传秘密/本机文件。
 
 以下内容仍不存在或未通过真实集成，不得在交接中当作已完成：
 
-- DeepSeek 认证、网络、流式、工具/Schema、长文档、限流、Token/费用和 context-too-long 冒烟。
-- LangGraph Agent Run 图、4 个真实 Agent 和 D5 定义链路。
+- DeepSeek 真实 429、博查费用/账单和来源质量人工评审；配置名与 Provider 返回模型名差异仍待确认。
+- 当前项目群聊接入 4 个 Runtime Agent；已有独立真模型冒烟不能冒充该接入完成。
 - Codex CLI Builder 完整执行、Capability Registry 运行时和 Tool Policy 执行器。
-- 有效原生截图式视觉 QA；ego-lite `Page.captureScreenshot` 超时，`design-qa.md` 保持 blocked。
+- 用户已确认当前前端无问题；如有后续视觉标注仍需增量修改与复验，当前确认稿的生产模式桌面/移动 QA 已归档并通过。
+- “销售复盘 Agent”恢复到 Web 同源 API；Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引和真实 Runtime 事件的前端投影验收。
+- AI PM PRD Run、确定性 PRD 持久化和 G2；之后仍须按 G3、G4 和人工闸顺序推进。
 - 线上部署、真实 URL、企业内部 dogfood/种子内测数据、BRD/G6 和反馈迭代。
