@@ -77,6 +77,7 @@ GitHub 安全快照已通过 Connector 完成：私有仓库 `HiWhaleW/product-f
 
 - 2026-08-23 PostgreSQL `16.15` 在线，migration 已到 `20260822_0006 (head)`；`0005` 补充 Web 投影契约，`0006` 回填真实 ToolRun/recovery 事件。
 - `pnpm test:api:integration`：42/42 通过；覆盖双击并发、重复提交、Permission 缺失拒绝、Reviewer 输入、Red Team Review 重放、G1 只开一次和 cursor 连续恢复。
+- 并行 Runtime 线新增 PRD 路由后，当前工作区最新 `pnpm check` 暂因其独立 `agent_router.py` 导入顺序失败；本线按约定未覆盖该文件。Runtime 线收口后必须重跑，不得把此前通过结果当作最新全工作区结果。
 - Factory Lead 真实对齐：两轮均 1 turn / 0 retry，共 6,633 Token；requested `deepseek-chat`、observed `deepseek-v4-flash`，完成后 `waiting_g0`。证据：[HTML](./evidence/d5-factory-lead-alignment-smoke-2026-08-22.html)。
 - Agent 测试 33/33；DeepSeek 真实冒烟 7 项通过、1 项未观察。虚拟产品 AI PM / Reviewer / G1 批准脱敏证据：[JSON](./evidence/d5-sales-retrospective-product-flow-2026-08-22.json) / [Runtime](./evidence/d5-agent-runtime-progress-2026-08-22.html)。
 - 2026-08-22 使用 ego-lite 检查本轮更新的 README、handoff、HANDOFF_PROMPT、operator-runbook、product-lifecycle 和 materials-inventory HTML：`1440×900` / `390×844` 均无页面级横向溢出；正式交接提示词的标题、三项任务和内部导航可见。该结果不替代产品 Web 视觉 QA。
@@ -115,11 +116,12 @@ GitHub 安全快照已通过 Connector 完成：私有仓库 `HiWhaleW/product-f
 
 - 已恢复“销售复盘 Agent”到 Web 同源 PostgreSQL/API；首页与工作区读取真实 Evidence Index v2、MRD v2、Red Team Review v2、历史 G1 及两项结构化 P2。
 - 已提供 Artifact 版本索引（version/status/created_at/created_by/content availability）、Project `iteration_version`、Graph owner/created_at、Permission reason/redacted parameters、执行投影和 ToolRun/recovery 回填。
+- 已提供 `GET /api/v1/projects/{project_id}/gate-decisions`，前端可直接读取批准人、批准时间、Context 前后版本和目标阶段；完整接口见 [D5 Web / 后端真实投影契约](./contracts/d5-web-backend-projection-contract-2026-08-23.md)。
 - 已提供邀请码换取 HttpOnly 签名 Session、`/me` 与 logout 契约；当前未配置认证且请求强制执行仍为 `false`，不得写成登录完成。
 - 仍缺 streaming/AG-UI/SSE、专用可回收 Gate/Permission 样本、认证强制执行和完整真实群聊生成。不可逆 Gate 没有安全项目时保持未测，不得代批。
 - `2500ms` cursor 短轮询仍是 AG-UI/SSE 未完成前的降级方案；用户只要求删除可见标签，不代表 transport 已修复。
 - 不得再使用“D3 双栏交互验收”作为 D5 业务验收项目；它只能用于前端组件回归。
-- 仍需后端/Runtime 对齐 Project 独立 `iteration_version`、Graph owner/agent、`created_at`，以及登录/Session、`/me`、logout、过期原因契约。
+- Project `iteration_version`、Graph owner/agent、`created_at`、登录/Session、`/me`、logout 和过期原因契约已对齐；当前剩余的是认证配置与请求强制执行，不是字段缺失。
 
 ### 5.3 后续开发安排
 

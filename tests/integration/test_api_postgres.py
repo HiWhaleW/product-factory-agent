@@ -645,13 +645,19 @@ def test_agent_definition_artifact_contract_is_versioned_and_idempotent(namespac
 def test_gate_decision_is_idempotent_and_rejects_stale_context(namespace: str) -> None:
     project_id, gate_id = seed_gate(namespace)
     path = f"/api/v1/gates/{gate_id}/decisions"
-    body = {"decision": "approve", "context_version": 1}
+    body = {
+        "decision": "approve",
+        "context_version": 1,
+        "comment": "用户批准 G0",
+        "decided_by": "integration-user",
+    }
     with TestClient(app) as client:
         open_gates = client.get(f"/api/v1/projects/{project_id}/gates")
         first = client.post(path, json=body)
         repeated = client.post(path, json=body)
         remaining = client.get(f"/api/v1/projects/{project_id}/gates")
         all_gates = client.get(f"/api/v1/projects/{project_id}/gates", params={"status": "all"})
+        decisions = client.get(f"/api/v1/projects/{project_id}/gate-decisions")
     assert open_gates.status_code == 200
     assert open_gates.json()[0]["id"] == gate_id
     assert first.status_code == repeated.status_code == 200
@@ -659,6 +665,22 @@ def test_gate_decision_is_idempotent_and_rejects_stale_context(namespace: str) -
     assert repeated.json()["idempotent"] is True
     assert remaining.json() == []
     assert all_gates.json()[0]["status"] == "approved"
+    assert decisions.status_code == 200
+    assert decisions.json() == [
+        {
+            "id": decisions.json()[0]["id"],
+            "gate_id": gate_id,
+            "project_id": project_id,
+            "gate_type": "G0",
+            "decision": "approve",
+            "comment": "用户批准 G0",
+            "decided_by": "integration-user",
+            "context_version_before": 1,
+            "context_version_after": 2,
+            "target_state": "mrd",
+            "decided_at": decisions.json()[0]["decided_at"],
+        }
+    ]
     with SessionLocal() as session:
         assert session.get(Project, project_id).state == "mrd"
         decisions = session.scalars(

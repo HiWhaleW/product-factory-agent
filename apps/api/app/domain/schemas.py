@@ -182,9 +182,9 @@ class ArtifactGateRef(ApiModel):
 
 
 class GateOpenCreate(ApiModel):
-    gate_type: Literal["G0", "G1"]
+    gate_type: Literal["G0", "G1", "G2"]
     context_version: int = Field(ge=1)
-    target_state: Literal["mrd", "prd"]
+    target_state: Literal["mrd", "prd", "solution_confirmation"]
     reason: str = Field(min_length=1, max_length=10_000)
     impacted_artifact_refs: list[ArtifactGateRef] = Field(default_factory=list, max_length=20)
 
@@ -194,6 +194,20 @@ class GateDecisionCreate(ApiModel):
     context_version: int = Field(ge=1)
     comment: str = Field(default="", max_length=10_000)
     decided_by: str = Field(default="local-admin", max_length=64)
+
+
+class GateDecisionRead(ApiModel):
+    id: str
+    gate_id: str
+    project_id: str
+    gate_type: str
+    decision: str
+    comment: str
+    decided_by: str
+    context_version_before: int
+    context_version_after: int
+    target_state: str | None
+    decided_at: datetime
 
 
 class ClarificationAnswerInput(ApiModel):

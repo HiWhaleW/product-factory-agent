@@ -114,9 +114,11 @@ pnpm db:migrate
 
 Reviewer 对接字段和错误码见 [D5 AI PM→Reviewer→G1 契约](./contracts/d5-review-candidate-contract-2026-08-22.md)。
 
-Runtime/后端已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。仍缺专用可回收 Gate/Permission 样本、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
+Runtime/后端已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引、`gate-decisions` 用户批准记录、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。完整读取接口见 [D5 Web / 后端真实投影契约](./contracts/d5-web-backend-projection-contract-2026-08-23.md)。仍缺专用可回收 Gate/Permission 样本、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
 
-末次验证记录（2026-08-23）：Web ESLint、TypeScript、Vitest 13/13、production build 通过；Ruff 与 Python 56/56 通过；PostgreSQL 集成 42/42；Alembic 为 `20260822_0006 (head)`。保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
+末次验证记录（2026-08-23）：Web ESLint、TypeScript、Vitest 13/13 通过；Ruff 与 Python 56/56 通过；PostgreSQL 集成 42/42；主库 Alembic 为 `20260822_0006 (head)`。临时空库的 `upgrade head → downgrade 0004 → upgrade head` 通过；测试先发现并修复空库恢复事件外键和破坏性降级两项问题。保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
+
+并行 Runtime 线随后新增 PRD 路由；当前工作区最新一次 `pnpm check` 因其独立 `apps/api/app/api/agent_router.py` 导入顺序失败。本线未覆盖该文件。Runtime 线收口后需要重新运行 `pnpm check`，此前通过记录不能冒充最新全工作区结果。
 
 ## 7. D9-D10 内部验收与发布前健康检查
 

@@ -101,8 +101,8 @@ def upgrade() -> None:
         INSERT INTO events (id, project_id, sequence, event_type, payload, created_at)
         SELECT
           'f5321d65-748a-4bc5-9b17-4ea2a2442501',
-          '2a3c38e1-9704-4f83-a096-84cb5a5025e7',
-          COALESCE(MAX(sequence), 0) + 1,
+          p.id,
+          COALESCE(MAX(e.sequence), 0) + 1,
           'run.recovery_recorded',
           json_build_object(
             'failed_run_id', 'f5321d65-748a-4bc5-9b17-4ea2a2442501',
@@ -111,14 +111,16 @@ def upgrade() -> None:
             'migration', '20260822_0006'
           ),
           now()
-        FROM events
-        WHERE project_id = '2a3c38e1-9704-4f83-a096-84cb5a5025e7'
+        FROM projects p
+        LEFT JOIN events e ON e.project_id = p.id
+        WHERE p.id = '2a3c38e1-9704-4f83-a096-84cb5a5025e7'
           AND NOT EXISTS (
-            SELECT 1 FROM events e
-            WHERE e.project_id = '2a3c38e1-9704-4f83-a096-84cb5a5025e7'
-              AND e.event_type = 'run.recovery_recorded'
-              AND e.payload->>'failed_run_id' = 'f5321d65-748a-4bc5-9b17-4ea2a2442501'
+            SELECT 1 FROM events existing
+            WHERE existing.project_id = p.id
+              AND existing.event_type = 'run.recovery_recorded'
+              AND existing.payload->>'failed_run_id' = 'f5321d65-748a-4bc5-9b17-4ea2a2442501'
           )
+        GROUP BY p.id
         """
     )
 
@@ -127,17 +129,6 @@ def downgrade() -> None:
     op.execute(
         "DELETE FROM events WHERE payload->>'migration' = '20260822_0006'"
     )
-    op.execute(
-        """
-        DELETE FROM tool_runs tr
-        USING run_steps rs
-        WHERE tr.id = rs.id AND rs.step_type = 'tool'
-        """
-    )
-    op.execute(
-        """
-        UPDATE permission_requests
-        SET reason = '', redacted_parameters = '{}'::json
-        WHERE redacted_parameters ? 'input_hash'
-        """
-    )
+    # ToolRun and Permission metadata are durable audit facts stored in schema
+    # that already exists at 0005. Keep them on downgrade because rows that
+    # predated this backfill cannot be distinguished safely from inserted rows.

@@ -58,6 +58,7 @@ from app.domain.schemas import (
     EventRead,
     ExecutionRunRead,
     GateDecisionCreate,
+    GateDecisionRead,
     GateOpenCreate,
     GateRead,
     GraphEdge,
@@ -1560,6 +1561,39 @@ def list_gates(
     if status_filter == "open":
         statement = statement.where(Gate.status == "open")
     return list(session.scalars(statement.order_by(Gate.opened_at, Gate.id)))
+
+
+@router.get(
+    "/api/v1/projects/{project_id}/gate-decisions",
+    response_model=list[GateDecisionRead],
+)
+def list_gate_decisions(
+    project_id: str, session: Session = Depends(get_session)
+) -> list[GateDecisionRead]:
+    if session.get(Project, project_id) is None:
+        raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
+    rows = session.execute(
+        select(GateDecision, Gate)
+        .join(Gate, GateDecision.gate_id == Gate.id)
+        .where(Gate.project_id == project_id)
+        .order_by(GateDecision.decided_at, GateDecision.id)
+    ).all()
+    return [
+        GateDecisionRead(
+            id=decision.id,
+            gate_id=decision.gate_id,
+            project_id=gate.project_id,
+            gate_type=gate.gate_type,
+            decision=decision.decision,
+            comment=decision.comment,
+            decided_by=decision.decided_by,
+            context_version_before=decision.context_version_before,
+            context_version_after=decision.context_version_after,
+            target_state=decision.target_state,
+            decided_at=decision.decided_at,
+        )
+        for decision, gate in rows
+    ]
 
 
 @router.post(
