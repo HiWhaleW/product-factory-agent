@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-08-23T01:00:00+08:00",
+  "scope": "sales retrospective PRD runtime and recoverable frontend acceptance fixture",
+  "real_provider_calls": true,
+  "prompts_recorded": false,
+  "model_outputs_recorded": false,
+  "hidden_reasoning_recorded": false,
+  "secret_values_recorded": false,
+  "project": {
+    "project_id": "2a3c38e1-9704-4f83-a096-84cb5a5025e7",
+    "name": "销售复盘 Agent",
+    "state": "prd",
+    "context_version": 3,
+    "iteration_version": 1,
+    "prd_context_pack_id": "7e918f18-8699-406f-86ca-7d90e6edc6a9"
+  },
+  "fail_closed_history": {
+    "run_id": "8b42fae4-affc-40e1-bf7f-0102f0b57387",
+    "model_run_state": "succeeded",
+    "submission_result": "rejected_before_write",
+    "error": "PRD output omitted the required waiting_review status field",
+    "artifact_created": false,
+    "g2_opened": false
+  },
+  "ai_pm_prd_run": {
+    "run_id": "9c7ffc14-afe2-4abb-b7f7-0c9929d2d327",
+    "state": "succeeded",
+    "turns_used": 1,
+    "retries_used": 0,
+    "requested_model": "deepseek-chat",
+    "observed_model": "deepseek-v4-flash",
+    "total_tokens": 9399,
+    "checkpoint_hash": "acaff91eabb1b1ebaf1cbe6506f7d9d9e760094873417b335791b4cfe8bec2b4",
+    "journal": ["runtime_start", "model", "checkpoint", "tool"],
+    "artifact_store_policy": "allow",
+    "artifact_store_idempotency_key": "artifact_store:prd:9c7ffc14-afe2-4abb-b7f7-0c9929d2d327",
+    "artifact_store_reconciled": true
+  },
+  "prd": {
+    "artifact_id": "71d3b81a-1d48-4501-9eb7-20209af85d1b",
+    "version": 1,
+    "status": "waiting_gate",
+    "content_hash": "b5abba88b5e9470d38ab8f4feadc7de09805aed54a1ba61038da0196e1390ec5",
+    "reviewer_context_pack_id": "bd5cf518-f655-4fec-afc6-faeeb377dd3b"
+  },
+  "reviewer_run": {
+    "run_id": "6442a2fa-9975-4545-ae8e-21c0a1f5ae7b",
+    "state": "succeeded",
+    "turns_used": 1,
+    "retries_used": 0,
+    "tool_calls_used": 0,
+    "requested_model": "deepseek-chat",
+    "observed_model": "deepseek-v4-flash",
+    "total_tokens": 10552,
+    "checkpoint_hash": "7cb538df2b5992668294701b7b32165876c8e7d66302cf3faf8a3df71b635576",
+    "journal": ["runtime_start", "model", "checkpoint", "tool"],
+    "verdict": "pass"
+  },
+  "prd_review": {
+    "artifact_id": "44c79e5a-d76c-4b1c-b9f3-b795142e2dc1",
+    "version": 1,
+    "status": "waiting_gate",
+    "known_issue_count": 2
+  },
+  "g2": {
+    "gate_id": "fdac9cd1-3cb8-4a98-b87d-18d8ef779e82",
+    "status": "open",
+    "target_state": "solution_confirmation",
+    "decided": false
+  },
+  "cursor": {
+    "prd_flow_sequence_start": 67,
+    "prd_flow_sequence_end": 82,
+    "event_types": [
+      "run.started",
+      "run.completed",
+      "tool_run.started",
+      "artifact.created",
+      "context.pack_created",
+      "tool_run.completed",
+      "prd.submitted",
+      "gate.opened",
+      "prd.reviewed"
+    ]
+  },
+  "recoverable_acceptance_fixture": {
+    "project_id": "c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001",
+    "name": "D5 Gate/Permission 联合验收（可回收）",
+    "gate_id": "ff88c878-171c-4d33-90e1-221c58d64df6",
+    "gate_type": "G2",
+    "gate_status": "open",
+    "permission_request_id": "b765256c-2d3b-4130-9adb-9e1ea5cee28d",
+    "permission_status": "open",
+    "resumable_run_id": "e8f84246-fc58-4051-801c-13abc7b5d00c",
+    "historical_resumed_run_id": "1c8afa41-aed0-4620-abb6-41f84a76b3d8",
+    "reset_command": "PYTHONPATH=apps/api UV_CACHE_DIR=.uv-cache uv run python -m app.agents.acceptance_fixture --reseed"
+  },
+  "safety": {
+    "g2_approved": false,
+    "builder_membership_count": 0,
+    "builder_task_count": 0,
+    "ag_ui_sse_completed": false,
+    "cursor_polling": "2500ms degraded fallback"
+  },
+  "validation": {
+    "pnpm_check": "passed before final documentation update: Web 13 passed, Python 60 passed, Ruff/TypeScript/ESLint passed",
+    "postgresql_integration": "44 passed",
+    "alembic_current": "20260822_0006 (head)",
+    "documentation_browser_qa": "README, handoff and PRD runtime evidence checked at 1440x900 and 390x844; horizontal overflow 0",
+    "warning": "One Starlette TestClient/httpx deprecation warning remains. The first full integration attempt was blocked by the sandbox from reaching 127.0.0.1; the permitted rerun passed 44/44."
+  }
+}

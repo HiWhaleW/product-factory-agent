@@ -129,6 +129,30 @@ class AiPmMrdOutput(AiPmOutput):
         return self
 
 
+class AiPmPrdArtifactProposal(ArtifactProposal):
+    kind: Literal["prd"]
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> AiPmPrdArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("PRD EvidenceRef values must be unique.")
+        missing = [ref for ref in self.evidence_refs if ref not in self.content]
+        if missing:
+            raise ValueError(
+                "Every declared PRD EvidenceRef must appear verbatim in the PRD content."
+            )
+        return self
+
+
+class AiPmPrdOutput(AiPmOutput):
+    artifact_proposals: list[AiPmPrdArtifactProposal] = Field(
+        min_length=1,
+        max_length=1,
+    )
+    transition_proposal: None = None
+
+
 class BuilderOutput(StrictModel):
     message: str
     technical_decisions: list[dict[str, Any]] = Field(default_factory=list)
@@ -199,6 +223,37 @@ class ReviewerMrdOutput(ReviewerOutput):
         return self
 
 
+class ReviewerPrdArtifactProposal(ArtifactProposal):
+    kind: Literal["prd_review"]
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> ReviewerPrdArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("PRD Review EvidenceRef values must be unique.")
+        missing = [ref for ref in self.evidence_refs if ref not in self.content]
+        if missing:
+            raise ValueError(
+                "Every declared review EvidenceRef must appear verbatim in review content."
+            )
+        return self
+
+
+class ReviewerPrdOutput(ReviewerOutput):
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+    artifact_proposals: list[ReviewerPrdArtifactProposal] = Field(
+        min_length=1,
+        max_length=1,
+    )
+    transition_proposal: None = None
+
+    @model_validator(mode="after")
+    def evidence_refs_are_unique(self) -> ReviewerPrdOutput:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Reviewer PRD EvidenceRef values must be unique.")
+        return self
+
+
 OUTPUT_MODELS = {
     "factory-lead": FactoryLeadOutput,
     "ai-pm": AiPmOutput,
@@ -212,4 +267,8 @@ def output_model_for(agent_id: str, stage: str) -> type[BaseModel]:
         return AiPmMrdOutput
     if agent_id == "reviewer" and stage == "mrd":
         return ReviewerMrdOutput
+    if agent_id == "ai-pm" and stage == "prd":
+        return AiPmPrdOutput
+    if agent_id == "reviewer" and stage == "prd":
+        return ReviewerPrdOutput
     return OUTPUT_MODELS[agent_id]

@@ -4,9 +4,18 @@ from functools import lru_cache
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.orm import Session
 
 from app.adapters.bocha import BochaAdapter
-from app.core.config import get_settings
+from app.agents.prd_contracts import (
+    PrdReviewCreate,
+    PrdReviewerInputRead,
+    PrdReviewRead,
+    PrdSubmissionCreate,
+    PrdSubmissionRead,
+)
+from app.core.config import Settings, get_settings
+from app.core.database import get_session
 from app.core.request_logging import current_request_id
 from app.domain.schemas import FactoryLeadAlignmentCreate, FactoryLeadAlignmentRead
 from app.services.agent_runtime import (
@@ -17,6 +26,13 @@ from app.services.agent_runtime import (
 from app.services.factory_lead import (
     FactoryLeadAlignmentError,
     FactoryLeadAlignmentService,
+)
+from app.services.prd_definition import (
+    PrdDefinitionError,
+    lock_prd_scope,
+    prd_reviewer_input,
+    submit_prd,
+    submit_prd_review,
 )
 
 
@@ -65,6 +81,21 @@ def runtime_error(error: AgentRuntimeError) -> HTTPException:
                 "user_message": str(error),
                 "retryable": error.retryable,
                 "request_id": current_request_id() or "req_agent_runtime",
+            }
+        },
+    )
+
+
+def prd_error(error: PrdDefinitionError) -> HTTPException:
+    return HTTPException(
+        status_code=error.http_status,
+        detail={
+            "error": {
+                "code": error.code,
+                "message": str(error),
+                "user_message": str(error),
+                "retryable": False,
+                "request_id": current_request_id() or "req_prd_definition",
             }
         },
     )
@@ -127,3 +158,77 @@ async def resume_agent_run(
         return await runtime.resume_permission(run_id)
     except AgentRuntimeError as error:
         raise runtime_error(error) from error
+
+
+@router.post(
+    "/projects/{project_id}/prd-submissions",
+    response_model=PrdSubmissionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_prd_submission(
+    project_id: str,
+    body: PrdSubmissionCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> PrdSubmissionRead:
+    try:
+        lock_prd_scope(session, project_id, idempotency_key)
+        result = submit_prd(
+            session,
+            artifact_root=settings.ARTIFACT_ROOT,
+            project_id=project_id,
+            idempotency_key=idempotency_key,
+            body=body,
+        )
+    except PrdDefinitionError as error:
+        raise prd_error(error) from error
+    session.commit()
+    return result
+
+
+@router.get(
+    "/projects/{project_id}/prd-submissions/{submission_id}/reviewer-input",
+    response_model=PrdReviewerInputRead,
+)
+def get_prd_reviewer_input(
+    project_id: str,
+    submission_id: str,
+    session: Session = Depends(get_session),
+) -> PrdReviewerInputRead:
+    try:
+        return prd_reviewer_input(
+            session,
+            project_id=project_id,
+            submission_id=submission_id,
+        )
+    except PrdDefinitionError as error:
+        raise prd_error(error) from error
+
+
+@router.post(
+    "/projects/{project_id}/prd-submissions/{submission_id}/review",
+    response_model=PrdReviewRead,
+)
+def create_prd_review(
+    project_id: str,
+    submission_id: str,
+    body: PrdReviewCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> PrdReviewRead:
+    try:
+        lock_prd_scope(session, project_id, idempotency_key)
+        result = submit_prd_review(
+            session,
+            artifact_root=settings.ARTIFACT_ROOT,
+            project_id=project_id,
+            submission_id=submission_id,
+            idempotency_key=idempotency_key,
+            body=body,
+        )
+    except PrdDefinitionError as error:
+        raise prd_error(error) from error
+    session.commit()
+    return result

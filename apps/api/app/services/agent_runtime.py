@@ -252,6 +252,33 @@ class AgentRuntimeService:
             )
         except CheckpointArchiveError as exc:
             raise AgentRuntimeError("CHECKPOINT_INVALID", str(exc)) from exc
+        with self.session_factory.begin() as session:
+            run = session.get(AgentRun, run_id)
+            task = session.get(AgentTask, task_id)
+            if run is None or task is None:
+                raise AgentRuntimeError("RUN_NOT_FOUND", "Run disappeared before resume.")
+            run.state = "running"
+            task.state = "running"
+            self._add_step(
+                session,
+                run_id=run_id,
+                step_type="resume",
+                state="completed",
+                input_hash=checkpoint.input_hash,
+                output_ref=checkpoint.output_ref,
+                idempotency_key=f"resume:{run_id}:{checkpoint.input_hash}",
+                external_effect_confirmed=True,
+            )
+            self._append_event(
+                session,
+                project_id,
+                "run.resumed",
+                {
+                    "run_id": run_id,
+                    "task_id": task_id,
+                    "checkpoint_hash": checkpoint.input_hash,
+                },
+            )
         graph = build_agent_graph(
             self.provider,
             checkpointer=saver,
@@ -530,7 +557,14 @@ class AgentRuntimeService:
         """
         if pack.agent_id != "reviewer":
             return []
-        if pack.policy.get("input_contract") != "definition-review/v1":
+        input_contract = pack.policy.get("input_contract")
+        if input_contract == "prd-review/v1":
+            return self._load_prd_review_candidate(
+                session,
+                project=project,
+                pack=pack,
+            )
+        if input_contract != "definition-review/v1":
             raise AgentRuntimeError(
                 "REVIEW_INPUT_CONTRACT_INVALID",
                 "Reviewer Context Pack is missing the deterministic review input contract.",
@@ -606,6 +640,75 @@ class AgentRuntimeService:
             )
         return loaded
 
+    def _load_prd_review_candidate(
+        self,
+        session: Session,
+        *,
+        project: Project,
+        pack: ContextPack,
+    ) -> list[dict[str, Any]]:
+        candidate = pack.policy.get("review_candidate")
+        if not isinstance(candidate, dict):
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_UNAVAILABLE",
+                "Reviewer Context Pack is not bound to a PRD candidate.",
+            )
+        artifact_id = candidate.get("artifact_id")
+        version_number = candidate.get("version")
+        expected_hash = candidate.get("content_hash")
+        artifact = session.get(Artifact, artifact_id) if isinstance(artifact_id, str) else None
+        version = (
+            session.scalar(
+                select(ArtifactVersion).where(
+                    ArtifactVersion.artifact_id == artifact_id,
+                    ArtifactVersion.version == version_number,
+                )
+            )
+            if artifact is not None and isinstance(version_number, int)
+            else None
+        )
+        if (
+            artifact is None
+            or version is None
+            or artifact.project_id != project.id
+            or artifact.kind != "prd"
+            or artifact.stage != "prd"
+            or version.context_version != project.context_version
+            or version.approval_status != "draft"
+            or version.content_hash != expected_hash
+        ):
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_STALE",
+                "PRD review candidate is missing, stale, or no longer reviewable.",
+            )
+        try:
+            _, content = read_verified_artifact(
+                self.settings.ARTIFACT_ROOT,
+                version.content_ref,
+                version.content_hash,
+            )
+        except ArtifactStoreError as exc:
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_INVALID",
+                "PRD review candidate failed integrity checks.",
+            ) from exc
+        self._reject_secret_like_input(content)
+        artifact_ref = f"artifact:{artifact.id}:v{version.version}"
+        return [
+            {
+                "resource_type": "review_candidate_artifact",
+                "review_status": "waiting_reviewer",
+                "resource_id": artifact.id,
+                "version": version.version,
+                "kind": artifact.kind,
+                "title": artifact.title,
+                "artifact_ref": artifact_ref,
+                "evidence_refs": list(candidate.get("evidence_refs") or []),
+                "content": content,
+                "content_hash": version.content_hash,
+            }
+        ]
+
     def _load_resource_material(
         self, session: Session, project_id: str, ref: ContextResourceRef
     ) -> dict[str, Any]:
@@ -664,6 +767,7 @@ class AgentRuntimeService:
             "version": version.version,
             "kind": resource.kind,
             "title": resource.title,
+            "artifact_ref": f"artifact:{resource.id}:v{version.version}",
             "content": content,
             "content_hash": version.content_hash,
         }

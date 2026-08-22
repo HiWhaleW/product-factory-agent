@@ -1,8 +1,8 @@
 # 产品工厂 Agent
 
-> 当前阶段：D5 定义链路进行中  
+> 当前阶段：产品状态 `prd / Context v3 / iteration v1`；真实 PRD 已保存，G2 等待用户决定  
 > 最后同步：2026-08-23  
-> 开发状态：销售复盘 Agent 虚拟产品已经过 G0、真实博查/AI PM、Evidence/MRD v2、Reviewer/Red Team Review；G1 已由用户批准，当前为 `prd / Context v3`
+> 开发状态：AI PM PRD 与 Reviewer 已真实运行；PRD/Review v1 已落库，G2 已打开但未决定；Builder 未启动
 
 产品工厂 Agent 是面向企业内部产品负责人的 AI 产品交付工具。用户在项目群聊中与主 Agent 对齐目标；AI PM、Builder、Reviewer 按阶段入群；Context Pack 控制共享上下文；右侧累计 DAG 保留从 Brief、MRD、PRD、方案/技术决定、后端/前端代码、MVP、内测、商业 BRD 到发布、反馈和下一轮分支的全部产物。
 
@@ -29,8 +29,8 @@
 | 调研 | 竞品/GitHub、Prompt 缺口、标准 Harness 参考评估 | 已完成；参考评估基于本地源码/测试设计，测试未在本机执行通过 |
 | Agent Prompt | Factory Lead、AI PM、Builder、Reviewer | v0.2 冻结；Factory Lead / Reviewer 已真实运行，不等于 4 Agent 整体效果通过 |
 | HTML / 前端视觉 | 权威交互基线、统一首页/工作区/设置页、规格评审、架构与交接 | 当前桌面为用户最新确认的约 `30/70` 双栏；生产模式桌面 `1440×900` 与移动 `390×844` 已用 ego-lite 完成统一导航和核心交互 QA，截图/JSON 已归档，用户已确认当前前端无问题；不代表视觉永久冻结或完整产品验收完成 |
-| 应用代码 | FastAPI/Next.js monorepo、真实项目列表与单屏双栏工作区 | 后端已实现并以隔离真实纵向冒烟验证 Factory Lead、AI PM 提交、Reviewer clean-review、Red Team Review 与 G1 open |
-| 数据库/API/迁移 | PostgreSQL 16.15、D5 migration、控制面 API | 42 条真实 PostgreSQL 集成/并发/恢复测试通过；migration 已到 `20260822_0006`；销售复盘项目、版本索引、执行/恢复和 Session 契约已投影 |
+| 应用代码 | FastAPI/Next.js monorepo、真实项目列表与单屏双栏工作区 | Factory Lead、AI PM、Reviewer 的真实链路已到 PRD Review/G2 open；Builder 未启动 |
+| 数据库/API/迁移 | PostgreSQL 16.15、D5-D6 控制面 API | 44 条真实 PostgreSQL 集成/并发/恢复测试通过；migration 已到 `20260822_0006`；真实 PRD/Review/G2、Run/Step/Tool/cursor 与可回收 Gate/Permission fixture 已存在 |
 | 公开搜索 | 博查 Web Search Adapter、稳定 EvidenceRef、billable Permission | 真实认证/大陆网络/中文 Schema/短超时与 AI PM checkpoint 恢复通过；429/费用未观察 |
 | DeepSeek | 异步 Adapter、SecretRef、Schema/工具/SSE/错误类型 | 7 类真实冒烟通过（含 context-too-long）；真实 429 未观察，Provider 未返回费用 |
 | 部署 | 无 | 真实种子内测和商业 BRD/G6 通过后才允许正式发布 |
@@ -54,15 +54,16 @@
 └── AI*.md                         # 原始工程手册
 ```
 
-## 正式接手必须完成的三件事
+## 当前统一执行线
 
-1. **GitHub 安全快照已完成。** Connector 已将 `codex/initial-import` 从精确父提交以 `force:false` 快进到 [`db39b5dd…`](https://github.com/HiWhaleW/product-factory-agent/commit/db39b5ddfa01e17477c99c6eaa512c5f23422c30)；[Draft PR #1](https://github.com/HiWhaleW/product-factory-agent/pull/1) 仍 open/draft。全程未使用 `gh` 或本地 Git push；上传/排除证据见 [安全快照记录](./docs/evidence/github-safe-snapshot-2026-08-23.html)。
-2. **Runtime / 后端并线已完成当前切片。** “销售复盘 Agent”已恢复到 Web 同源 PostgreSQL/API；Evidence Index v2、MRD v2、Red Team Review v2、历史 G1 两项 known issues、Artifact v1/v2、执行/恢复和 Session 契约可读。仍缺可回收 Gate/Permission 样本、认证强制执行与 AG-UI/SSE。
-3. **按 Gate 推进后续安排。** 先完成 GitHub 安全快照，再统一销售复盘项目真相源并做前端真实投影验收；随后完成 PRD Run、确定性 PRD 持久化和 G2。之后依次为方案/G3、技术栈/G4；G4 前不得启动 Builder。G4 后固定按后端开发 → 前端开发的独立 Task/Run/测试证据推进，再进入 MVP、内部验收/G5、种子内测、商业 BRD/G6、发布/交接和反馈迭代。
+1. **已完成本次任务切片：** GitHub Connector 安全快照；销售复盘项目恢复到 Web 同源 PostgreSQL/API；Artifact v1/v2、G1、known issues、执行/恢复、Gate 决定和 Session 投影；Web 真实版本切换与生产模式 QA。
+2. **不再等待跨线并入：** Agent Runtime、FastAPI 和 Next.js 后续由同一任务在当前工作区直接修改、联调、测试和更新文档。局部改动必须形成 API → Web → 数据库/事件的完整证据。
+3. **当前下一项：** 等待用户决定真实 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`；批准后再推进方案/G3、技术栈/G4。
+4. **Builder 边界：** G4 前禁止启动；G4 后固定后端开发 → 前端开发，再进入 MVP、G5、种子内测、BRD/G6 和发布。
 
 ## 当前下一步
 
-**D5 正在进行。销售复盘 Agent 虚拟产品已真实贯通 AI PM Permission/checkpoint、博查、Evidence/MRD v2、Reviewer Red Team Review v2 和 G1。首轮 Reviewer reject 与一次 Provider 错误均正确 fail-closed。G1 已由用户批准，项目为 `prd / Context v3`，PRD Context Pack 已创建。当前证据不等于完整 D5、Builder、MVP 或内测通过。**
+**销售复盘 Agent 已用真实 DeepSeek 完成 AI PM PRD Run 和 Reviewer clean-review；PRD v1、PRD Review v1 已确定性持久化，G2 已打开但未决定。首次 PRD 输出因 Schema 缺字段被 fail-closed，未写入业务数据；修正后才重跑成功。当前证据不等于 Builder、MVP、内测或发布通过。**
 
 需要用户确认：
 
@@ -71,7 +72,7 @@
 - [x] V1 Builder 使用本地 Codex CLI 适配器。
 - [x] V1 优先本机/内网运行，不做 SSO、多租户或云代码沙箱。
 
-当前已完成 PostgreSQL migration `20260822_0006`、42 项在线集成/并发/恢复测试、56 项 Python 单测、13 项 Web 测试，以及 DeepSeek/Runtime/Factory Lead/博查/AI PM + Reviewer 真实冒烟。契约：[博查](./docs/contracts/d5-bocha-web-research-contract-2026-08-22.html) / [AI PM→Reviewer→G1](./docs/contracts/d5-review-candidate-contract-2026-08-22.html)。虚拟产品脱敏证据：[全流程 JSON](./docs/evidence/d5-sales-retrospective-product-flow-2026-08-22.json) / [本轮 Web 投影 QA](./docs/evidence/d5-runtime-projection-ego-qa-2026-08-22.json)。G1 已决定，但这不代表 Builder 或完整 D5 已通过。
+当前统一工作区已通过 `pnpm check`：Web 13/13、Python 60 passed；PostgreSQL 在线集成 44/44；Next.js production build 通过；Alembic 为 `20260822_0006 (head)`。真实 PRD 证据：[HTML](./docs/evidence/d5-prd-runtime-progress-2026-08-23.html) / [JSON](./docs/evidence/d5-prd-runtime-flow-2026-08-23.json)。联合验收 fixture 项目为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`。底层 `2500ms` cursor 仍是降级轮询，AG-UI/SSE 未完成。
 
 ## 文档权威顺序
 

@@ -2,11 +2,14 @@
 
 ## 当前事实
 
-- 日期：2026-08-22。
+- 日期：2026-08-23。
 - D1-D2 规格冻结包、独立工程排期、竞品/GitHub/标准 Harness 参考评估、4 份核心 Prompt 和 HTML 已生成。
 - 四项 Spec Freeze 已于 2026-08-20 获用户明确批准；D3–D4 已于 2026-08-21 收口，D5 正在进行。
-- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、D5 确定性控制面、Alembic `20260822_0004`、42 项在线集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
-- DeepSeek、博查 Adapter、有界 LangGraph Runtime 和 Run/Step/checkpoint 已存在。销售复盘 Agent 虚拟产品已完成“模糊输入 → 3 个澄清 → Brief v1 → 用户批准 G0 → 博查/AI PM → Reviewer reject → Evidence/MRD v2 修订 → Reviewer pass_with_known_issues → 用户批准 G1 → 进入 PRD”。项目当前为 `prd / Context v3`，PRD Context Pack 已创建。Codex Builder 完整执行、部署和线上地址仍不存在。
+- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、D5 确定性控制面、Alembic `20260822_0006`、60 项 Python 单测、44 项在线 PostgreSQL 集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
+- DeepSeek、博查 Adapter、有界 LangGraph Runtime 和 Run/Step/checkpoint 已存在。销售复盘 Agent 虚拟产品已完成“模糊输入 → 3 个澄清 → Brief v1 → 用户批准 G0 → 博查/AI PM → Reviewer reject → Evidence/MRD v2 修订 → Reviewer pass_with_known_issues → 用户批准 G1 → 真实 PRD → Reviewer pass → G2 open”。项目仍为 `prd / Context v3`，G2 未决定。Codex Builder 完整执行、部署和线上地址仍不存在。
+- 真实 AI PM PRD Run `9c7ffc14…`、PRD v1 `71d3b81a…`、Reviewer Run `6442a2fa…`、PRD Review v1 `44c79e5a…` 和 G2 `fdac9cd1…` 已落同源 PostgreSQL。首次 PRD 模型 Run 因输出缺少必填状态被确定性提交接口拒绝，未创建 Artifact/G2；修正严格 Schema 后才重新真实运行成功。
+- 可回收前端联合验收项目固定为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`，包含开放 G2、开放 PermissionRequest、历史 pause/resume/tool 事件和当前可恢复 Run；它是测试 fixture，不得冒充真实业务项目。
+- 后续不再把 Agent Runtime、后端和前端拆成等待并线的独立任务线。当前工作区是唯一实现真相源；下一位 Agent 直接在同一工作区按 Gate 顺序完成端到端切片，并在每个切片后重跑全量检查。
 - 唯一权威交互视觉基线是根目录 `产品工厂Agent_Harness表.html`。`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html` 只是把 12 阶段生命周期投影到该交互范式的修订版，不得反向覆盖视觉基线。
 - 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects/{projectId}` 双栏工作区和 `/settings` 设置页；接入真实项目创建/列表、群聊输入、参与者、Event cursor、Gate/Permission 和 React Flow Artifact DAG。
 - 当前桌面工作区按用户最新确认稿采用约 `30/70` 双栏（左侧群聊、右侧产物画布）；根目录 Harness 的 `38/62` 是交互视觉基线的历史比例，不能反向覆盖用户最新确认。12 阶段仍为 `6×2`，移动 `390×844` 仍使用“群聊 / 产物”同屏切换。
@@ -34,13 +37,15 @@
 
 不要在一次模型上下文中加载所有手册和规格。
 
-## 正式接手的三项强制任务
+## 当前接手与执行规则
 
-完成上述阅读和真实状态核验后，下一位接手者必须按顺序完成：
+完成上述阅读和真实状态核验后，下一位接手者必须按顺序执行：
 
-1. **使用 GitHub 插件/Connector 推送当前安全快照，不得使用 `gh` CLI。** 当前本地 `main` 是无提交分支，安全项目文件均为未跟踪；仅配置了 `origin=https://github.com/HiWhaleW/product-factory-agent.git`，远端分支和 PR 状态尚未在本轮通过 GitHub 插件核验。先用插件读取默认分支、`codex/initial-import` 和 Draft PR #1 的真实状态，再创建/更新非破坏性分支、提交或 PR；不得 force push、覆盖并线修改或重建仓库。推送前检查秘密、本机路径和 `.gitignore`，不得上传 `.env`、`.runtime/`、`.venv/`、依赖/缓存、Artifact/Workspace 内容或其他本机敏感文件。插件缺失或无写权限时停止远端写入并请求安装/授权，不得回退到 `gh`。
-2. **向 Agent Runtime / 后端同步并线清单。** 要求把“销售复盘 Agent”恢复/暴露到 Web 当前使用的同一 PostgreSQL/API，并让前端读取 Evidence Index v2、MRD v2、Red Team Review v2、G1 卡及两项已知问题；补充 Artifact 版本索引、`known_issues[]`、真实 agent/run/task/tool/恢复事件、可回收 Gate/Permission 验收样本、Project iteration version 和认证/Session 契约。不得再把“D3 双栏交互验收”当作 D5 业务验收项目。
-3. **按人工闸安排后续开发。** 先完成 GitHub 安全快照，再统一销售复盘项目真相源和前端真实投影，然后完成 PRD Run/确定性持久化/G2；之后依次推进方案/G3、技术栈/G4。G4 前不得启动 Builder；G4 后严格按后端开发 → 前端开发的独立 Task/Run/测试证据推进，再进入 MVP、G5、种子内测、BRD/G6、发布/交接和反馈迭代。
+1. **把当前工作区作为唯一真相源。** 不再等待 Runtime、后端或前端的其他并线任务，不覆盖现有实现，也不把某一层的局部通过当作端到端完成。
+2. **等待用户决定真实 G2。** PRD 切片已完成且 G2 仅为 `open`；不得代批、不得在 G2 决定前进入方案确认。
+3. **再按 Gate 串行推进。** 用户批准 G2 后进入方案/G3，G3 后技术栈/G4；G4 前禁止 Builder。G4 后固定后端开发 → 前端开发，每段都要有 Execution Task、AgentRun、RunStep、ArtifactVersion 和测试证据。
+4. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。
+5. **GitHub 仍只用 Connector。** 现有安全快照和 Draft PR 已建立；后续推送前重新核对远端 head、扫描秘密与本机路径，并继续使用 `force:false`，不得使用 `gh`。
 
 ## 已批准的 V1 产品边界
 
@@ -78,14 +83,13 @@
 
 ## 下一阶段任务
 
-D3-D4 已收口，D5 正在进行。销售复盘 Agent 虚拟产品的 AI PM→Reviewer→G1 纵向链路已真实运行，G1 已由用户批准，当前为 `prd / Context v3`。真实 429、博查费用/账单、来源质量人工评审和模型路由差异保持未验证。
+D3-D4 已收口，D5 正在进行。销售复盘 Agent 已真实生成 PRD 并经 Reviewer `pass`，G2 已打开但未决定，项目仍为 `prd / Context v3`。真实 429、博查费用/账单、来源质量人工评审和模型路由差异保持未验证。
 
-1. 使用已批准的 PRD Context Pack 进行 AI PM PRD 阶段；在新的确定性 PRD 提交/G2 契约完成前，不得用 Runtime 输出直接写业务状态。
-2. Runtime/后端先将“销售复盘 Agent”恢复到 Web 同源 API，前端只展示真实 Evidence Index v2、MRD v2、Red Team Review v2 和 G1 投影。
-3. 本 D5 开发线不得因 G1 批准而自动启用 Builder。
-4. 保留 Reviewer 的两项 P2 已知问题：引用粒度需用户访谈验证，Gong 定价/客户规模缺乏直接证据。
-5. G1 的用户批准记录已落库；后续 G2 仍必须等待用户人工决定。
-6. Builder 保持 D5 禁用，不宣称代码开发、MVP、内测或发布完成。
+1. 等待用户人工决定 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`；Runtime 和后续接手者不得代批。
+2. 用户批准 G2 后，才生成方案确认产物并申请 G3；G2 退回时保留 PRD v1 历史并创建新版本。
+3. 保留 Reviewer 的两项 P2 已知问题：引用粒度待用户访谈验证，Gong 定价和客户规模缺少直接证据。
+4. G2 未由用户批准前不进入方案；G4 未批准前 Builder 保持禁用。
+5. `2500ms` cursor 轮询仍是降级方案，AG-UI/SSE 未完成；同一任务线继续负责 Runtime、后端、前端、测试和文档闭环。
 
 ## 交接提示词
 

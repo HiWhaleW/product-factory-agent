@@ -7,7 +7,12 @@ from app.adapters.deepseek import DeepSeekResponse, DeepSeekSchemaError, DeepSee
 from app.agents.checkpoint import CheckpointArchive
 from app.agents.context import ApprovedContextPack, ContextBoundaryError
 from app.agents.graph import _research_query, build_agent_graph
-from app.agents.outputs import AiPmMrdOutput, ReviewerMrdOutput
+from app.agents.outputs import (
+    AiPmMrdOutput,
+    AiPmPrdOutput,
+    ReviewerMrdOutput,
+    ReviewerPrdOutput,
+)
 from app.agents.policy import ToolRequest, evaluate_tool_policy
 from app.agents.registry import AgentRegistryError, load_frozen_prompt, require_d5_agent
 from app.domain.schemas import ContextPackRead, ContextResourceRef
@@ -336,6 +341,129 @@ def test_reviewer_fabricated_candidate_ref_retries_then_hands_back() -> None:
     assert completed["error_code"] == "DEEPSEEK_SCHEMA_INVALID"
     assert completed["retries_used"] == 2
     assert provider.calls == 2
+
+
+def prd_pack(agent_id: str) -> ApprovedContextPack:
+    return ApprovedContextPack(
+        id=f"{agent_id}-prd-pack",
+        project_id="project-1",
+        context_version=3,
+        stage="prd",
+        approval_status="approved",
+        recipient_agent_id=agent_id,
+        primary_resource=ContextResourceRef(
+            resource_type="artifact",
+            resource_id="11111111-1111-1111-1111-111111111111",
+            version=2,
+            approval_status="approved",
+        ),
+        required_resources=[],
+        task="基于已批准 MRD 形成并审查 PRD。",
+        allowed_capability_ids=["CAP-04" if agent_id == "ai-pm" else "CAP-10"],
+        forbidden_actions=["approve_gate", "start_builder"],
+        budget={"max_turns": 3, "max_retries": 1, "timeout_seconds": 30},
+    )
+
+
+def ai_pm_prd_output() -> dict:
+    ref = "artifact:11111111-1111-1111-1111-111111111111:v2"
+    return {
+        "message": "已形成待独立审查的 PRD。",
+        "artifact_proposals": [
+            {
+                "kind": "prd",
+                "title": "销售复盘 Agent PRD",
+                "content": f"核心闭环、范围、验收与反指标。来源：{ref}",
+                "evidence_refs": [ref],
+                "assumptions": ["引用粒度需真实访谈验证"],
+                "status": "waiting_review",
+            }
+        ],
+        "verified_fact_proposals": [],
+        "open_questions": [],
+        "transition_proposal": None,
+    }
+
+
+def reviewer_prd_output() -> dict:
+    ref = "artifact:22222222-2222-2222-2222-222222222222:v1"
+    return {
+        "message": "PRD 可进入 G2，保留 P2。",
+        "verdict": "pass_with_known_issues",
+        "findings": [
+            {
+                "severity": "P2",
+                "title": "引用粒度仍需访谈验证",
+                "evidence_refs": [ref],
+                "reproduction": ["检查 PRD 已知问题章节"],
+                "impact": "不阻断 G2，但影响证据精度。",
+                "recommended_fix": "种子访谈中补齐。",
+            }
+        ],
+        "evidence_refs": [ref],
+        "artifact_proposals": [
+            {
+                "kind": "prd_review",
+                "title": "PRD Review",
+                "content": f"独立审查结论与已知问题。候选：{ref}",
+                "evidence_refs": [ref],
+                "assumptions": [],
+                "status": "waiting_review",
+            }
+        ],
+        "transition_proposal": None,
+    }
+
+
+def test_prd_schemas_are_stage_specific_and_do_not_propose_gate_transition() -> None:
+    assert AiPmPrdOutput.model_validate(ai_pm_prd_output()).artifact_proposals[0].kind == "prd"
+    assert ReviewerPrdOutput.model_validate(
+        reviewer_prd_output()
+    ).artifact_proposals[0].kind == "prd_review"
+    invalid = ai_pm_prd_output()
+    invalid["artifact_proposals"][0]["kind"] = "mrd"
+    with pytest.raises(ValueError):
+        AiPmPrdOutput.model_validate(invalid)
+
+
+def test_ai_pm_prd_uses_only_approved_artifact_refs() -> None:
+    pack = prd_pack("ai-pm")
+    state = initial_state(pack)
+    state["approved_materials"] = [
+        {
+            "resource_type": "artifact",
+            "artifact_ref": "artifact:11111111-1111-1111-1111-111111111111:v2",
+            "content": "已批准 MRD",
+        }
+    ]
+    provider = FakeProvider([ai_pm_prd_output()])
+    completed = asyncio.run(
+        build_agent_graph(provider).ainvoke(
+            state,
+            {"configurable": {"thread_id": "ai-pm-prd-provenance"}},
+        )
+    )
+    assert completed["status"] == "succeeded"
+
+
+def test_reviewer_prd_uses_bound_candidate_ref() -> None:
+    pack = prd_pack("reviewer")
+    state = initial_state(pack)
+    state["review_candidates"] = [
+        {
+            "artifact_ref": "artifact:22222222-2222-2222-2222-222222222222:v1",
+            "evidence_refs": [],
+            "content": "待审 PRD",
+        }
+    ]
+    provider = FakeProvider([reviewer_prd_output()])
+    completed = asyncio.run(
+        build_agent_graph(provider).ainvoke(
+            state,
+            {"configurable": {"thread_id": "reviewer-prd-provenance"}},
+        )
+    )
+    assert completed["status"] == "succeeded"
 
 
 def test_registry_loads_frozen_prompts_and_builder_is_inactive() -> None:

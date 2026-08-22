@@ -39,6 +39,11 @@ GATE_RULES: dict[str, dict[str, object]] = {
         "target_state": "prd",
         "required_artifact_kinds": {"evidence_index", "mrd", "red_team_review"},
     },
+    "G2": {
+        "source_state": "prd",
+        "target_state": "solution_confirmation",
+        "required_artifact_kinds": {"prd", "prd_review"},
+    },
 }
 
 CONTROL_PLANE_EVENT_TYPES = {
@@ -58,6 +63,11 @@ CONTROL_PLANE_EVENT_TYPES = {
     "factory_lead.invocation.failed",
     "definition.submitted",
     "definition.reviewed",
+    "prd.submitted",
+    "prd.reviewed",
+    "tool_run.started",
+    "tool_run.completed",
+    "run.resumed",
     "artifact.created",
     "artifact.versioned",
 }
@@ -85,7 +95,7 @@ def validate_gate_open(
 ) -> None:
     rule = GATE_RULES.get(gate_type)
     if rule is None:
-        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1。")
+        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1/G2。")
     if not context_matches:
         raise ControlPlaneError("STALE_CONTEXT", "Gate 必须绑定项目当前 Context 版本。")
     if rule["source_state"] != current_state:
@@ -103,7 +113,7 @@ def validate_gate_open(
 def validate_gate_artifact_kinds(gate_type: str, artifact_kinds: set[str]) -> None:
     rule = GATE_RULES.get(gate_type)
     if rule is None:
-        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1。")
+        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1/G2。")
     missing = set(rule["required_artifact_kinds"]) - artifact_kinds
     if missing:
         raise ControlPlaneError(

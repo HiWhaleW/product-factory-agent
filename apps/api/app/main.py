@@ -42,7 +42,7 @@ async def validation_error(request: Request, exc: RequestValidationError) -> JSO
                 "user_message": "请求字段不符合确定性 API 契约。",
                 "retryable": False,
                 "request_id": request_id,
-                "fields": exc.errors(include_context=False, include_url=False),
+                "fields": exc.errors(include_url=False),
             }
         },
     )

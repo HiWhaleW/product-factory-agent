@@ -244,6 +244,22 @@ def build_agent_graph(
                 "review candidates, and include every declared review EvidenceRef verbatim in "
                 "the Red Team Review content adjacent to the relevant finding or conclusion."
             )
+        if definition.id == "ai-pm" and state["stage"] == "prd":
+            system += (
+                "\nPRD contract: inherit the approved MRD without reopening market scope. "
+                "Produce exactly one PRD with no more than three V1 core capabilities. Include "
+                "the core loop, in/out scope, states and boundaries, user-operable acceptance "
+                "criteria, north-star and counter-metrics, AI task/data/evaluation/fallback, and "
+                "the inherited known issues. Cite only exact EvidenceRef or artifact_ref values "
+                "present in approved_materials, and place every declared ref inline."
+            )
+        if definition.id == "reviewer" and state["stage"] == "prd":
+            system += (
+                "\nPRD clean-review contract: review only the deterministically bound draft PRD "
+                "against approved inputs and acceptance criteria. Produce exactly one PRD Review. "
+                "Cite the candidate artifact_ref and only refs present in review_candidates. "
+                "Do not approve G2 or propose a state transition."
+            )
         user_payload = {
             "context_pack": pack.model_payload(),
             "approved_materials": state.get("approved_materials") or [],
@@ -263,7 +279,7 @@ def build_agent_graph(
                 ],
                 max_tokens=(
                     8192
-                    if state["stage"] == "mrd"
+                    if state["stage"] in {"mrd", "prd"}
                     and definition.id in {"ai-pm", "reviewer"}
                     else 4096
                 ),
@@ -462,16 +478,16 @@ def _validate_evidence_provenance(
     approved_materials: list[dict[str, Any]],
     review_candidates: list[dict[str, Any]],
 ) -> None:
-    if stage != "mrd" or agent_id not in {"ai-pm", "reviewer"}:
+    if stage not in {"mrd", "prd"} or agent_id not in {"ai-pm", "reviewer"}:
         return
-    if agent_id == "ai-pm":
+    if stage == "mrd" and agent_id == "ai-pm":
         allowed = {
             str(result.get("evidence_ref"))
             for tool_result in tool_results
             for result in tool_result.get("results") or []
             if result.get("evidence_ref")
         }
-    else:
+    elif stage == "mrd":
         content_refs = {
             match
             for material in review_candidates
@@ -486,6 +502,33 @@ def _validate_evidence_provenance(
             for ref in material.get("evidence_refs") or []
         }
         allowed = content_refs | declared_refs
+    elif agent_id == "ai-pm":
+        allowed = {
+            str(value)
+            for material in approved_materials
+            for value in [
+                material.get("artifact_ref"),
+                *re.findall(
+                    r"(?:bocha:web:[0-9a-f]{64}|artifact:[0-9a-f-]{36}:v[0-9]+)",
+                    str(material.get("content") or ""),
+                ),
+            ]
+            if value
+        }
+    else:
+        allowed = {
+            str(value)
+            for material in review_candidates
+            for value in [
+                material.get("artifact_ref"),
+                *(material.get("evidence_refs") or []),
+                *re.findall(
+                    r"(?:bocha:web:[0-9a-f]{64}|artifact:[0-9a-f-]{36}:v[0-9]+)",
+                    str(material.get("content") or ""),
+                ),
+            ]
+            if value
+        }
     proposed = set(output.get("evidence_refs") or [])
     for artifact in output.get("artifact_proposals") or []:
         proposed.update(artifact.get("evidence_refs") or [])

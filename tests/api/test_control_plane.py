@@ -66,7 +66,7 @@ def test_acyclic_task_dependency_is_allowed() -> None:
     validate_task_dependency([("b", "a")], "c", "b")
 
 
-def test_g0_g1_gate_source_target_and_context_are_deterministic() -> None:
+def test_g0_g1_g2_gate_source_target_and_context_are_deterministic() -> None:
     validate_gate_open(
         current_state="alignment",
         gate_type="G0",
@@ -77,6 +77,12 @@ def test_g0_g1_gate_source_target_and_context_are_deterministic() -> None:
         current_state="mrd",
         gate_type="G1",
         target_state="prd",
+        context_matches=True,
+    )
+    validate_gate_open(
+        current_state="prd",
+        gate_type="G2",
+        target_state="solution_confirmation",
         context_matches=True,
     )
     with pytest.raises(ControlPlaneError) as error:
@@ -101,4 +107,11 @@ def test_g1_requires_evidence_mrd_and_red_team_review() -> None:
     validate_gate_artifact_kinds("G1", {"evidence_index", "mrd", "red_team_review"})
     with pytest.raises(ControlPlaneError) as error:
         validate_gate_artifact_kinds("G1", {"evidence_index", "mrd"})
+    assert error.value.code == "GATE_EVIDENCE_MISSING"
+
+
+def test_g2_requires_prd_and_independent_review() -> None:
+    validate_gate_artifact_kinds("G2", {"prd", "prd_review"})
+    with pytest.raises(ControlPlaneError) as error:
+        validate_gate_artifact_kinds("G2", {"prd"})
     assert error.value.code == "GATE_EVIDENCE_MISSING"
