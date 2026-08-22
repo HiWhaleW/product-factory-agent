@@ -4,7 +4,7 @@
 > 当前阶段：产品状态 `prd / Context v3 / iteration v1`；真实 PRD/Review 已保存，G2 open  
 > 下一闸口：等待用户人工决定 G2  
 > 开发状态：AI PM PRD 与 Reviewer 已真实运行；G2 未决定，Builder 未启动  
-> 执行方式：后续不再拆分 Runtime、后端和前端并线，由同一任务在当前工作区端到端闭环
+> 执行方式：后续不再启动 Runtime、后端、前端三条并行任务，也不存在后续并线；由同一个 coding task 在当前工作区串行、端到端闭环
 
 ## 1. 交接结论
 
@@ -18,7 +18,12 @@
 
 GitHub 安全快照已通过 Connector 完成：私有仓库 `HiWhaleW/product-factory-agent` 默认分支为 `main`；`codex/initial-import` 从精确父提交 `36503fd9…` 以 `force:false` 快进到实现提交 [`db39b5dd…`](https://github.com/HiWhaleW/product-factory-agent/commit/db39b5ddfa01e17477c99c6eaa512c5f23422c30)；[Draft PR #1](https://github.com/HiWhaleW/product-factory-agent/pull/1) 仍为 open/draft。全程未使用 `gh` 或本地 Git push。31 个上传文件、排除清单和扫描证据见 [Markdown](./evidence/github-safe-snapshot-2026-08-23.md) / [HTML](./evidence/github-safe-snapshot-2026-08-23.html)。
 
-本次接手任务继续完成了真实 PRD 切片：严格 PRD/Review Schema、AI PM 与 Reviewer Run、确定性 Artifact/ToolRun/RunStep/Event 持久化、G2 只开不批，以及可回收 Gate/Permission 联合验收 fixture。第一次模型 Run 因缺少必填状态被提交接口拒绝，未创建 Artifact/G2；修正 Schema 后重新真实运行成功。
+### 工作归属（明确本 Agent Runtime 开发线实际完成内容）
+
+- **本 Agent Runtime 开发线累计完成：** DeepSeek fail-closed Adapter 与真实冒烟；博查 Adapter；4 Agent 注册与 D5 激活边界；有界 LangGraph、`allow/ask/deny` Tool Policy、checkpoint/pause/resume、Run/Step/Tool Journal 和副作用对账；Factory Lead 对齐；真实 AI PM→Reviewer→G1；真实 PRD→Reviewer→G2 open；严格 PRD/Review Schema、确定性 Artifact/Event 持久化和可回收 Gate/Permission fixture。
+- **本线没有完成：** AG-UI/SSE、认证强制执行、Builder/Codex 完整执行、MVP、内测、BRD/G6、部署和发布；未修改冻结 Prompt，也未代批任何 Gate。
+- **此前其他工作已存在并予以保留：** D1–D4 规格/确定性控制面、Web 约 30/70 确认稿、migration `0005/0006`、同源 Web/API 投影与前端生产 QA。它们不是本 Agent Runtime 开发线单独完成的成果。
+- **本次文档同步完成：** 更新项目事实、任务表、工程排期、交接提示词及同名 HTML；本次文档同步本身没有新增 Runtime/API/Web 应用代码。
 
 ## 2. 已完成
 
@@ -111,7 +116,7 @@ GitHub 安全快照已通过 Connector 完成：私有仓库 `HiWhaleW/product-f
 ### 5.1 使用 GitHub 插件推送当前安全快照
 
 1. 只能使用 GitHub 插件/Connector 完成远端读取、分支、文件上传/提交和 PR 更新；不得使用 `gh` CLI。
-2. Connector 已核验默认分支、`codex/initial-import` 和 Draft PR #1；推送前必须再次确认 PR head 仍等于预期父提交，避免覆盖并线更新。
+2. Connector 已核验默认分支、`codex/initial-import` 和 Draft PR #1；推送前必须再次确认 PR head 仍等于预期父提交，避免覆盖其他已存在修改。
 3. 推送前按 `.gitignore` 和秘密扫描形成安全清单。不得上传 `.env`、`.runtime/`、`.venv/`、`node_modules/`、`.next/`、Artifact/Workspace、缓存、SecretRef 原值、本机来源路径或其他敏感文件。
 4. 不得 force push、重建仓库、覆盖远端其他任务线或把所有未跟踪文件不经审查地整包提交。
 5. 插件未安装、不可调用或无写权限时，停止远端写入并请求安装/授权；不得回退使用 `gh`。

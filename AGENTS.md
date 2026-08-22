@@ -9,7 +9,7 @@
 - DeepSeek、博查 Adapter、有界 LangGraph Runtime 和 Run/Step/checkpoint 已存在。销售复盘 Agent 虚拟产品已完成“模糊输入 → 3 个澄清 → Brief v1 → 用户批准 G0 → 博查/AI PM → Reviewer reject → Evidence/MRD v2 修订 → Reviewer pass_with_known_issues → 用户批准 G1 → 真实 PRD → Reviewer pass → G2 open”。项目仍为 `prd / Context v3`，G2 未决定。Codex Builder 完整执行、部署和线上地址仍不存在。
 - 真实 AI PM PRD Run `9c7ffc14…`、PRD v1 `71d3b81a…`、Reviewer Run `6442a2fa…`、PRD Review v1 `44c79e5a…` 和 G2 `fdac9cd1…` 已落同源 PostgreSQL。首次 PRD 模型 Run 因输出缺少必填状态被确定性提交接口拒绝，未创建 Artifact/G2；修正严格 Schema 后才重新真实运行成功。
 - 可回收前端联合验收项目固定为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`，包含开放 G2、开放 PermissionRequest、历史 pause/resume/tool 事件和当前可恢复 Run；它是测试 fixture，不得冒充真实业务项目。
-- 后续不再把 Agent Runtime、后端和前端拆成等待并线的独立任务线。当前工作区是唯一实现真相源；下一位 Agent 直接在同一工作区按 Gate 顺序完成端到端切片，并在每个切片后重跑全量检查。
+- 后续不会再分别启动 Agent Runtime、后端、前端三条并行任务线，也不存在后续“并线”步骤。当前工作区是唯一实现真相源；由同一个 coding task 按 Gate 串行完成 Runtime → API/数据库 → Web 投影 → 测试/浏览器 QA → 文档闭环。
 - 唯一权威交互视觉基线是根目录 `产品工厂Agent_Harness表.html`。`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html` 只是把 12 阶段生命周期投影到该交互范式的修订版，不得反向覆盖视觉基线。
 - 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects/{projectId}` 双栏工作区和 `/settings` 设置页；接入真实项目创建/列表、群聊输入、参与者、Event cursor、Gate/Permission 和 React Flow Artifact DAG。
 - 当前桌面工作区按用户最新确认稿采用约 `30/70` 双栏（左侧群聊、右侧产物画布）；根目录 Harness 的 `38/62` 是交互视觉基线的历史比例，不能反向覆盖用户最新确认。12 阶段仍为 `6×2`，移动 `390×844` 仍使用“群聊 / 产物”同屏切换。
@@ -41,7 +41,7 @@
 
 完成上述阅读和真实状态核验后，下一位接手者必须按顺序执行：
 
-1. **把当前工作区作为唯一真相源。** 不再等待 Runtime、后端或前端的其他并线任务，不覆盖现有实现，也不把某一层的局部通过当作端到端完成。
+1. **把当前工作区作为唯一真相源。** 不再创建 Runtime、后端或前端并行任务，不等待后续并线；不覆盖现有实现，也不把某一层的局部通过当作端到端完成。
 2. **等待用户决定真实 G2。** PRD 切片已完成且 G2 仅为 `open`；不得代批、不得在 G2 决定前进入方案确认。
 3. **再按 Gate 串行推进。** 用户批准 G2 后进入方案/G3，G3 后技术栈/G4；G4 前禁止 Builder。G4 后固定后端开发 → 前端开发，每段都要有 Execution Task、AgentRun、RunStep、ArtifactVersion 和测试证据。
 4. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。

@@ -57,7 +57,7 @@
 ## 当前统一执行线
 
 1. **已完成本次任务切片：** GitHub Connector 安全快照；销售复盘项目恢复到 Web 同源 PostgreSQL/API；Artifact v1/v2、G1、known issues、执行/恢复、Gate 决定和 Session 投影；Web 真实版本切换与生产模式 QA。
-2. **不再等待跨线并入：** Agent Runtime、FastAPI 和 Next.js 后续由同一任务在当前工作区直接修改、联调、测试和更新文档。局部改动必须形成 API → Web → 数据库/事件的完整证据。
+2. **不再拆三条并行线：** 后续不会分别启动 Agent Runtime、FastAPI 后端和 Next.js 前端任务，也没有“完成后再并线”的步骤。一个 coding task 在当前工作区按 Runtime → API/数据库 → Web 投影 → 测试/浏览器 QA → 文档的顺序闭环。
 3. **当前下一项：** 等待用户决定真实 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`；批准后再推进方案/G3、技术栈/G4。
 4. **Builder 边界：** G4 前禁止启动；G4 后固定后端开发 → 前端开发，再进入 MVP、G5、种子内测、BRD/G6 和发布。
 

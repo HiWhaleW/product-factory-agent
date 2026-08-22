@@ -1,9 +1,10 @@
 # 产品工厂 Agent - 10 工作日工程排期
 
-> 版本：v0.2  
-> 日期：2026-08-20  
-> 状态：Spec Freeze 已批准；D3–D4 已于 2026-08-21 收口；D5 尚未开始  
+> 版本：v0.5  
+> 日期：2026-08-23  
+> 状态：D1–D4 已完成；D5 业务主链路已完成，仍缺 AG-UI/SSE 与认证强制执行；D6 已完成真实 PRD/Review 并打开 G2，当前等待用户决定；可回收 Gate/Permission fixture 已有数据、浏览器联合验收待完成  
 > 排期口径：D3 是 Spec Freeze Review 全部批准后的第一个工作日，不预填虚假日历日期
+> 执行口径：后续不再启动 Agent Runtime、后端、前端三条并行任务，也不存在后续并线；由同一个 coding task 在当前工作区按 Gate 串行完成 Runtime → API/数据库 → Web 投影 → 验证/文档
 
 ## 1. 排期结论
 
@@ -63,11 +64,32 @@ D1-D2 规格冻结候选（已完成）
 | 规格冻结候选 | D1-D2 | 产品、交互、前端实施、7 层架构、Harness、技术、验收、Prompt、研究和 HTML | Spec 文件完整、矛盾关闭、可视化可评审 | 已完成并获批准 |
 | Spec Freeze Review | Gate | 四项 V1 边界由用户明确确认 | 全部批准并同步状态 | 已通过 |
 | 最小控制面 | D3-D4 | 工程骨架、DB、核心 API、状态/任务/运行/权限、简洁可观察 UI | 本地持久化和确定性测试通过 | 已完成（2026-08-21） |
-| 定义链路 | D5-D6 | 对齐→MRD/G1→PRD/G2→方案/G3→技术栈/G4 | 真实模型、版本、Gate 和浏览器事件跑通 | 未开始 |
+| 定义链路 | D5-D6 | 对齐→MRD/G1→PRD/G2→方案/G3→技术栈/G4 | 真实模型、版本、Gate 和浏览器事件跑通 | 进行中：真实 PRD/Review 已完成，G2 open；等待用户决定后才可进入方案/G3 |
 | 分阶段开发 | D7-D8 | 后端→前端→MVP，Builder/Codex、代码与测试节点 | 受限工作区纵向切片可运行、基本渲染可见 | 未开始 |
 | 独立 QA | D9 | Reviewer、真模型/工程/浏览器审查 | 可打回、局部修复、恢复并再次验收 | 未开始 |
 | 内部验收 | D10 | G5、Beta Candidate、种子用户内测计划与数据采集 | G5 通过且内测包可执行 | 未开始 |
 | 证据驱动验证 | B1-Bn | 种子内测→商业 BRD/G6→发布/交接→反馈 | 达到预设样本/使用/反馈阈值，不按日期伪造 | D10 后 |
+
+### 4.1 当前任务表（2026-08-23）
+
+| ID | 任务 | 状态 | 本次/当前证据 | 下一动作或阻塞 |
+|---|---|---|---|---|
+| T01 | GitHub Connector 安全快照 | 已完成 | 最新 Runtime 快照 `4cac2589…`、Draft PR #1、`force:false`、上传/排除清单 | 后续推送继续核对远端 head，禁止 `gh`/force push |
+| T02 | 销售复盘项目恢复到同源 PostgreSQL/API | 已完成 | 项目为 `prd / Context v3 / iteration v1`；G0/G1 决定可读 | 保持单一真相源 |
+| T03 | 后端真实投影契约 | 已完成 | Artifact v1/v2、known issues、execution、Gate decisions、Session；migration `0005/0006` | 认证强制执行另列 T12 |
+| T04 | 前端真实项目投影 | 已完成 | Evidence/MRD/Red Team v2、MRD v1/v2、历史 G1、两项 P2；ego-lite 生产 QA | 后续跨层改动同步回归 |
+| T05 | 当前统一工作区全量检查 | 已完成 | Web 13/13、Python 60/60、PostgreSQL 44/44、build 通过、Alembic `0006 head` | 每个切片结束重跑 |
+| T06 | PRD 确定性提交/Review/G2 契约（本 Runtime 线） | 已完成 | 严格 Schema、`prd-submissions`、`prd-review/v1`、Tool Policy=`allow`、G2 只开一次且不推进项目/不启动 Builder | 保持幂等与不越权回归 |
+| T07 | 销售复盘项目真实 AI PM PRD Run（本 Runtime 线） | 已完成 | AI PM Run `9c7ffc14…`；PRD v1 `71d3b81a…` 已确定性持久化；首次 Schema 不合规被 fail-closed | 等待 G2 决定，不重复运行 |
+| T08 | Reviewer PRD clean-review 与打开 G2（本 Runtime 线） | 已完成 | Reviewer Run `6442a2fa…` 为 `pass`；Review v1 `44c79e5a…`；G2 `fdac9cd1…` open | 不代替用户决定 G2 |
+| T09 | 用户决定 G2 | 等待人工（当前阻塞） | G2 已打开；不允许 Agent/Runtime/test fixture 代批 | 用户批准则进入方案/G3；退回则保留 v1 并创建新版本 |
+| T10 | 可回收 Gate/Permission fixture（本 Runtime 线） | 数据已完成，浏览器待验 | fixture `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001` 含 open G2、Permission、pause/resume/tool/recovery | 完成桌面/移动联合 QA，不使用真实业务 G2 |
+| T11 | AG-UI/SSE | 未完成 | 当前仍为 `2500ms` cursor 短轮询降级 | 在统一任务线完成真实传输与恢复验收 |
+| T12 | 认证强制执行 | 未完成 | Session 契约存在；`auth_enforced=false` | 配置并验证真实登录/过期/退出边界 |
+| T13 | 方案/G3、技术栈/G4 | 锁定 | G2 尚未批准 | G2 批准后逐级推进；G4 前 Builder 禁用 |
+| T14 | Builder 后端→前端、MVP/G5、内测、BRD/G6、发布 | 禁止启动/未开始 | G4 未批准，无 Builder/MVP/发布真实证据 | G4 后固定先后端、后前端，再按 Gate 推进 |
+
+v0.5 文档 QA：`README.html`、`docs/handoff.html`、`Engineering-Schedule.html` 已用 ego-browser 检查 `1440×900` 与 `390×844`，页面级横向溢出均为 0；任务表 T09 和“不再三线并行/并线”口径可见。
 
 ## 5. 每日工程排期
 
@@ -150,11 +172,15 @@ D1-D2 规格冻结候选（已完成）
 
 ### D5 - 项目对齐、MRD 与 G1
 
+**当前进度（2026-08-23）**：销售复盘项目已完成 Brief/G0、真实博查与 AI PM、Evidence/MRD v2、Reviewer/Red Team Review v2、用户批准 G1，并进入 `prd / Context v3`。同源 Web/API 投影已完成。专用可回收 Gate/Permission fixture 数据已存在但浏览器联合验收仍缺；完整 AG-UI/SSE 和认证强制执行也未完成，因此 D5 只标记“业务主链路完成、配套项未全部收口”。
+
 **任务**：实现模糊输入澄清、Project Brief/G0、AI PM 入群与最小 Context Pack；真实模型和公开搜索生成 Evidence Index、MRD 与 Red Team Review；完成流式事件、版本化产物、G1 及 cursor 恢复。
 
 **退出证据**：一条真实想法完成“输入→G0→Evidence/MRD→G1→DAG”；G1 前不得进入 PRD，且记录模型、Prompt/Skill/Context 版本、Token、延迟和引用。
 
 ### D6 - PRD、方案、技术栈与 G2-G4
+
+**当前进度（2026-08-23）**：PRD 阶段专用 Schema、确定性提交、`prd-review/v1` clean-review、G2 开闸和幂等/不越权测试已存在。真实销售复盘项目已完成 AI PM PRD Run 与 Reviewer clean-review，PRD v1、PRD Review v1 已确定性持久化；G2 `fdac9cd1…` 已打开但未决定。当前关键阻塞是用户 G2 决定；方案/G3 与技术栈/G4 尚未开始。
 
 **任务**：生成 PRD/验收标准/做不做范围并通过 G2；生成 User Flow/交互方案并通过 G3；生成 Technical Adaptation/API Contract/成本安全回退并通过 G4。Reviewer 使用 clean-review Context；同时完成压缩、后台回注、stale 与版本预览。
 
@@ -243,7 +269,7 @@ flowchart TD
 | 下午中段 | 失败路径、权限、恢复和浏览器检查 | 测试/截图/事件证据 |
 | 当日结束 | 运行 lint/type/test/build；同步真实状态 | 日结：完成/未完成/mock/风险/次日阻塞 |
 
-产品开发顺序固定为后端纵向能力 → 前端基本渲染，但不允许把前端推迟到所有后端模块完成之后；每个后端切片都要尽快补对应可观察投影。每天至少验证一次 API → 群聊/状态 → Artifact DAG 的可见链路。
+产品开发顺序固定为 Runtime/契约 → 后端纵向能力 → 前端基本渲染 → 全量验证/文档。后续不再启动“Runtime 线 / 后端线 / 前端线”三条并行任务，也不存在后续并线；同一个 coding task 必须在一个切片内完成 API → 群聊/状态 → Artifact DAG 的可见链路和全量检查。
 
 ### D3-D8 前端实施轨
 

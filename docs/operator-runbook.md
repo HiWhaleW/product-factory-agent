@@ -1,7 +1,7 @@
 # 产品工厂 Agent - 开发/运维交接
 
 > 同步日期：2026-08-23  
-> 当前状态：D3–D4 已收口，D5 进行中；PostgreSQL migration `20260822_0006`、DeepSeek/博查 Runtime、Factory Lead 和 AI PM→Reviewer→G1 确定性后端契约已存在；“销售复盘 Agent”为 `prd / Context v3 / iteration v1` 并已投影到 Web；PRD/G2、Builder 和部署未完成。
+> 当前状态：D3–D4 已收口，D5–D6 定义链路进行中；PostgreSQL migration `20260822_0006`、DeepSeek/博查 Runtime、Factory Lead 和 AI PM→Reviewer 确定性契约已存在；“销售复盘 Agent”为 `prd / Context v3 / iteration v1` 并已投影到 Web；真实 PRD/Review v1 已落库，G2 已打开但未决定；Builder 和部署未开始。
 
 ## 1. 本机已检测环境
 
@@ -79,9 +79,11 @@ SESSION_SECRET=
 5. [完成基础切片] Project/Message/Event/Graph/Gate/Permission API 与 Task 原子认领
 6. [完成基础切片] 状态迁移、Permission 不推进阶段、过期/旧 Context 拒绝和并发幂等
 7. [完成基础切片] 真实单屏 UI 展示 12 阶段、群聊、Gate/Permission 与 React Flow Artifact DAG
-8. [已验证] PostgreSQL 集成 42/42；DeepSeek/博查/Factory Lead/AI PM→Reviewer 真实冒烟已有脱敏证据；销售复盘项目 G0/G1 已由用户决定
-9. [完成并线] 销售复盘项目、Artifact v1/v2、历史 G1、执行/恢复投影和 Session 契约已接入 Web
-10. [待完成] AI PM PRD Run、确定性 PRD 持久化、G2；Codex Builder 与完整 AG-UI/浏览器恢复
+8. [已验证] PostgreSQL 集成 44/44；DeepSeek/博查/Factory Lead/AI PM→Reviewer 真实冒烟已有脱敏证据；销售复盘项目 G0/G1 已由用户决定
+9. [完成统一投影] 销售复盘项目、Artifact v1/v2、历史 G1、执行/恢复、Gate 决定和 Session 契约已接入 Web
+10. [完成] 真实 AI PM PRD Run、确定性提交、Reviewer clean-review、PRD/Review v1 与 G2 open；G2 未由用户决定
+11. [数据完成、浏览器待验] 可回收 Gate/Permission fixture `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`
+12. [待完成] AG-UI/SSE、认证强制执行；G4 前禁止 Codex Builder
 ```
 
 ### 5.1 正式接手的 GitHub 操作边界
@@ -114,11 +116,11 @@ pnpm db:migrate
 
 Reviewer 对接字段和错误码见 [D5 AI PM→Reviewer→G1 契约](./contracts/d5-review-candidate-contract-2026-08-22.md)。
 
-Runtime/后端已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引、`gate-decisions` 用户批准记录、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。完整读取接口见 [D5 Web / 后端真实投影契约](./contracts/d5-web-backend-projection-contract-2026-08-23.md)。仍缺专用可回收 Gate/Permission 样本、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
+当前统一工作区已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、PRD/Review v1、G2 open、Artifact 版本索引、`gate-decisions`、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。完整读取接口见 [D5 Web / 后端真实投影契约](./contracts/d5-web-backend-projection-contract-2026-08-23.md)。可回收 Gate/Permission fixture 数据已存在，仍缺浏览器联合验收、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
 
-末次验证记录（2026-08-23）：Web ESLint、TypeScript、Vitest 13/13 通过；Ruff 与 Python 56/56 通过；PostgreSQL 集成 42/42；主库 Alembic 为 `20260822_0006 (head)`。临时空库的 `upgrade head → downgrade 0004 → upgrade head` 通过；测试先发现并修复空库恢复事件外键和破坏性降级两项问题。保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
+末次验证记录（2026-08-23）：当前统一工作区 `pnpm check` 通过；Web ESLint、TypeScript、Vitest 13/13，Ruff 与 Python 60/60；PostgreSQL 在线集成 44/44；production build 通过；主库 Alembic 为 `20260822_0006 (head)`。临时空库的 `upgrade head → downgrade 0004 → upgrade head` 历史验证通过；保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
 
-并行 Runtime 线随后新增 PRD 路由；当前工作区最新一次 `pnpm check` 因其独立 `apps/api/app/api/agent_router.py` 导入顺序失败。本线未覆盖该文件。Runtime 线收口后需要重新运行 `pnpm check`，此前通过记录不能冒充最新全工作区结果。
+后续不再启动 Runtime、后端和前端三条并行任务，也不存在后续并线。任何跨层改动由一个 coding task 在同一工作区按 Runtime → API/数据库 → Web 投影 → 全量检查/浏览器 QA → 文档的顺序闭环；不得用“等待并线”解释未完成项。
 
 ## 7. D9-D10 内部验收与发布前健康检查
 
