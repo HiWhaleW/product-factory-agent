@@ -15,9 +15,12 @@ import type {
   ProjectEvent,
 } from "@/lib/contracts";
 import { projectStageIndex, projectStageLabel, projectStages } from "@/lib/stages";
+import { localUser } from "@/lib/identity";
 import {
   composeReferencedMessage,
+  cursorPollingSync,
   eventPresentation,
+  formatProjectVersion,
   parseReferencedMessage,
 } from "@/lib/workspace";
 
@@ -129,25 +132,51 @@ function GateConversationCard({
   onKillCancel: () => void;
   onKillRequest: () => void;
 }) {
+  const isOpen = gate.status === "open";
   return (
-    <article className="gate-card conversation-control">
+    <article className={`gate-card conversation-control${isOpen ? "" : " gate-card-history"}`}>
       <div className="control-card-heading">
         <Image alt="" className="control-card-icon" height={42} src="/icon-gate-card.png" width={42} />
         <div>
-          <span className="control-kind">需要你选择 · 产品闸口 {gate.gate_type}</span>
+          <span className="control-kind">{isOpen ? "需要你选择" : "历史记录"} · 产品闸口 {gate.gate_type}</span>
           <strong>是否进入 {gate.target_state ? projectStageLabel(gate.target_state) : "既定下一阶段"}？</strong>
         </div>
         <span>Context v{gate.context_version}</span>
       </div>
-      <p>这是不可变的产品阶段决定，不能由普通群聊代替。</p>
-      <label htmlFor={`gate-comment-${gate.id}`}>原因（批准可选，其他选项必填）</label>
-      <textarea
-        id={`gate-comment-${gate.id}`}
-        onChange={(event) => onComment(event.target.value)}
-        rows={2}
-        value={comment}
-      />
-      {confirmingKill ? (
+      <p>{isOpen
+        ? "这是不可变的产品阶段决定，不能由普通群聊代替。"
+        : `该 Gate 已记录为 ${gate.status}；这里只读展示当时的审批依据与已知问题。`}</p>
+      {gate.reason ? (
+        <div className="gate-basis">
+          <strong>审批依据</strong>
+          <p>{gate.reason}</p>
+          {gate.impacted_artifact_refs.length ? (
+            <small>关联 {gate.impacted_artifact_refs.length} 个真实产物版本</small>
+          ) : null}
+        </div>
+      ) : null}
+      {gate.known_issues.length ? (
+        <div className="gate-basis known-issues">
+          <strong>已知问题</strong>
+          <ul>
+            {gate.known_issues.map((issue) => (
+              <li key={`${issue.severity}:${issue.issue}`}>
+                <b>{issue.severity}</b> · {issue.issue} · {issue.status === "open" ? "待验证" : issue.status}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {isOpen ? <label htmlFor={`gate-comment-${gate.id}`}>原因（批准可选，其他选项必填）</label> : null}
+      {isOpen ? (
+        <textarea
+          id={`gate-comment-${gate.id}`}
+          onChange={(event) => onComment(event.target.value)}
+          rows={2}
+          value={comment}
+        />
+      ) : null}
+      {isOpen && confirmingKill ? (
         <div className="inline-confirm" role="alert">
           <p>确认终止这个项目？该决定无法由普通消息撤销。</p>
           <div className="button-row">
@@ -155,7 +184,7 @@ function GateConversationCard({
             <button disabled={disabled} onClick={onKillCancel} type="button">取消</button>
           </div>
         </div>
-      ) : (
+      ) : isOpen ? (
         <div className="button-row">
           <button className="primary-button" disabled={disabled} onClick={() => onDecision("approve")} type="button">批准并推进</button>
           <button disabled={disabled} onClick={() => onDecision("changes")} type="button">退回修改</button>
@@ -164,7 +193,7 @@ function GateConversationCard({
             <button className="danger-button" disabled={disabled} onClick={onKillRequest} type="button">终止项目</button>
           ) : null}
         </div>
-      )}
+      ) : null}
     </article>
   );
 }
@@ -188,7 +217,8 @@ function PermissionConversationCard({
         <span>{permission.risk_level}</span>
       </div>
       <p>Task {permission.task_id.slice(0, 8)} · Context v{permission.context_version} · input {permission.input_hash.slice(0, 8)}…</p>
-      <p>{permission.expires_at ? `有效期至 ${dateTimeFormatter.format(new Date(permission.expires_at))}` : "未设置有效期"}；原因与脱敏参数摘要尚未入库。</p>
+      <p>{permission.reason || "后端未提供权限原因。"}</p>
+      <p>{permission.expires_at ? `有效期至 ${dateTimeFormatter.format(new Date(permission.expires_at))}` : "未设置有效期"}；脱敏参数 {JSON.stringify(permission.redacted_parameters)}</p>
       <div className="button-row">
         <button className="primary-button" disabled={disabled} onClick={() => onDecision("allow")} type="button">仅本次允许</button>
         <button disabled={disabled} onClick={() => onDecision("deny")} type="button">拒绝</button>
@@ -299,7 +329,7 @@ export function WorkspaceClient({
             fetch(`/api/control/api/v1/projects/${project.id}/messages`, { cache: "no-store" }),
             fetch(`/api/control/api/v1/projects/${project.id}/graph`, { cache: "no-store" }),
             fetch(`/api/control/api/v1/projects/${project.id}`, { cache: "no-store" }),
-            fetch(`/api/control/api/v1/projects/${project.id}/gates`, { cache: "no-store" }),
+            fetch(`/api/control/api/v1/projects/${project.id}/gates?status=all`, { cache: "no-store" }),
             fetch(`/api/control/api/v1/projects/${project.id}/permissions`, { cache: "no-store" }),
           ]);
           if (messageResponse.ok) setMessages((await messageResponse.json()) as Message[]);
@@ -312,7 +342,7 @@ export function WorkspaceClient({
       } catch {
         setConnection("stale");
       }
-    }, 2500);
+    }, cursorPollingSync.intervalMs);
     return () => window.clearInterval(timer);
   }, [cursor, project.id]);
 
@@ -337,7 +367,7 @@ export function WorkspaceClient({
   async function refreshDecisions() {
     const [projectResponse, gateResponse, permissionResponse] = await Promise.all([
       fetch(`/api/control/api/v1/projects/${project.id}`, { cache: "no-store" }),
-      fetch(`/api/control/api/v1/projects/${project.id}/gates`, { cache: "no-store" }),
+      fetch(`/api/control/api/v1/projects/${project.id}/gates?status=all`, { cache: "no-store" }),
       fetch(`/api/control/api/v1/projects/${project.id}/permissions`, { cache: "no-store" }),
     ]);
     if (!projectResponse.ok || !gateResponse.ok || !permissionResponse.ok) {
@@ -367,7 +397,7 @@ export function WorkspaceClient({
           decision,
           context_version: gate.context_version,
           comment,
-          decided_by: "local-admin",
+          decided_by: localUser.id,
         }),
       });
       const body = (await response.json()) as ApiError;
@@ -391,7 +421,7 @@ export function WorkspaceClient({
         body: JSON.stringify({
           decision,
           input_hash: permission.input_hash,
-          decided_by: "local-admin",
+          decided_by: localUser.id,
         }),
       });
       const body = (await response.json()) as ApiError;
@@ -417,7 +447,7 @@ export function WorkspaceClient({
         body: JSON.stringify({
           client_message_id: crypto.randomUUID(),
           content,
-          actor_id: "local-admin",
+          actor_id: localUser.id,
         }),
       });
       const body = (await response.json()) as Message & ApiError;
@@ -433,9 +463,10 @@ export function WorkspaceClient({
   }
 
   const currentStage = projectStageIndex(project.state);
+  const projectVersion = formatProjectVersion(project.context_version);
 
   return (
-    <main className="workspace-page">
+    <main className="workspace-page" id="main-content">
       {connection === "stale" ? (
         <div aria-live="polite" className="reconnect-banner">事件连接暂时中断，保留最后快照并自动重试。</div>
       ) : null}
@@ -481,7 +512,7 @@ export function WorkspaceClient({
         <div className="chat-panel" id="chat-workspace-panel" role="tabpanel">
           <div aria-label="项目参与者" className="participants">
             <strong className="participants-title">团队群聊</strong>
-            <span className="participant participant-user is-present"><span className="presence-dot" />用户</span>
+            <span className="participant participant-user is-present"><span className="presence-dot" />我</span>
             {participantRoster.map((participant) => {
               const isPresent = participant.aliases.some((alias) => joinedAgents.has(alias));
               return (
@@ -575,10 +606,9 @@ export function WorkspaceClient({
 
         <div className="dag-panel" id="artifact-workspace-panel" role="tabpanel">
           <div className="panel-heading">
-            <h2>累计产物 DAG</h2>
+            <h2>{projectStageLabel(project.state)} {projectVersion}</h2>
           </div>
           <ArtifactDag
-            canvasLabel={`${projectStageLabel(project.state)} V${project.context_version}.0`}
             graph={graph}
             onPrepareRevision={prepareRevision}
             onReferenceArtifact={referenceArtifact}

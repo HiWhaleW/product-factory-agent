@@ -23,6 +23,18 @@ export type ReferencedMessage = {
   } | null;
 };
 
+export const cursorPollingSync = {
+  intervalMs: 2500,
+} as const;
+
+export function formatProjectVersion(version: number) {
+  return `V${version}.0`;
+}
+
+export function artifactVersionOptions(latestVersion: number) {
+  return Array.from({ length: Math.max(0, latestVersion) }, (_, index) => latestVersion - index);
+}
+
 function payloadText(event: ProjectEvent, key: string) {
   const value = event.payload[key];
   return typeof value === "string" || typeof value === "number" ? String(value) : "";

@@ -22,7 +22,7 @@ async function loadWorkspace(projectId: string) {
       getMessages(projectId),
       getEvents(projectId),
       getGraph(projectId),
-      getGates(projectId),
+      getGates(projectId, "all"),
       getPermissions(projectId),
     ]);
   } catch (error) {

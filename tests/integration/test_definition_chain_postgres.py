@@ -282,8 +282,29 @@ def test_reviewer_pass_opens_g1_once_without_advancing_project(definition_scope)
     assert first.status_code == second.status_code == 200
     assert first.json()["status"] == "waiting_g1"
     assert first.json()["gate"]["gate_type"] == "G1"
+    assert first.json()["gate"]["known_issues"] == [
+        {
+            "issue": "样本仍需扩展",
+            "severity": "P2",
+            "evidence_refs": [_evidence_ref()],
+            "source_refs": first.json()["gate"]["impacted_artifact_refs"],
+            "status": "open",
+        }
+    ]
+    assert first.json()["known_issues"] == first.json()["gate"]["known_issues"]
     assert first.json()["idempotent"] is False
     assert second.json()["idempotent"] is True
+    with TestClient(app) as client:
+        evidence_artifact_id = submission["artifact_refs"][0]["artifact_id"]
+        versions = client.get(f"/api/v1/artifacts/{evidence_artifact_id}/versions")
+        execution = client.get(f"/api/v1/projects/{project_id}/execution")
+    assert versions.status_code == 200
+    assert versions.json()[0]["created_by"] == "ai-pm"
+    assert versions.json()[0]["content_available"] is True
+    assert execution.status_code == 200
+    assert execution.json()["memberships"]
+    assert execution.json()["tasks"]
+    assert execution.json()["runs"]
     with SessionLocal() as session:
         project = session.get(Project, project_id)
         assert project.state == "mrd"

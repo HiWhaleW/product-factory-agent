@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-08-22T10:24:07+08:00",
+  "last_updated_at": "2026-08-22T20:52:47+08:00",
+  "scope": "virtual sales retrospective product definition flow",
+  "real_provider_calls": true,
+  "prompts_recorded": false,
+  "search_bodies_recorded": false,
+  "model_outputs_recorded": false,
+  "secret_values_recorded": false,
+  "project": {
+    "project_id": "2a3c38e1-9704-4f83-a096-84cb5a5025e7",
+    "project_brief_id": "37e00347-1149-48db-9300-b32cb0ecc16c",
+    "project_brief_version": 1,
+    "g0_id": "b242ef80-9e38-420a-a364-e4329f009693",
+    "g0_decision": "approve",
+    "state_after_g0": "mrd",
+    "context_version": 2,
+    "ai_pm_context_pack_id": "33554516-b905-475a-bd79-7bd3c10c7911"
+  },
+  "first_review_cycle": {
+    "permission_request_id": "f930def3-10e1-4e96-9e8e-cc7e9e928e08",
+    "permission_decision": "allow",
+    "permission_is_not_gate": true,
+    "ai_pm_run": {
+      "run_id": "d07c8a13-fb95-4f31-91a2-a9a47bf1a3a6",
+      "state": "succeeded",
+      "turns_used": 1,
+      "retries_used": 0,
+      "tool_calls_used": 1,
+      "requested_model": "deepseek-chat",
+      "observed_model": "deepseek-v4-flash",
+      "total_tokens": 10367,
+      "checkpoint_hash_before": "593b6953438d75f2376f511c898892fa8479e15cfe1198fb2797271f39cd53ec",
+      "checkpoint_hash_after": "a292d2d7fb160648133183d64736d17bea13a875bb78afd63dc9a0df02119f73",
+      "tool_idempotency_key": "web_research:d07c8a13-fb95-4f31-91a2-a9a47bf1a3a6:1",
+      "external_effect_confirmed": true
+    },
+    "definition_submission_id": "90f1c4bf-8007-4670-87f9-b1459c58c1b4",
+    "reviewer_run_id": "9b419c47-1a14-4626-af5c-30bfe71a003f",
+    "review_id": "aea5b069-8c98-4b88-952e-d3d14f2cbd0d",
+    "review_verdict": "reject",
+    "submission_status": "changes_requested",
+    "g1_opened": false,
+    "fail_closed": true,
+    "finding_summary": [
+      "Market evidence was not sufficiently aligned with the product objective.",
+      "Source locator granularity was not supported by the search evidence.",
+      "Several sources were background information rather than direct evidence."
+    ]
+  },
+  "revision_cycle": {
+    "runtime_change": "An explicit Research query line is separated from model-only task instructions; PermissionRequest hashes the actual query.",
+    "ai_pm_run": {
+      "run_id": "0df21c90-e303-4eac-879e-de83d2438426",
+      "state": "succeeded",
+      "turns_used": 1,
+      "retries_used": 0,
+      "tool_calls_used": 1,
+      "observed_model": "deepseek-v4-flash",
+      "checkpoint_hash_before": "43d087f427ede094ff4fcaecae61863e75eedbb8fbb1ed8ddca1df7426bd4dc7",
+      "checkpoint_hash_after": "8b3ed2d63dc83f0ecd831dee580bb14dd2192d0996f57923d509982a83d20eeb",
+      "tool_idempotency_key": "web_research:0df21c90-e303-4eac-879e-de83d2438426:1",
+      "evidence_set_ref": "evidence-set://09eca5b61a1c784aaf211f80af94f4727e604810d78c4e0f151d56b09f2e4298",
+      "external_effect_confirmed": true
+    },
+    "definition_submission_id": "b6c27533-09e4-4e84-b0a0-f3343625f977",
+    "artifact_versions": {
+      "evidence_index": 2,
+      "mrd": 2,
+      "red_team_review": 2
+    },
+    "failed_reviewer_attempt": {
+      "run_id": "f5321d65-748a-4bc5-9b17-4ea2a2442501",
+      "state": "waiting_human",
+      "error_code": "DEEPSEEK_PROVIDER_ERROR",
+      "g1_opened": false,
+      "submission_status": "waiting_reviewer"
+    },
+    "successful_reviewer_retry": {
+      "run_id": "d6b2444e-5995-4485-9576-1162a5b53193",
+      "state": "succeeded",
+      "turns_used": 1,
+      "retries_used": 0,
+      "tool_calls_used": 0,
+      "requested_model": "deepseek-chat",
+      "observed_model": "deepseek-v4-flash",
+      "total_tokens": 8786,
+      "checkpoint_hash": "846d72eebc2f83b2e75064179a3824844c22b79dde63bd33fc789c3d7d74d067",
+      "review_id": "d383d981-e599-4daf-8dd1-836e9e360f93",
+      "verdict": "pass_with_known_issues",
+      "submission_status": "waiting_g1"
+    },
+    "known_issues": [
+      "Source locator granularity must remain a user-research hypothesis until verified.",
+      "Gong pricing and customer-size positioning lacks direct evidence and must remain a hypothesis."
+    ],
+    "g1": {
+      "gate_id": "cec40b01-ba61-494b-a057-b2f5c74173f1",
+      "status": "approved",
+      "target_state": "prd",
+      "decided": true,
+      "decision": "approve",
+      "resulting_context_version": 3
+    },
+    "last_event_sequence_before_g1_decision": 59
+  },
+  "after_g1": {
+    "database_instance": {
+      "host": "127.0.0.1",
+      "port": 5432,
+      "database": "product_factory",
+      "data_directory": "[local PostgreSQL data directory omitted]",
+      "active_api_check": "GET 127.0.0.1:8000 returned HTTP 200 for the project"
+    },
+    "project_state": "prd",
+    "context_version": 3,
+    "prd_context_pack_id": "7e918f18-8699-406f-86ca-7d90e6edc6a9",
+    "recipient_agent_id": "ai-pm",
+    "primary_resource": "MRD v2",
+    "required_resources": ["Evidence Index v2", "Red Team Review v2"],
+    "allowed_capability_ids": ["CAP-04"],
+    "builder_activated": false,
+    "events": [
+      [60, "context.updated"],
+      [61, "gate.decided"],
+      [62, "project.state_changed"],
+      [63, "context.pack_created"]
+    ],
+    "last_event_sequence": 63
+  },
+  "builder_activated": false,
+  "mvp_or_release_claimed": false,
+  "validation": {
+    "pnpm_check": "passed",
+    "web_tests": "13 passed",
+    "python_unit_tests": "56 passed, 42 integration tests skipped by design",
+    "agent_tests": "33 passed",
+    "postgresql_integration_tests": "42 passed",
+    "alembic_current": "20260822_0006 (head)",
+    "documentation_browser_qa": "README, handoff, runtime progress and Bocha contract: 1440x900 and 390x844, horizontal overflow 0",
+    "warning": "One Starlette TestClient/httpx deprecation warning remains."
+  }
+}

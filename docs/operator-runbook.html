@@ -1,35 +1,9 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>产品工厂 Agent · 开发运维交接</title>
-  <style>
-    :root{--p:#f4f6f5;--s:#fff;--t:#17201d;--m:#596661;--l:#cbd4d0;--b:#1f65a6;--g:#13705b;--a:#9a5b00;font:16px/1.58 Inter,"PingFang SC",system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--p);color:var(--t)}a{color:var(--b)}.in{width:min(1080px,calc(100% - 40px));margin:auto}.band{padding:44px 0;border-bottom:1px solid var(--l)}h1{font-size:clamp(34px,5vw,52px)}.note,.card{padding:15px;border:1px solid var(--l);background:var(--s)}.note{border-left:5px solid var(--a);background:#fff8e9}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.card{border-top:4px solid var(--g);min-width:0}.card.wait{border-top-color:var(--a)}.card span{display:block;color:var(--m);font-size:12px}.cmd{padding:16px;overflow:auto;background:#17201d;color:#edf2ef;font:13px/1.7 ui-monospace,monospace}code{overflow-wrap:anywhere}footer{padding:24px 0;color:var(--m);font-size:12px}@media(max-width:700px){.in{width:calc(100% - 24px)}.grid{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-<main>
-  <section class="band"><div class="in"><small>OPERATOR RUNBOOK · D5</small><h1>确定性链路可检查，完整 D5 尚未通过</h1><div class="note">PostgreSQL 0004、DeepSeek/博查 Runtime 和隔离 AI PM→Reviewer→G1 open 已验证；真实产品 G0/G1、Builder 和部署仍未完成。</div></div></section>
-  <section class="band"><div class="in"><h2>环境事实</h2><div class="grid">
-    <div class="card"><strong>PostgreSQL</strong><span>16.15、migration 0004、在线集成 42/42。</span></div>
-    <div class="card"><strong>DeepSeek / 博查</strong><span>真实渠道、Schema、超时与 Permission/checkpoint 已有脱敏证据。</span></div>
-    <div class="card"><strong>隔离纵向链路</strong><span>AI PM、Evidence/MRD、Reviewer、Red Team Review、G1 open 已贯通。</span></div>
-    <div class="card"><strong>Python</strong><span>uv 管理 3.12.13；Python 52/52。</span></div>
-    <div class="card"><strong>Web</strong><span>Web 测试 6/6；本线未修改 apps/web。</span></div>
-    <div class="card wait"><strong>待完成</strong><span>真实产品 G0/G1、完整 AG-UI 恢复、Builder 与发布。</span></div>
-  </div></div></section>
-  <section class="band"><div class="in"><h2>可重复命令</h2><pre class="cmd">env UV_CACHE_DIR=.uv-cache uv sync --locked
-pnpm check
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>产品工厂 Agent · 运维交接</title><style>:root{--i:#242321;--p:#f8f3ee;--c:#fffdf9;--t:#198c83;--o:#e76f2e}*{box-sizing:border-box}body{margin:0;background:var(--p);color:var(--i);font:15px/1.65 system-ui,sans-serif}.in{width:min(1100px,calc(100% - 32px));margin:auto}.band{padding:34px 0;border-bottom:2px solid var(--i)}h1{font-size:clamp(34px,6vw,64px);line-height:1;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.card,pre{padding:18px;border:1.5px solid var(--i);background:var(--c)}.ok{border-top:8px solid var(--t)}.warn{border-top:8px solid var(--o)}pre{overflow:auto;white-space:pre-wrap}a{color:inherit}a:focus-visible{outline:3px solid #086ac5;outline-offset:3px}@media(max-width:720px){.grid{grid-template-columns:1fr}}</style></head><body><main><section class="band"><div class="in"><small>OPERATOR RUNBOOK · 2026-08-23</small><h1>0006 已上线，完整 D5 仍未通过</h1><p>销售复盘 Agent 已进入同源 Web/API；当前为 PRD / Context v3 / iteration v1。G2、Builder 和部署未完成。</p></div></section><section class="band"><div class="in grid"><div class="card ok"><h2>运行态</h2><ul><li>PostgreSQL 16.15</li><li>FastAPI 127.0.0.1:8000</li><li>Next.js production 127.0.0.1:3100</li><li>Alembic 20260822_0006 head</li><li>Codex CLI 0.148.0-alpha.21 只读检测</li></ul></div><div class="card warn"><h2>边界</h2><ul><li>AG-UI/SSE 未完成，2500ms 轮询是降级</li><li>Session 契约存在，auth_enforced=false</li><li>无安全 Gate/Permission 联合样本</li><li>Builder 在 G4 前禁止启动</li><li>秘密只传 SecretRef</li></ul></div></div></section><section class="band"><div class="in"><h2>标准检查</h2><pre>pnpm install --frozen-lockfile
+pnpm lint:web
+pnpm typecheck
+pnpm test:web
+pnpm lint:api
+pnpm test:api
 pnpm test:api:integration
-env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current
-pnpm dev</pre><p>Key 只在后端 <code>.env</code> / SecretRef 中配置，不进入聊天、文档、Git、Artifact、Context Pack 或日志。</p></div></section>
-  <section class="band"><div class="in"><h2>末次验证与问题记录</h2><div class="grid">
-    <div class="card"><strong>检查通过</strong><span>Web 6/6、Python 52/52、PostgreSQL 42/42、Alembic 0004 head。</span></div>
-    <div class="card"><strong>保留警告</strong><span>1 条 Starlette/httpx 弃用警告。</span></div>
-    <div class="card wait"><strong>受限运行失败</strong><span>第一次在线测试 31 failed / 40 errors，原因是系统禁止访问本机 PostgreSQL；允许访问后全部通过。</span></div>
-  </div><p><a href="./operator-runbook.md">完整 Markdown</a> · <a href="./contracts/d5-review-candidate-contract-2026-08-22.html">Reviewer/G1 契约</a></p></div></section>
-</main>
-<footer><div class="in">Operator Runbook · 2026-08-22 更新 · 已检查 1440×900 / 390×844，横向溢出 0</div></footer>
-</body>
-</html>
+pnpm build
+env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current</pre><p>末次结果：Web 13/13、Python 56/56、PostgreSQL 42/42、build 通过；保留 1 条 Starlette/httpx 弃用警告。</p></div></section><section class="band"><div class="in grid"><div class="card ok"><h2>API 投影</h2><ul><li>Artifact /versions</li><li>Project /execution</li><li>known_issues[]</li><li>iteration_version</li><li>Graph owner/created_at</li><li>Permission reason/redacted_parameters</li><li>POST session、GET /me、DELETE session</li></ul></div><div class="card warn"><h2>GitHub</h2><p>Connector 已核验默认 main、codex/initial-import、open Draft PR #1 与 write 权限。禁止 gh 与 force push；推送前扫描秘密和本机路径。</p></div></div></section><section class="band"><div class="in"><h2>排障原则</h2><ul><li>API 新路由 404：先确认 launchd 进程是否加载最新模块，再 kickstart 现有服务。</li><li>PostgreSQL 测试在沙箱中 Operation not permitted：按授权连接本机 5432 后重跑，不把网络策略当断言失败。</li><li>pnpm 包装器尝试重链 node_modules：按锁文件恢复；验证可直接运行 workspace .bin。</li><li>DAG 缺节点先查 Artifact/Event 后端事实，不在前端伪造。</li></ul><p><a href="./operator-runbook.md">完整 Markdown</a> · <a href="./handoff.html">交接首页</a></p></div></section></main></body></html>

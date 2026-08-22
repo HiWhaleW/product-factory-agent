@@ -21,6 +21,7 @@ class ProjectRead(ApiModel):
     name: str
     state: str
     context_version: int
+    iteration_version: int
     paused_from_state: str | None
     created_at: datetime
     updated_at: datetime
@@ -154,6 +155,14 @@ class ContextPackRead(ApiModel):
     created_at: datetime
 
 
+class KnownIssueRead(ApiModel):
+    issue: str
+    severity: Literal["P0", "P1", "P2"]
+    evidence_refs: list[str] = Field(default_factory=list)
+    source_refs: list[dict[str, Any]] = Field(default_factory=list)
+    status: Literal["open", "resolved", "accepted"] = "open"
+
+
 class GateRead(ApiModel):
     id: str
     project_id: str
@@ -163,6 +172,7 @@ class GateRead(ApiModel):
     target_state: str | None
     reason: str
     impacted_artifact_refs: list[dict[str, Any]]
+    known_issues: list[KnownIssueRead] = Field(default_factory=list)
     opened_at: datetime
 
 
@@ -237,6 +247,8 @@ class PermissionRequestRead(ApiModel):
     tool_name: str
     input_hash: str
     risk_level: str
+    reason: str
+    redacted_parameters: dict[str, Any]
     context_version: int
     status: str
     expires_at: datetime | None
@@ -250,6 +262,8 @@ class GraphNode(ApiModel):
     stage: str
     status: str
     latest_version: int
+    owner_agent: str
+    created_at: datetime
 
 
 class GraphEdge(ApiModel):
@@ -273,6 +287,15 @@ class TaskRead(ApiModel):
     context_version: int
     claimed_by: str | None
     created_at: datetime
+
+
+class AgentMembershipRead(ApiModel):
+    id: str
+    project_id: str
+    agent_id: str
+    joined_context_version: int
+    status: str
+    joined_at: datetime
 
 
 class TaskClaimCreate(ApiModel):
@@ -307,6 +330,39 @@ class RunRead(ApiModel):
     steps: list[RunStepRead]
 
 
+class ExecutionRunRead(ApiModel):
+    id: str
+    task_id: str
+    attempt: int
+    state: str
+    input_hash: str
+    turns_used: int
+    retries_used: int
+    started_at: datetime | None
+    completed_at: datetime | None
+    steps: list[RunStepRead]
+
+
+class ToolRunRead(ApiModel):
+    id: str
+    task_id: str
+    run_id: str
+    capability_id: str
+    tool_name: str
+    state: str
+    input_hash: str
+    idempotency_key: str
+    result_ref: str | None
+    created_at: datetime
+
+
+class ProjectExecutionRead(ApiModel):
+    memberships: list[AgentMembershipRead]
+    tasks: list[TaskRead]
+    runs: list[ExecutionRunRead]
+    tool_runs: list[ToolRunRead]
+
+
 class RunResumeCreate(ApiModel):
     resume_token: str = Field(min_length=1, max_length=100)
     input_hash: str = Field(min_length=64, max_length=64)
@@ -319,7 +375,12 @@ class ArtifactVersionRead(ApiModel):
     approval_status: str
     content_hash: str
     summary: str
+    created_by: str
     created_at: datetime
+
+
+class ArtifactVersionIndexRead(ArtifactVersionRead):
+    content_available: bool
 
 
 class ArtifactContentRead(ApiModel):
@@ -340,6 +401,18 @@ class RuntimeStatusRead(ApiModel):
     event_transport: Literal["sse_cursor"]
     short_polling_degraded: bool
     codex: dict[str, object]
+
+
+class SessionCreate(ApiModel):
+    invite_code: str = Field(min_length=1, max_length=500)
+
+
+class SessionRead(ApiModel):
+    authenticated: bool
+    user_id: str | None
+    expires_at: datetime | None
+    reason: Literal["active", "missing", "invalid", "expired", "auth_not_configured", "logged_out"]
+    auth_enforced: bool
 
 
 class AgentControlInput(ApiModel):
@@ -510,6 +583,7 @@ class DefinitionReviewRead(ApiModel):
     verdict: str
     status: str
     red_team_review: DefinitionArtifactRefRead
+    known_issues: list[KnownIssueRead] = Field(default_factory=list)
     gate: GateRead | None
     idempotent: bool
 

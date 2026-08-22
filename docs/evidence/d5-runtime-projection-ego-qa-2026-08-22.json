@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-08-22T23:56:00+08:00",
+  "tool": "ego-browser / ego-lite",
+  "mode": "Next.js production on 127.0.0.1:3100 with FastAPI on 127.0.0.1:8000",
+  "project": {
+    "id": "2a3c38e1-9704-4f83-a096-84cb5a5025e7",
+    "name": "销售复盘 Agent",
+    "state": "prd",
+    "context_version": 3,
+    "iteration_version": 1,
+    "next_gate": "G2",
+    "builder_activated": false
+  },
+  "desktop_1440x900": {
+    "result": "passed",
+    "artifact_nodes": [
+      "MRD.md v2",
+      "Evidence Index.md v2",
+      "Red Team Review v2"
+    ],
+    "artifact_history": {
+      "artifact": "MRD.md",
+      "options": ["v2 latest", "v1 history"],
+      "v2_content_length": 1286,
+      "v1_content_length": 2105,
+      "actions_follow_selected_version": true
+    },
+    "historical_gates": {
+      "G0": "approved read-only projection",
+      "G1": "approved read-only projection",
+      "known_issues": [
+        "引用粒度待用户访谈验证",
+        "Gong 定价和客户规模缺少直接证据"
+      ]
+    },
+    "participants": {
+      "factory_lead": "joined",
+      "ai_pm": "joined",
+      "reviewer": "joined",
+      "builder": "not joined"
+    },
+    "participant_hover": "AI PM hover matched and title remained joined",
+    "artifact_drag": {
+      "before_transform": "translate(305px, 110px)",
+      "after_transform": "translate(435px, 173px)",
+      "local_view_moved": true,
+      "business_graph_unchanged": true
+    },
+    "settings_session": {
+      "authenticated": false,
+      "reason": "auth_not_configured",
+      "auth_enforced": false,
+      "ui_disclaimer_visible": true
+    },
+    "not_found": {
+      "heading": "项目不存在",
+      "return_link": "#projects",
+      "result": "passed"
+    },
+    "application_errors": 0
+  },
+  "mobile_390x844": {
+    "result": "passed",
+    "default_view": "chat",
+    "artifact_switch": "passed",
+    "chat_display_after_switch": "none",
+    "artifact_display_after_switch": "flex",
+    "artifact_nodes": ["MRD.md v2", "Evidence Index.md v2", "Red Team Review v2"],
+    "mrd_version_options": ["v2 latest", "v1 history"],
+    "known_issues_in_dom": 2,
+    "application_errors": 0
+  },
+  "safe_controls": {
+    "gate_decisions_submitted": 0,
+    "permission_decisions_submitted": 0,
+    "messages_sent": 0,
+    "builder_runs_started": 0
+  },
+  "visual_capture": {
+    "status": "not_captured_in_this_increment",
+    "reason": "ego-lite Page.captureScreenshot timed out in both reused and fresh isolated task spaces",
+    "fallback": "DOM, semantic tree, CDP interaction state and console/application events were verified; older screenshots were not relabeled as new evidence"
+  }
+}

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { ArtifactNode, ProjectEvent } from "../lib/contracts";
 import {
+  artifactVersionOptions,
   composeReferencedMessage,
+  cursorPollingSync,
   eventPresentation,
+  formatProjectVersion,
   parseReferencedMessage,
   visibleRunState,
 } from "../lib/workspace";
@@ -15,6 +18,8 @@ const artifact: ArtifactNode = {
   stage: "prd",
   status: "waiting_review",
   title: "产品需求文档",
+  owner_agent: "ai-pm",
+  created_at: "2026-08-21T00:00:00Z",
 };
 
 function projectEvent(eventType: string, payload: Record<string, unknown> = {}): ProjectEvent {
@@ -29,6 +34,22 @@ function projectEvent(eventType: string, payload: Record<string, unknown> = {}):
 }
 
 describe("workspace projection helpers", () => {
+  it("offers every persisted artifact version from newest to oldest", () => {
+    expect(artifactVersionOptions(3)).toEqual([3, 2, 1]);
+    expect(artifactVersionOptions(1)).toEqual([1]);
+  });
+
+  it("keeps cursor short polling on the existing interval", () => {
+    expect(cursorPollingSync).toEqual({
+      intervalMs: 2500,
+    });
+  });
+
+  it("formats the project-level context version for the workspace title", () => {
+    expect(formatProjectVersion(1)).toBe("V1.0");
+    expect(formatProjectVersion(3)).toBe("V3.0");
+  });
+
   it("persists a visible artifact reference with the message", () => {
     expect(composeReferencedMessage("请检查边界", artifact)).toBe(
       "【引用产物｜产品需求文档｜v3｜artifact:artifact-1】\n请检查边界",

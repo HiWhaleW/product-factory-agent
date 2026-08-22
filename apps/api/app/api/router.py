@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select, text, update
 from sqlalchemy.orm import Session
@@ -36,10 +36,13 @@ from app.domain.models import (
     ProjectBriefVersion,
     RunStep,
     TaskDependency,
+    ToolRun,
 )
 from app.domain.schemas import (
     AgentArtifactProposal,
+    AgentMembershipRead,
     ArtifactContentRead,
+    ArtifactVersionIndexRead,
     ArtifactVersionRead,
     ClarificationCreate,
     ClarificationRead,
@@ -53,6 +56,7 @@ from app.domain.schemas import (
     DefinitionSubmissionCreate,
     DefinitionSubmissionRead,
     EventRead,
+    ExecutionRunRead,
     GateDecisionCreate,
     GateOpenCreate,
     GateRead,
@@ -67,13 +71,17 @@ from app.domain.schemas import (
     ProjectBriefCreateResult,
     ProjectBriefVersionRead,
     ProjectCreate,
+    ProjectExecutionRead,
     ProjectRead,
     RunRead,
     RunResumeCreate,
     RunStepRead,
     RuntimeStatusRead,
+    SessionCreate,
+    SessionRead,
     TaskClaimCreate,
     TaskRead,
+    ToolRunRead,
 )
 from app.services.artifact_store import ArtifactStoreError, read_verified_artifact
 from app.services.control_plane import (
@@ -89,8 +97,15 @@ from app.services.definition_chain import (
     submit_definition,
     submit_definition_review,
 )
+from app.services.session_auth import (
+    SessionTokenError,
+    invite_code_matches,
+    issue_session_token,
+    verify_session_token,
+)
 
 router = APIRouter()
+SESSION_COOKIE_NAME = "product_factory_session"
 
 
 def api_error(code: str, user_message: str, http_status: int = 409) -> HTTPException:
@@ -362,6 +377,93 @@ def runtime_status(
         event_transport="sse_cursor",
         short_polling_degraded=True,
         codex=smoke_codex_cli(settings).model_dump(),
+    )
+
+
+@router.post("/api/v1/auth/session", response_model=SessionRead)
+def create_session(
+    body: SessionCreate,
+    response: Response,
+    settings: Settings = Depends(get_settings),
+) -> SessionRead:
+    if not settings.session_auth_ready:
+        raise api_error("AUTH_NOT_CONFIGURED", "登录尚未配置。", 503)
+    if not invite_code_matches(body.invite_code, settings.INVITE_CODE_HASH):
+        raise api_error("INVITE_CODE_INVALID", "邀请码无效。", 401)
+    token, expires_at = issue_session_token(
+        user_id="local-admin",
+        secret=settings.resolve_session_secret(),
+        ttl_seconds=settings.SESSION_TTL_SECONDS,
+    )
+    response.set_cookie(
+        SESSION_COOKIE_NAME,
+        token,
+        httponly=True,
+        secure=settings.APP_ENV == "production",
+        samesite="lax",
+        max_age=settings.SESSION_TTL_SECONDS,
+        path="/",
+    )
+    return SessionRead(
+        authenticated=True,
+        user_id="local-admin",
+        expires_at=expires_at,
+        reason="active",
+        auth_enforced=False,
+    )
+
+
+@router.get("/api/v1/me", response_model=SessionRead)
+def get_me(
+    request: Request, settings: Settings = Depends(get_settings)
+) -> SessionRead:
+    if not settings.session_auth_ready:
+        return SessionRead(
+            authenticated=False,
+            user_id=None,
+            expires_at=None,
+            reason="auth_not_configured",
+            auth_enforced=False,
+        )
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return SessionRead(
+            authenticated=False,
+            user_id=None,
+            expires_at=None,
+            reason="missing",
+            auth_enforced=False,
+        )
+    try:
+        user_id, expires_at = verify_session_token(
+            token, secret=settings.resolve_session_secret()
+        )
+    except SessionTokenError as exc:
+        return SessionRead(
+            authenticated=False,
+            user_id=None,
+            expires_at=None,
+            reason=exc.reason,
+            auth_enforced=False,
+        )
+    return SessionRead(
+        authenticated=True,
+        user_id=user_id,
+        expires_at=expires_at,
+        reason="active",
+        auth_enforced=False,
+    )
+
+
+@router.delete("/api/v1/auth/session", response_model=SessionRead)
+def delete_session(response: Response) -> SessionRead:
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    return SessionRead(
+        authenticated=False,
+        user_id=None,
+        expires_at=None,
+        reason="logged_out",
+        auth_enforced=False,
     )
 
 
@@ -965,6 +1067,89 @@ def list_tasks(project_id: str, session: Session = Depends(get_session)) -> list
     )
 
 
+@router.get(
+    "/api/v1/projects/{project_id}/execution",
+    response_model=ProjectExecutionRead,
+)
+def get_project_execution(
+    project_id: str, session: Session = Depends(get_session)
+) -> ProjectExecutionRead:
+    if session.get(Project, project_id) is None:
+        raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
+    memberships = list(
+        session.scalars(
+            select(AgentMembership)
+            .where(AgentMembership.project_id == project_id)
+            .order_by(AgentMembership.joined_at, AgentMembership.id)
+        )
+    )
+    tasks = list(
+        session.scalars(
+            select(AgentTask)
+            .where(AgentTask.project_id == project_id)
+            .order_by(AgentTask.created_at, AgentTask.id)
+        )
+    )
+    task_ids = [task.id for task in tasks]
+    runs = (
+        list(
+            session.scalars(
+                select(AgentRun)
+                .where(AgentRun.task_id.in_(task_ids))
+                .order_by(AgentRun.started_at, AgentRun.id)
+            )
+        )
+        if task_ids
+        else []
+    )
+    run_ids = [run.id for run in runs]
+    steps = (
+        list(
+            session.scalars(
+                select(RunStep)
+                .where(RunStep.run_id.in_(run_ids))
+                .order_by(RunStep.run_id, RunStep.step_index)
+            )
+        )
+        if run_ids
+        else []
+    )
+    steps_by_run: dict[str, list[RunStepRead]] = {}
+    for step in steps:
+        steps_by_run.setdefault(step.run_id, []).append(RunStepRead.model_validate(step))
+    tool_runs = (
+        list(
+            session.scalars(
+                select(ToolRun)
+                .where(ToolRun.task_id.in_(task_ids))
+                .order_by(ToolRun.created_at, ToolRun.id)
+            )
+        )
+        if task_ids
+        else []
+    )
+    return ProjectExecutionRead(
+        memberships=[AgentMembershipRead.model_validate(item) for item in memberships],
+        tasks=[TaskRead.model_validate(item) for item in tasks],
+        runs=[
+            ExecutionRunRead(
+                id=run.id,
+                task_id=run.task_id,
+                attempt=run.attempt,
+                state=run.state,
+                input_hash=run.input_hash,
+                turns_used=run.turns_used,
+                retries_used=run.retries_used,
+                started_at=run.started_at,
+                completed_at=run.completed_at,
+                steps=steps_by_run.get(run.id, []),
+            )
+            for run in runs
+        ],
+        tool_runs=[ToolRunRead.model_validate(item) for item in tool_runs],
+    )
+
+
 @router.post("/api/v1/tasks/{task_id}/claim", response_model=TaskRead)
 def claim_task(
     task_id: str, body: TaskClaimCreate, session: Session = Depends(get_session)
@@ -1127,6 +1312,7 @@ def submit_definition_artifact(
             stage="mrd",
             status="draft",
             latest_version=0,
+            owner_agent="reviewer" if body.artifact_kind == "red_team_review" else "ai-pm",
         )
         session.add(artifact)
         session.flush()
@@ -1146,6 +1332,7 @@ def submit_definition_artifact(
         content_ref=body.content_ref,
         content_hash=body.content_hash,
         summary=body.summary,
+        created_by="reviewer" if body.artifact_kind == "red_team_review" else "ai-pm",
     )
     artifact.latest_version = version.version
     artifact.title = body.title
@@ -1194,6 +1381,50 @@ def get_artifact_version(
     if artifact_version is None:
         raise api_error("ARTIFACT_VERSION_NOT_FOUND", "产物版本不存在。", 404)
     return artifact_version
+
+
+@router.get(
+    "/api/v1/artifacts/{artifact_id}/versions",
+    response_model=list[ArtifactVersionIndexRead],
+)
+def list_artifact_versions(
+    artifact_id: str,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> list[ArtifactVersionIndexRead]:
+    artifact = session.get(Artifact, artifact_id)
+    if artifact is None:
+        raise api_error("ARTIFACT_NOT_FOUND", "产物不存在。", 404)
+    versions = list(
+        session.scalars(
+            select(ArtifactVersion)
+            .where(ArtifactVersion.artifact_id == artifact_id)
+            .order_by(ArtifactVersion.version.desc())
+        )
+    )
+    result: list[ArtifactVersionIndexRead] = []
+    for version in versions:
+        try:
+            read_verified_artifact(
+                settings.ARTIFACT_ROOT, version.content_ref, version.content_hash
+            )
+            content_available = True
+        except ArtifactStoreError:
+            content_available = False
+        result.append(
+            ArtifactVersionIndexRead(
+                artifact_id=version.artifact_id,
+                version=version.version,
+                context_version=version.context_version,
+                approval_status=version.approval_status,
+                content_hash=version.content_hash,
+                summary=version.summary,
+                created_by=version.created_by,
+                created_at=version.created_at,
+                content_available=content_available,
+            )
+        )
+    return result
 
 
 @router.get("/api/v1/artifacts/{artifact_id}/content", response_model=ArtifactContentRead)
@@ -1458,6 +1689,8 @@ def list_permissions(
             tool_name=request.tool_name,
             input_hash=request.input_hash,
             risk_level=request.risk_level,
+            reason=request.reason,
+            redacted_parameters=request.redacted_parameters,
             context_version=task.context_version,
             status=request.status,
             expires_at=request.expires_at,

@@ -1,95 +1,94 @@
-# 产品工厂前端高保真 Design QA
+# 产品工厂前端 Design QA
 
-> 日期：2026-08-22  
-> 浏览器：ego-browser / ego-lite（任务空间 `101`）  
-> 范围：`apps/web/**`、前端资产与前端 QA 证据
+> 日期：2026-08-23  
+> 当前结果：`passed_with_visual_capture_gap`  
+> 生产入口：`http://127.0.0.1:3100/`  
+> 业务验收项目：`销售复盘 Agent`（`prd / Context v3 / iteration v1`）
 
-## 当前结论
+## 1. 本轮结论
 
-- 附件 1 的两项修改已实现：项目标题右侧的“项目阶段 / Context v1 / 数据库实时投影 / Agent 未接入”信息组已删除；Artifact 画布提示改为真实项目阶段和 Context 版本生成的“项目对齐 V1.0”。
-- 附件 2 对应的项目工作区字号已整体提高 `2px`；桌面与移动端的显式响应式覆盖均已同步，未改变冻结交互。
-- 图片静止态黑框已移除：品牌、用户头像、事件和 Gate 图标默认使用透明边界并裁掉 PNG 外框，只有 hover 或键盘 focus-within 时恢复黑色轮廓；图标内部线条和 Artifact 文档图形不被误裁。
-- 真实 ego-lite DOM、布局、字体与交互核验通过；桌面 `1440×900` 和移动 `390×844` 均无页面级滚动，应用控制台错误为 `0`。
-- 本轮 post-change 原生截图未取得：`captureScreenshot` helper 不可用，CDP `Page.captureScreenshot` 两次超时，`Page.startScreencast` 未返回帧。因此本轮不能完成同屏截图式视觉比较，最终结论保持 `blocked`，不以 DOM 指标冒充视觉完成。
+“销售复盘 Agent”已恢复到 Web 使用的同一 PostgreSQL/FastAPI，并完成真实前端投影验收。首页显示该项目；工作区显示真实 Evidence Index v2、MRD v2、Red Team Review v2；MRD 可读取 v2 与历史 v1；历史 G1 以只读卡片展示两项权威 P2 已知问题。
 
-## Source visual truth
+本轮没有推进 PRD、没有打开或批准 G2、没有启动 Builder，也没有提交 Gate、Permission 或群聊消息。
 
-- 功能页确认稿：`docs/evidence/workspace-hifi-approved.png`，`1586×992`。
-- 本轮附件 1：`docs/evidence/workspace-annotation-remove-meta-2026-08-22.png`，要求删除顶部信息组并把画布提示改为“项目对齐 V1.0”。
-- 本轮附件 2：`docs/evidence/workspace-annotation-font-plus2-2026-08-22.png`，要求项目工作区所有文字整体增加 `2px`。
-- 权威交互基线：`产品工厂Agent_Harness表.html`。
-- 历史同屏比较：`docs/evidence/d5-frontend-visual-comparison-2026-08-22.html` / `.png`；它早于本轮字号和信息层级修改，不能作为本轮 post-change 截图证据。
+本轮修复了两项 QA 中发现的投影错误：
 
-## 本轮实际修改
+- Artifact 节点角标由项目 Context `V3.0` 改为各产物真实修订版 `v2`；工作区标题仍保留项目阶段与 Context 版本 `PRD V3.0`。
+- 工作区 Gate 查询由仅取 `open` 改为取 `all`；已关闭 G0/G1 使用只读历史卡，不出现可再次提交的决定按钮。
 
-- `workspace-client.tsx`：删除顶部状态信息组及其无用状态计算；继续显示真实项目名称。
-- `workspace-client.tsx` → `artifact-dag.tsx`：传递动态画布标题 `${projectStageLabel(project.state)} V${project.context_version}.0`，没有静态伪造阶段。
-- `globals.css`：桌面项目标题、阶段、参与者、群聊、事件、Gate、Permission、输入框、Artifact 节点、预览抽屉、按钮和说明文字均增加 `2px`。
-- `globals.css`：移动端项目标题、阶段编号与名称、参与者、头像、Gate 标题、输入区、移动切换、画布标题和抽屉标题条同步增加 `2px`；删除已失效的 `.project-meta` 与隐藏画布说明规则。
-- `globals.css`：图片外框改为交互态显示；`design-qa.html` 的附件图片也改为默认透明边框、hover/focus 才显示黑框。
+## 2. 真实性核验
 
-## ego-lite 浏览器证据
+| 项目 | 实际结果 |
+|---|---|
+| 项目 | `销售复盘 Agent`，ID `2a3c38e1-9704-4f83-a096-84cb5a5025e7` |
+| 阶段 | `prd / Context v3 / iteration v1` |
+| 产物 | MRD v2、Evidence Index v2、Red Team Review v2，均来自真实 Artifact Graph |
+| 历史版本 | MRD v2/v1 都可读取；版本索引含状态、时间、创建者和内容可用性 |
+| G1 | `approved` 的只读历史卡，关联 3 个真实产物版本 |
+| 已知问题 | `引用粒度待用户访谈验证`；`Gong 定价和客户规模缺少直接证据` |
+| Runtime | Factory Lead、AI PM、Reviewer Membership/Task/Run/Step/ToolRun 可从执行投影读取 |
+| Builder | 未入群、未激活、未运行 |
+| Session | `/me` 返回 `auth_not_configured`、`auth_enforced=false`；页面明确未启用登录 |
 
-机器可读记录：`docs/evidence/d5-frontend-ego-qa-2026-08-22.json`。
+## 3. ego-lite 生产模式验证
 
-### 桌面 1440×900
+浏览器只使用 ego-lite / ego-browser。机器可读证据见 [d5-runtime-projection-ego-qa-2026-08-22.json](./docs/evidence/d5-runtime-projection-ego-qa-2026-08-22.json)。
 
-- 页面：`scrollWidth=1440`、`scrollHeight=900`、`body overflow=hidden`。
-- 工作区：`x=32, y=62, w=1376, h=838`；双栏 `521.36 / 850.64px`，约 `37.9 / 62.1`。
-- 12 阶段保持 `6×2`，两行顶坐标为 `119 / 172`。
-- 顶部四项信息文本均不存在；画布标题为“项目对齐 V1.0”。
-- 关键计算字号：品牌 `24px`、导航 `16px`、项目标题 `17px`、阶段 `14px`、参与者 `12px`、消息 `13px`、Gate 标题 `18px`、DAG 标题 `18px`、节点标题 `17px`。
-- 应用控制台错误：`0`。
-- 图片默认计算样式：品牌和事件图标 `clip-path: inset(2px)`，头像外框为透明且 `box-shadow: none`；品牌真实 hover 后变为 `clip-path: inset(0)`，黑框仅在交互态出现。
+### 3.1 桌面 1440×900
 
-### 移动 390×844
+| 验收项 | 结果 | 证据摘要 |
+|---|---|---|
+| 首页/统一导航 | 通过 | 首页出现销售复盘项目；设置页可达 |
+| 30/70 双栏与 12 阶段 | 通过 | 工作区为单屏双栏；12 阶段保持 6×2 |
+| 群聊/参与者 | 通过 | Factory Lead、AI PM、Reviewer 已入群；Builder 未入群；AI PM hover 命中 |
+| Artifact 节点 | 通过 | 三个节点均显示真实 `v2` |
+| 版本预览 | 通过 | MRD 下拉显示 `v2 · 最新` 与 `v1 · 历史`；切换后正文与引用/修改/下载标签同步到 v1 |
+| G1 历史卡 | 通过 | 只读 `approved`；两项 P2 可见；无决定按钮 |
+| Artifact 拖动 | 通过 | CDP 指针把 MRD transform 从 `(305,110)` 移到 `(435,173)`；Graph API 仍返回同一 MRD v2 |
+| 设置/Session | 通过 | “未启用登录”“auth_not_configured”“尚未启用强制认证”可见 |
+| 404 | 通过 | 不存在项目显示“项目不存在”和返回项目列表入口 |
+| Console/应用错误 | 通过 | 生产应用错误 0；忽略 ego-lite 自带扩展的 info 日志 |
 
-- 页面：`scrollWidth=390`、`scrollHeight=844`、`body overflow=hidden`；工作区 `x=6, y=58, w=378, h=786`。
-- 12 阶段保持 `6×2`，两行顶坐标为 `100 / 147`。
-- “群聊 → 产物 → 群聊”真实点击切换通过。
-- 关键计算字号：项目标题 `13px`、阶段 `10px`、阶段编号 `9px`、切换按钮 `13px`、计数 `11px`、参与者标题 `14px`、参与者 `10px`、Gate 标题 `16px`、输入与发送按钮 `12px`、DAG 标题 `15px`、预览标题条 `12px`。
-- 三个 Artifact 节点均完整位于画布内部；移动 MiniMap 按冻结逻辑隐藏；预览抽屉宽 `374px`，无横向溢出。
-- 应用控制台错误：`0`。
-- 同名 `design-qa.html` 已用 ego-lite 在 `1440×900` 与 `390×844` 打开：两端均无横向溢出，2 张附件图片损坏数为 `0`，页面明确显示 `final result: blocked`。
+### 3.2 移动 390×844
 
-## 实际交互测试
+| 验收项 | 结果 | 证据摘要 |
+|---|---|---|
+| 同屏切换 | 通过 | 默认群聊；点击产物后 chat `display:none`、DAG `display:flex` |
+| Artifact 节点 | 通过 | MRD、Evidence Index、Red Team Review 均显示 v2 |
+| 版本预览 | 通过 | MRD 显示 v2/v1 两个真实版本选项 |
+| G1 已知问题 | 通过 | 两项 P2 均在移动 DOM 中 |
+| 页面错误 | 通过 | 应用错误 0 |
 
-- **群聊：通过。** 真实输入“前端字号调整 QA：真实群聊输入与持久化验证。”成功提交、回显并在刷新后存在。
-- **Gate：安全分支通过。** 空理由点击“退回修改”显示“退回、暂停或终止必须填写理由。”；项目仍为“项目对齐”，未提交不可逆决定。
-- **Artifact 拖动：通过。** ego-lite CDP 真实指针事件将节点移动约 `70×35px`；只改变 React Flow 本地位置，没有修改业务 Graph。
-- **Artifact 预览：通过。** 桌面和移动均可打开“项目对齐简报”预览并关闭；内容继续从受控 Artifact API 读取。
-- **移动切换：通过。** 群聊和产物面板互斥显示，页面不滚动。
-- **图片 hover / focus：通过。** ego-lite 在桌面真实 hover 品牌和可见消息头像：头像变为黑色边框、`2px 2px` 硬阴影，图片由 `inset(2px)` 变为 `inset(0)`；真实聚焦 Gate 输入框后卡片满足 `:focus-within`，Gate 图标也变为 `inset(0)`。控制台错误为 `0`。
-- **Permission：未测成功态。** 当前项目没有开放 PermissionRequest，未伪造测试数据。
+## 4. 自动化验证
 
-## 数据与 Agent 真实性
+- Web ESLint：通过。
+- Web TypeScript：通过。
+- Web Vitest：3 个文件、13 项通过。
+- Next.js 16.3.1 production build：通过。
+- Python Ruff：通过。
+- Python单元测试：56 项通过，42 项集成测试按标记跳过。
+- PostgreSQL 集成/并发/恢复测试：42 项通过。
+- Alembic：`20260822_0006 (head)`。
+- 保留 1 条 Starlette TestClient/httpx 弃用警告。
 
-- 当前“D3 双栏交互验收”项目没有 Agent 入群，参与者区明确显示 4 个 Agent 均未入群。
-- 项目、消息、Gate、Artifact 与事件来自真实 FastAPI/PostgreSQL 控制面，不是纯前端 `demoProject` 或静态 mock。
-- 当前群聊和 Artifact 内容是人工写入或明确标记的 D4 控制面样例，不是 DeepSeek 或真实 Agent 生成，不能作为 Agent 效果验收证据。
-- 后端 / Agent Runtime 并线已有独立 DeepSeek、Factory Lead 和隔离 AI PM 冒烟证据；这不等于当前项目群聊已经接入 Agent。
+## 5. 未安全测试与未完成项
 
-## Required fidelity surfaces
+- 当前没有专用、可回收的开放 PermissionRequest/Gate 联合浏览器样本；未对真实项目执行不可逆决定。
+- G2 必须等待用户人工决定；本轮未打开 G2。
+- Builder、MVP、内测、G5/G6、发布和线上地址未完成。
+- 2500ms cursor 短轮询仍是 AG-UI/SSE 未完成前的降级实现；工作区不再显示该标签不代表传输层完成。
+- Session 签发、`/me`、logout 契约已存在，但当前未配置邀请认证，且业务请求强制认证仍为 `false`。
+- DeepSeek 配置名 `deepseek-chat` 与运行返回 `deepseek-v4-flash` 的差异仍待确认。
+- 真实 429、博查账单/费用和来源质量人工评审未验证。
 
-- **Fonts and typography：代码与计算样式已核验；截图比较 blocked。** 本轮所有目标字号均增加 `2px`，未发现 DOM 裁切；缺少 post-change 原生截图，无法完成最终字形、抗锯齿与视觉密度比较。
-- **Spacing and layout rhythm：通过。** `38/62`、`6×2`、页面无滚动、移动切换均保持。
-- **Colors and tokens：未修改。** 沿用已确认的“纸上工场”色板和状态色。
-- **Image quality and icons：通过交互态核验。** Logo 与 UI 图标继续使用已确认资产；PNG 烘焙矩形外框在静止态被安全裁掉，hover/focus 时恢复，不改图标主体。
-- **Copy and content：通过。** 不需要用户理解的顶部技术信息已删除；画布标题来自真实业务状态。
-- **Responsiveness：通过。** 桌面和移动布局、内部滚动与抽屉宽度均通过 ego-lite DOM/交互核验。
+## 6. 视觉证据边界
 
-## 未完成与并线问题
+本轮 ego-lite 的 `Page.captureScreenshot` 在复用任务空间和新隔离任务空间均超时；因此没有生成新的桌面/移动 PNG，也没有把历史截图改名冒充本轮证据。DOM、语义树、CDP 指针交互、真实端点和 Console/应用事件均已核验。
 
-- **P1 / 阻塞：** 本轮 post-change 原生截图通道失败，不能按 Design QA 要求把附件与当前实现放入同一视觉比较输入。需要 ego-lite 截图能力恢复后补拍桌面工作区、桌面预览、移动群聊、移动产物和移动预览，再决定是否从 `blocked` 改为 `passed`。
-- Artifact Graph API 仍没有负责人 / Agent 标签与 `created_at`，前端没有伪造确认稿里的负责人和时间。
-- 当前没有可回收 PermissionRequest；allow/deny 成功态待后端 / Runtime 并线提供真实测试数据。
-- 成功 Gate 决定具有不可逆业务语义，本轮只验证必填阻断；完整成功态应使用专用可回收验收项目。
+历史已确认视觉证据仍以 `docs/evidence/d5-*-production-*-2026-08-22.png` 为准；本轮新增机器证据只记录真实运行态投影与交互结果。
 
-## 测试与构建
+## 7. 最终状态
 
-- `pnpm lint:web`：通过。
-- `pnpm typecheck`：通过。
-- `pnpm test:web`：2 个文件、6 项全部通过。
-- `pnpm build`：Next.js 16.3.1 Webpack 生产构建通过。
+`passed_with_visual_capture_gap`
 
-final result: blocked
+当前确认稿与本轮真实投影范围通过；新截图生成存在工具缺口。该结论不等于视觉永久冻结、完整 D5 验收、G2 批准或 Builder 可启动。

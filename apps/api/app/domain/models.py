@@ -35,6 +35,7 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     state: Mapped[str] = mapped_column(String(64), nullable=False, default="alignment")
     context_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    iteration_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     paused_from_state: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
@@ -127,6 +128,7 @@ class Artifact(Base):
     stage: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(64), nullable=False, default="draft")
     latest_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    owner_agent: Mapped[str] = mapped_column(String(64), nullable=False, default="system")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
@@ -142,6 +144,7 @@ class ArtifactVersion(Base):
     content_ref: Mapped[str] = mapped_column(String(500), nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_by: Mapped[str] = mapped_column(String(64), nullable=False, default="system")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
@@ -169,6 +172,9 @@ class Gate(Base):
     target_state: Mapped[str | None] = mapped_column(String(64))
     reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
     impacted_artifact_refs: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    known_issues: Mapped[list[dict[str, Any]]] = mapped_column(
         JSON, nullable=False, default=list
     )
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
@@ -383,6 +389,9 @@ class DefinitionReview(Base):
     )
     red_team_artifact_version: Mapped[int] = mapped_column(Integer, nullable=False)
     gate_id: Mapped[str | None] = mapped_column(ForeignKey("gates.id", ondelete="RESTRICT"))
+    known_issues: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
@@ -410,6 +419,10 @@ class PermissionRequest(Base):
     tool_name: Mapped[str] = mapped_column(String(120), nullable=False)
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     risk_level: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    redacted_parameters: Mapped[dict[str, Any]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="open")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

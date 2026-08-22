@@ -4,6 +4,7 @@ export type Project = {
   name: string;
   state: string;
   context_version: number;
+  iteration_version: number;
   created_at: string;
   updated_at: string;
 };
@@ -34,6 +35,18 @@ export type GateRequest = {
   context_version: number;
   status: string;
   target_state: string | null;
+  reason: string;
+  impacted_artifact_refs: Array<{
+    artifact_id: string;
+    version: number;
+  }>;
+  known_issues: Array<{
+    issue: string;
+    severity: "P0" | "P1" | "P2";
+    evidence_refs: string[];
+    source_refs: Array<Record<string, unknown>>;
+    status: "open" | "resolved" | "accepted";
+  }>;
   opened_at: string;
 };
 
@@ -45,6 +58,8 @@ export type PermissionRequest = {
   tool_name: string;
   input_hash: string;
   risk_level: string;
+  reason: string;
+  redacted_parameters: Record<string, unknown>;
   context_version: number;
   status: string;
   expires_at: string | null;
@@ -58,6 +73,8 @@ export type ArtifactNode = {
   stage: string;
   status: string;
   latest_version: number;
+  owner_agent: string;
+  created_at: string;
 };
 
 export type ArtifactEdge = {
@@ -81,6 +98,18 @@ export type ArtifactContent = {
   content: string;
 };
 
+export type ArtifactVersionIndex = {
+  artifact_id: string;
+  version: number;
+  context_version: number;
+  approval_status: string;
+  content_hash: string;
+  summary: string;
+  created_by: string;
+  created_at: string;
+  content_available: boolean;
+};
+
 export type RuntimeStatus = {
   database: string;
   artifact_root_configured: boolean;
@@ -95,6 +124,14 @@ export type RuntimeStatus = {
     checked_at: string;
     error: string | null;
   };
+};
+
+export type SessionStatus = {
+  authenticated: boolean;
+  user_id: string | null;
+  expires_at: string | null;
+  reason: "active" | "missing" | "invalid" | "expired" | "auth_not_configured" | "logged_out";
+  auth_enforced: boolean;
 };
 
 export type ApiError = {

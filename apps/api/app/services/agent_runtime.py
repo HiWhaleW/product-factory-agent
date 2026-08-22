@@ -36,6 +36,7 @@ from app.domain.models import (
     ProjectBrief,
     ProjectBriefVersion,
     RunStep,
+    ToolRun,
 )
 from app.domain.schemas import ContextPackRead, ContextResourceRef
 from app.services.artifact_store import ArtifactStoreError, read_verified_artifact
@@ -307,7 +308,7 @@ class AgentRuntimeService:
             for attempt in range(tool_steps, tool_calls_used):
                 final_attempt = attempt == tool_calls_used - 1
                 completed = final_attempt and tool_output_hash is not None
-                self._add_step(
+                step = self._add_step(
                     session,
                     run_id=run_id,
                     step_type="tool",
@@ -318,6 +319,32 @@ class AgentRuntimeService:
                     ),
                     idempotency_key=f"web_research:{run_id}:{attempt + 1}",
                     external_effect_confirmed=completed,
+                )
+                tool_run = ToolRun(
+                    task_id=task_id,
+                    run_id=run_id,
+                    capability_id="CAP-02",
+                    tool_name="web_research",
+                    state=step.state,
+                    input_hash=step.input_hash,
+                    idempotency_key=step.idempotency_key,
+                    result_ref=step.output_ref,
+                )
+                session.add(tool_run)
+                session.flush()
+                self._append_event(
+                    session,
+                    project_id,
+                    "tool_run.completed" if completed else "tool_run.failed",
+                    {
+                        "tool_run_id": tool_run.id,
+                        "run_id": run_id,
+                        "task_id": task_id,
+                        "tool_id": tool_run.tool_name,
+                        "state": tool_run.state,
+                        "idempotency_key": tool_run.idempotency_key,
+                        "result_ref": tool_run.result_ref,
+                    },
                 )
             model_steps = session.scalar(
                 select(func.count())
@@ -363,6 +390,8 @@ class AgentRuntimeService:
                     tool_name=str(value.get("tool_id") or "unknown"),
                     input_hash=permission_hash,
                     risk_level="high",
+                    reason=str(value.get("reason") or ""),
+                    redacted_parameters=dict(value.get("parameters") or {}),
                     status="open",
                 )
                 session.add(permission)

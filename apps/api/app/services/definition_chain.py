@@ -340,6 +340,27 @@ def submit_definition_review(
         project=project,
         proposal=body.red_team_review,
     )
+    known_issues = [
+        {
+            "issue": finding.title,
+            "severity": finding.severity,
+            "evidence_refs": finding.evidence_refs,
+            "source_refs": [
+                {
+                    "artifact_id": submission.evidence_artifact_id,
+                    "version": submission.evidence_artifact_version,
+                },
+                {
+                    "artifact_id": submission.mrd_artifact_id,
+                    "version": submission.mrd_artifact_version,
+                },
+                {"artifact_id": red_team_artifact.id, "version": red_team_version.version},
+            ],
+            "status": "open",
+        }
+        for finding in body.findings
+        if finding.severity == "P2"
+    ]
 
     gate = None
     if body.verdict in {"pass", "pass_with_known_issues"}:
@@ -361,6 +382,7 @@ def submit_definition_review(
                 },
                 {"artifact_id": red_team_artifact.id, "version": red_team_version.version},
             ],
+            known_issues=known_issues,
         )
         session.add(gate)
         session.flush()
@@ -375,6 +397,7 @@ def submit_definition_review(
                 "context_version": project.context_version,
                 "target_state": "prd",
                 "impacted_artifact_refs": gate.impacted_artifact_refs,
+                "known_issues": gate.known_issues,
             },
         )
     else:
@@ -397,6 +420,7 @@ def submit_definition_review(
         red_team_artifact_id=red_team_artifact.id,
         red_team_artifact_version=red_team_version.version,
         gate_id=gate.id if gate else None,
+        known_issues=known_issues,
     )
     session.add(review)
     session.flush()
@@ -413,6 +437,7 @@ def submit_definition_review(
             "red_team_artifact_id": red_team_artifact.id,
             "red_team_artifact_version": red_team_version.version,
             "gate_id": gate.id if gate else None,
+            "known_issues": known_issues,
         },
     )
     return definition_review_read(session, project, submission, review, idempotent=False)
@@ -436,6 +461,7 @@ def definition_review_read(
         red_team_review=_artifact_ref(
             session, review.red_team_artifact_id, review.red_team_artifact_version
         ),
+        known_issues=review.known_issues,
         gate=session.get(Gate, review.gate_id) if review.gate_id else None,
         idempotent=idempotent,
     )
@@ -622,6 +648,7 @@ def _persist_artifact_values(
             stage="mrd",
             status="waiting_review",
             latest_version=0,
+            owner_agent="reviewer" if kind == "red_team_review" else "ai-pm",
         )
         session.add(artifact)
         session.flush()
@@ -646,6 +673,7 @@ def _persist_artifact_values(
         content_ref=content_ref,
         content_hash=content_hash,
         summary=summary,
+        created_by="reviewer" if kind == "red_team_review" else "ai-pm",
     )
     artifact.latest_version = version.version
     artifact.title = title

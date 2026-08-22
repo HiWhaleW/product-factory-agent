@@ -9,6 +9,7 @@ import type {
   Project,
   ProjectEvent,
   RuntimeStatus,
+  SessionStatus,
 } from "@/lib/contracts";
 
 const apiBaseUrl = process.env.PRODUCT_FACTORY_API_URL ?? "http://127.0.0.1:8000";
@@ -46,8 +47,10 @@ export const getEvents = (projectId: string) =>
   apiFetch<ProjectEvent[]>(`/api/v1/projects/${encodeURIComponent(projectId)}/events`);
 export const getGraph = (projectId: string) =>
   apiFetch<ArtifactGraph>(`/api/v1/projects/${encodeURIComponent(projectId)}/graph`);
-export const getGates = (projectId: string) =>
-  apiFetch<GateRequest[]>(`/api/v1/projects/${encodeURIComponent(projectId)}/gates`);
+export const getGates = (projectId: string, status: "open" | "all" = "open") =>
+  apiFetch<GateRequest[]>(
+    `/api/v1/projects/${encodeURIComponent(projectId)}/gates?status=${status}`,
+  );
 export const getPermissions = (projectId: string) =>
   apiFetch<PermissionRequest[]>(`/api/v1/projects/${encodeURIComponent(projectId)}/permissions`);
 export const getHealth = () =>
@@ -58,6 +61,7 @@ export const getHealth = () =>
     model_configured: boolean;
   }>("/health");
 export const getRuntimeStatus = () => apiFetch<RuntimeStatus>("/api/v1/runtime/status");
+export const getMe = () => apiFetch<SessionStatus>("/api/v1/me");
 export const getArtifactContent = (artifactId: string, version?: number) =>
   apiFetch<ArtifactContent>(
     `/api/v1/artifacts/${encodeURIComponent(artifactId)}/content${version ? `?version=${version}` : ""}`,

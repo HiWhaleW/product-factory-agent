@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     AGENT_MAX_RETRIES_PER_RUN: int = Field(default=2, ge=0, le=5)
     RUN_HEARTBEAT_TIMEOUT_SECONDS: int = Field(default=90, ge=15, le=600)
 
+    INVITE_CODE_HASH: str = ""
+    SESSION_SECRET: SecretStr | None = Field(default=None, repr=False, exclude=True)
+    SESSION_TTL_SECONDS: int = Field(default=28_800, ge=300, le=604_800)
+
     @field_validator("DATABASE_URL")
     @classmethod
     def require_postgresql(cls, value: str) -> str:
@@ -105,6 +109,19 @@ class Settings(BaseSettings):
         if self.BOCHA_API_KEY is None or not self.BOCHA_API_KEY.get_secret_value():
             raise ValueError("configured Bocha SecretRef has no value")
         return self.BOCHA_API_KEY.get_secret_value()
+
+    @property
+    def session_auth_ready(self) -> bool:
+        return bool(
+            len(self.INVITE_CODE_HASH) == 64
+            and self.SESSION_SECRET
+            and self.SESSION_SECRET.get_secret_value()
+        )
+
+    def resolve_session_secret(self) -> str:
+        if self.SESSION_SECRET is None or not self.SESSION_SECRET.get_secret_value():
+            raise ValueError("SESSION_SECRET is not configured")
+        return self.SESSION_SECRET.get_secret_value()
 
 
 @lru_cache

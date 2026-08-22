@@ -1,20 +1,20 @@
 # 产品工厂 Agent - 开发/运维交接
 
-> 同步日期：2026-08-22  
-> 当前状态：D3–D4 已收口，D5 进行中；PostgreSQL migration `20260822_0004`、DeepSeek/博查 Runtime、Factory Lead 和 AI PM→Reviewer→G1 确定性后端契约已存在；隔离真实 Reviewer/G1 open 纵向冒烟已通过，真实产品 G0/G1、Builder 和部署未完成。
+> 同步日期：2026-08-23  
+> 当前状态：D3–D4 已收口，D5 进行中；PostgreSQL migration `20260822_0006`、DeepSeek/博查 Runtime、Factory Lead 和 AI PM→Reviewer→G1 确定性后端契约已存在；“销售复盘 Agent”为 `prd / Context v3 / iteration v1` 并已投影到 Web；PRD/G2、Builder 和部署未完成。
 
 ## 1. 本机已检测环境
 
 | 工具 | 路径/版本 | 判断 |
 |---|---|---|
-| Codex CLI | `CODEX_CLI_PATH` / `0.148.0-alpha.15` | 可用；路径由环境变量配置，不硬编码 |
+| Codex CLI | `CODEX_CLI_PATH` / 当前运行态 `0.148.0-alpha.21` | 可用；D3–D4 历史证据为 `.15`，路径由环境变量配置，不硬编码 |
 | Node.js | `PATH` / `24.19.0` | 可用 |
 | npm | `PATH` / `10.9.8` | 可用 |
 | pnpm | 本机可用，项目已生成 `pnpm-lock.yaml` | 依赖已锁定；构建脚本仅允许必要原生依赖脚本 |
 | uv | `PATH` / `0.12.1` | 可用 |
 | 项目 Python | `.venv` / `3.12.13` | 由 uv 管理；不用系统 Python 3.9.6 |
 | Docker | 未检测到 | 不阻塞 V1；V2 沙箱化再引入 |
-| Git | 本地已初始化；GitHub 私有仓库与 `codex/initial-import` 已建立 | Draft PR `#1`，`main` 尚未合并 |
+| Git | 本地已初始化；`origin` 指向 `https://github.com/HiWhaleW/product-factory-agent.git` | Connector 已核验默认 main、`codex/initial-import`、open Draft PR #1 和 write 权限；本地 main 仍无 commit |
 
 ## 2. 当前可打开的静态产物
 
@@ -37,7 +37,7 @@
 
 ## 4. 分阶段环境值
 
-PostgreSQL 16.15、Artifact/Workspace Root 和 Codex CLI 已在本机配置并验证：根目录 `artifacts/` 与 `workspaces/` 相互独立且被 Git 忽略，Codex CLI 路径存在、可执行并返回 `0.148.0-alpha.15`。DeepSeek 渠道、`MODEL_NAME`、`MODEL_BASE_URL` 最晚 D5 真模型切片前就绪；正式发布宿主机/URL 在 B1-Bn 真实内测证据达标、G6 前就绪。
+PostgreSQL 16.15、Artifact/Workspace Root 和 Codex CLI 已在本机配置并验证：根目录 `artifacts/` 与 `workspaces/` 相互独立且被 Git 忽略，Codex CLI 路径存在、可执行；D3–D4 历史证据记录 `0.148.0-alpha.15`，2026-08-22 设置页运行态检测为 `0.148.0-alpha.21`。DeepSeek 渠道、`MODEL_NAME`、`MODEL_BASE_URL` 已配置并完成脱敏真实冒烟；正式发布宿主机/URL 在 B1-Bn 真实内测证据达标、G6 前就绪。
 
 ```env
 APP_ENV=development
@@ -75,13 +75,21 @@ SESSION_SECRET=
 1. [完成] 初始化 Git，保留用户已有文件
 2. [完成] 用 uv 安装/锁定 Python 3.12
 3. [完成] 创建 Next.js + FastAPI monorepo 骨架
-4. [完成] PostgreSQL 16.15 在线，migration 到 20260822_0004 (head)，Artifact/Workspace/Codex 路径已验证
+4. [完成] PostgreSQL 16.15 在线，migration 到 20260822_0006 (head)，Artifact/Workspace/Codex 路径已验证
 5. [完成基础切片] Project/Message/Event/Graph/Gate/Permission API 与 Task 原子认领
 6. [完成基础切片] 状态迁移、Permission 不推进阶段、过期/旧 Context 拒绝和并发幂等
 7. [完成基础切片] 真实单屏 UI 展示 12 阶段、群聊、Gate/Permission 与 React Flow Artifact DAG
-8. [已验证] PostgreSQL 集成 42/42；DeepSeek/博查/Factory Lead/隔离 AI PM→Reviewer→G1 open 真实冒烟已有脱敏证据
-9. [待完成] 真实产品 G0/G1 用户决定；Codex Builder 与完整 AG-UI/浏览器恢复
+8. [已验证] PostgreSQL 集成 42/42；DeepSeek/博查/Factory Lead/AI PM→Reviewer 真实冒烟已有脱敏证据；销售复盘项目 G0/G1 已由用户决定
+9. [完成并线] 销售复盘项目、Artifact v1/v2、历史 G1、执行/恢复投影和 Session 契约已接入 Web
+10. [待完成] AI PM PRD Run、确定性 PRD 持久化、G2；Codex Builder 与完整 AG-UI/浏览器恢复
 ```
+
+### 5.1 正式接手的 GitHub 操作边界
+
+- 远端读取、分支、提交/文件上传和 PR 更新必须使用 GitHub 插件/Connector，不得使用 `gh` CLI。
+- Connector 已核验默认分支 `main`、`codex/initial-import` 和 open Draft PR #1；推送前再次核对 PR head，使用 `force:false`。
+- 推送前按 `.gitignore`、秘密和本机路径扫描形成安全清单；不得上传 `.env`、Runtime、虚拟环境、依赖/缓存、Artifact/Workspace 或 SecretRef 原值。
+- 不得 force push、重建仓库或覆盖其他任务线。插件缺失或无写权限时停止远端写入并请求安装/授权。
 
 ## 6. 当前标准检查命令
 
@@ -106,7 +114,9 @@ pnpm db:migrate
 
 Reviewer 对接字段和错误码见 [D5 AI PM→Reviewer→G1 契约](./contracts/d5-review-candidate-contract-2026-08-22.md)。
 
-末次验证记录（2026-08-22）：`pnpm check` 为 Web 6/6、Python 52/52；`pnpm test:api:integration` 在允许访问本机 PostgreSQL 后为 42/42；Alembic 为 `20260822_0004 (head)`。保留 1 条 Starlette/httpx 弃用警告。第一次在受限环境运行在线测试出现 31 failed / 40 errors，根因是系统禁止访问本机 PostgreSQL，允许访问后重跑全部通过。
+Runtime/后端已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。仍缺专用可回收 Gate/Permission 样本、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
+
+末次验证记录（2026-08-23）：Web ESLint、TypeScript、Vitest 13/13、production build 通过；Ruff 与 Python 56/56 通过；PostgreSQL 集成 42/42；Alembic 为 `20260822_0006 (head)`。保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
 
 ## 7. D9-D10 内部验收与发布前健康检查
 
