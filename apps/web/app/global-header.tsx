@@ -5,10 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import type { GateRequest, PermissionRequest, Project } from "@/lib/contracts";
+import { LogoutButton } from "@/app/logout-button";
+
+import type { GateRequest, PermissionRequest, Project, SessionStatus } from "@/lib/contracts";
 import { nextHeaderPopover, type HeaderPopoverId } from "@/lib/header";
 import type { AttentionItem } from "@/lib/home";
-import { localUser } from "@/lib/identity";
 
 type GlobalAttentionItem = AttentionItem & { projectId: string; projectName: string };
 
@@ -52,42 +53,44 @@ export function GlobalHeader({ productName }: { productName: string }) {
   const pathname = usePathname();
   const [attention, setAttention] = useState<GlobalAttentionItem[]>([]);
   const [attentionState, setAttentionState] = useState<"loading" | "ready" | "error">("loading");
+  const [session, setSession] = useState<SessionStatus | null>(null);
   const [activePopover, setActivePopover] = useState<HeaderPopoverId | null>(null);
   const headerTools = useRef<HTMLDivElement>(null);
   const popoverTriggers = useRef<Partial<Record<HeaderPopoverId, HTMLElement>>>({});
 
   useEffect(() => {
     let active = true;
-    const refresh = () => {
+    const refresh = async () => {
       setAttentionState("loading");
-      loadAttention().then((items) => {
+      try {
+        const sessionResponse = await fetch("/api/control/api/v1/me", { cache: "no-store" });
+        if (!sessionResponse.ok) throw new Error("会话状态读取失败");
+        const currentSession = (await sessionResponse.json()) as SessionStatus;
+        if (!active) return;
+        setSession(currentSession);
+        if (currentSession.auth_enforced && !currentSession.authenticated) {
+          setAttention([]);
+          setAttentionState("ready");
+          return;
+        }
+        const items = await loadAttention();
         if (!active) return;
         setAttention(items);
         setAttentionState("ready");
-      }).catch(() => {
+      } catch {
         if (active) setAttentionState("error");
-      });
+      }
     };
-    refresh();
-    window.addEventListener("focus", refresh);
+    void refresh();
+    const refreshFromEvent = () => void refresh();
+    window.addEventListener("focus", refreshFromEvent);
+    window.addEventListener("product-factory:session-changed", refreshFromEvent);
     return () => {
       active = false;
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", refreshFromEvent);
+      window.removeEventListener("product-factory:session-changed", refreshFromEvent);
     };
   }, [pathname]);
-
-  useEffect(() => {
-    function onShortcut(event: KeyboardEvent) {
-      if (event.key !== "?" || event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
-      event.preventDefault();
-      popoverTriggers.current.help?.focus();
-      setActivePopover("help");
-    }
-    window.addEventListener("keydown", onShortcut);
-    return () => window.removeEventListener("keydown", onShortcut);
-  }, []);
 
   useEffect(() => {
     function closeOutside(event: PointerEvent) {
@@ -116,15 +119,8 @@ export function GlobalHeader({ productName }: { productName: string }) {
     setActivePopover((current) => nextHeaderPopover(current, popover));
   }
 
-  function openOnboarding() {
-    setActivePopover(null);
-    window.dispatchEvent(new CustomEvent("product-factory:open-onboarding"));
-  }
-
-  function focusProjectList() {
-    if (pathname !== "/") return;
-    window.setTimeout(() => document.getElementById("projects")?.focus({ preventScroll: true }), 0);
-  }
+  const displayName = session?.authenticated ? session.display_name ?? "我" : "访客";
+  const roleLabel = session?.role === "admin" ? "管理员" : session?.role === "user" ? "用户" : "未登录";
 
   return (
     <>
@@ -136,7 +132,8 @@ export function GlobalHeader({ productName }: { productName: string }) {
         </Link>
         <div className="header-navigation">
           <nav aria-label="主导航">
-            <Link aria-current={pathname === "/" ? "page" : undefined} href="/#projects" onClick={focusProjectList}>项目列表</Link>
+            <Link aria-current={pathname === "/" ? "page" : undefined} href="/">首页</Link>
+            <Link aria-current={pathname.startsWith("/projects") ? "page" : undefined} href="/projects">项目列表</Link>
             <Link aria-current={pathname === "/settings" ? "page" : undefined} href="/settings">设置</Link>
           </nav>
           <div aria-label="全局工具" className="header-tools" ref={headerTools}>
@@ -171,42 +168,34 @@ export function GlobalHeader({ productName }: { productName: string }) {
                 ))}
               </div>
             </details>
-            <details className="header-popover" open={activePopover === "help"}>
-              <summary
-                aria-keyshortcuts="?"
-                onClick={(event) => {
-                  event.preventDefault();
-                  togglePopover("help");
-                }}
-                ref={(node) => { if (node) popoverTriggers.current.help = node; }}
-              >帮助</summary>
-              <div className="header-popover-panel help-panel">
-                <strong>使用帮助</strong>
-                <button onClick={openOnboarding} type="button">重新打开首次引导</button>
-                <p><kbd>/</kbd> 聚焦项目搜索　<kbd>?</kbd> 打开帮助</p>
-                <p>关键 Gate 必须由你决定；Agent 不会自动越过。</p>
-              </div>
-            </details>
             <details className="header-popover identity-popover" open={activePopover === "identity"}>
               <summary
-                aria-label={`${localUser.displayName}，${localUser.role}`}
+                aria-label={`${displayName}，${roleLabel}`}
                 onClick={(event) => {
                   event.preventDefault();
                   togglePopover("identity");
                 }}
                 ref={(node) => { if (node) popoverTriggers.current.identity = node; }}
-              >{localUser.displayName}</summary>
+              >个人信息</summary>
               <div className="header-popover-panel identity-panel">
                 <span className="identity-avatar" aria-hidden="true">我</span>
                 <div>
-                  <strong>{localUser.role}</strong>
-                  <small>{localUser.id}</small>
+                  <strong>{displayName}</strong>
+                  <small>{roleLabel}</small>
                 </div>
                 <dl>
-                  <div><dt>运行模式</dt><dd>{localUser.mode}</dd></div>
-                  <div><dt>身份认证</dt><dd>{localUser.authStatus}</dd></div>
+                  <div><dt>用户</dt><dd>{displayName}</dd></div>
+                  <div><dt>角色</dt><dd>{roleLabel}</dd></div>
+                  <div><dt>用户 ID</dt><dd>{session?.user_id ?? "—"}</dd></div>
+                  <div><dt>运行模式</dt><dd>{session?.role === "admin" ? "内部验证环境" : "用户工作空间"}</dd></div>
+                  <div><dt>身份认证</dt><dd>{session?.authenticated ? "会话有效" : session?.auth_enforced ? "需要登录" : "未强制登录"}</dd></div>
+                  <div><dt>Session 原因</dt><dd>{session?.reason ?? "—"}</dd></div>
+                  <div><dt>请求强制认证</dt><dd>{session?.auth_enforced ? "已启用" : "尚未启用"}</dd></div>
                 </dl>
-                <p>当前身份仅用于单机控制面署名，不代表已建立登录 Session。</p>
+                <p>{session?.authenticated
+                  ? "当前请求已由后端 HttpOnly Session 校验。"
+                  : session?.auth_enforced ? "请回到首页使用邀请码登录。" : "开发环境未强制认证。"}</p>
+                {session?.authenticated ? <LogoutButton /> : null}
               </div>
             </details>
           </div>

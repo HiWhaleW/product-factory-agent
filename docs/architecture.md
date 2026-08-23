@@ -1,11 +1,13 @@
 # 产品工厂 Agent - 架构交接
 
-> 同步日期：2026-08-22  
+> 同步日期：2026-08-23  
 > 权威技术契约：[产品工厂Agent/spec/Technical-Adaptation.md](../产品工厂Agent/spec/Technical-Adaptation.md)  
 > 说明：本文是交接摘要，不替代 spec。
 
 ## 1. 架构原则
 
+- **AI Native 优先：** Agent 负责理解目标、规划、调用工具、生成产物、协作和修订；产品不能退化为固定表单流程外加聊天框。
+- **Harness 原生：** Context、Tool、Observation、Action、Permission、Artifact、Reviewer 和反馈循环都必须是一等架构对象。
 - 产品形态是长任务、多 Agent、人工闸、产物 DAG 和受限工具的内部 Web Agent。
 - 开发使用纵向切片；群聊、Context/HITL 和 DAG 不是可后补的 UI 壳。
 - LLM 只提决策/产物/转移建议；状态、权限、预算、幂等和人工闸由确定性代码执行。
@@ -26,6 +28,7 @@ flowchart LR
     GRAPH --> BUILD[Builder]
     GRAPH --> REVIEW[Reviewer]
     APP --> PG[(PostgreSQL)]
+    APP --> SECRET[用户隔离 Secret Store]
     APP --> ART[本地 Artifact Store]
     APP --> CAP[能力/工具策略]
     CAP --> CODEX[Codex CLI Adapter]
@@ -37,7 +40,17 @@ flowchart LR
 - Web 不直接连模型、数据库、Codex CLI 或文件系统。
 - Agent 不直接获得数据库 session；只能调用应用服务和已注册工具。
 - DAG 是后端 Artifact 依赖的投影，不是仅存于前端内存的画布状态。
+- Web 提交用户自己的 API Key 和 OpenAI-compatible 接口元数据；Key 原文进入受控 Secret Store，不进入 PostgreSQL、Context、Artifact、日志或响应。Runtime 按项目 owner 解析 Key、HTTPS Base URL 与模型名。
 - Task/Run/Permission/Tool 事件是内部控制面；前端只显示可理解的进度、审批和证据摘要。
+
+### 2.1 双环境部署边界
+
+| 环境 | 入口 | 数据与文件 | 责任 |
+|---|---|---|---|
+| 内部验证 | Web `3200` / API `8200` | `.runtime/seed-beta/` 与内部数据库 | 保留销售复盘 Agent，先完成迁移、测试、build、健康和浏览器验收 |
+| 独立用户 | Web `3300` / API `8300` | `.runtime/user-beta/` 与 `product_factory_user_beta` | 只承载真实用户及其自建项目，首次登录为空 |
+
+用户环境只绑定内部环境已经验收的 production 发布包。两套环境共享应用版本，不共享数据库、Artifact、Workspace、日志、Session Secret 或邀请码。详细运维契约见 [双环境运行说明](./environments.html)。
 
 ## 3. 用户可见流程
 
@@ -85,8 +98,10 @@ Context Pack 是不可就地修改的版本化任务包。新版本生效后，�
 
 ## 6. 数据模型实现边界
 
-截至 2026-08-22，PostgreSQL 16.15 与 Alembic `20260822_0004` 已在线验证，SQLAlchemy 实体包括：
+截至 2026-08-23，PostgreSQL 16.15 与 Alembic `20260823_0010 (head)` 已在线验证，SQLAlchemy 控制面已经覆盖项目从对齐到种子内测、真实身份、项目归属、项目软删除和用户模型凭据元数据所需的主要实体，包括：
 
+- User / UserInvite / Project.owner_user_id / Project.deleted_at
+- UserProviderCredential（只保存 SecretRef、指纹和脱敏提示，不保存 Key 原文）
 - Project / ContextVersion / ContextPack
 - Message / Event
 - AgentTask / TaskDependency / AgentRun / RunStep
@@ -98,7 +113,24 @@ Context Pack 是不可就地修改的版本化任务包。新版本生效后，�
 - FactoryLeadInvocation
 - DefinitionSubmission / DefinitionReview
 
-尚未实现：AgentHandoff、VerifiedFact、Assumption、Iteration、Feedback。当前 D5 控制面已有 42 项 PostgreSQL 在线集成/并发/恢复测试；这只证明已覆盖的确定性能力，不代表完整 D5 或真实 Agent 效果。
+当前 PostgreSQL 在线集成/并发/恢复测试为 48/48。销售复盘 Agent 已真实进入 `seed_beta / Context v10`，G5 approved，G6 尚未打开。内部验证环境保留该项目；独立用户环境初始项目为 0，并已验证双用户跨项目与凭据隔离。
+
+项目删除由确定性控制面执行软删除：活跃列表和常规详情 fail closed，回收箱按后端 Session owner 过滤；恢复清除 `deleted_at`、回到原阶段并写入 `project.restored`，重复恢复不重复写事件。V1 不开放永久删除，避免破坏 Run、Gate、Artifact、Context 与审计链。
+
+### 认证与归属路由
+
+| 路由 | 用途 |
+|---|---|
+| `POST /api/v1/auth/session` | 使用邀请码建立绑定数据库用户的 HttpOnly Session |
+| `DELETE /api/v1/auth/session` | 删除当前 Session |
+| `GET /api/v1/me` | 返回当前真实用户 ID、显示名和角色 |
+| `GET /api/v1/projects` | 按当前 Session 用户过滤项目 |
+| `POST /api/v1/projects` | 创建并自动绑定当前 Session 用户 |
+| `GET /api/v1/me/provider-credentials/model-api` | 返回当前用户的接口名称、Base URL、模型名、配置状态和脱敏提示，不返回 Key 原文 |
+| `PUT /api/v1/me/provider-credentials/model-api` | 保存或替换当前用户的 OpenAI-compatible 接口配置和 Key |
+| `DELETE /api/v1/me/provider-credentials/model-api` | 删除当前用户自己的 Key 与接口配置 |
+
+项目下游路由由 Session Middleware 和后端服务共同校验项目 owner；前端提交的 owner 参数不是身份真相源。
 
 ### D5 定义链路数据流
 

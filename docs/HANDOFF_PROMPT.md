@@ -1,99 +1,114 @@
-# 产品工厂 Agent - 正式项目交接提示词
+# 产品工厂 Agent - 正式交接提示词
 
-> 交接日期：2026-08-23  
-> 适用范围：下一位在单一工作区串行负责 Agent Runtime、后端、前端和后续 Gate 闭环的 coding agent  
-> 当前状态：销售复盘项目为 `prd / Context v3 / iteration v1`；G0/G1 已批准；真实 PRD/Review v1 已落库，G2 已打开但未决定；Builder 尚未启动。
+> 当前状态：`seed_beta / Context v10 / iteration v1`  
+> 当前闸口：G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` 已批准；G6 尚未打开  
+> 内部发布包：`20260823T155102Z`；用户环境发布包：`20260823T155102Z`
 
-## 可直接复制的提示词
+## 可直接复制
 
 ```text
-你现在接手“产品工厂 Agent”正式项目交接与后续开发线。
+你现在接手“产品工厂 Agent”后续开发。
 
 项目根目录：
-<项目根目录>
+<PROJECT_ROOT>
 
-这是正式工作交接。后续不会再分别启动 Agent Runtime、后端、前端三条并行任务，也不存在完成后的“并线”步骤；当前工作区是唯一实现真相源。你必须由一个 coding task 按 Gate 串行完成 Runtime → API/数据库 → Web 投影 → 测试/浏览器 QA → 文档。不得重新初始化项目、覆盖现有修改、回退到 mock、擅自修改冻结规格或代替用户审批 Gate。
+第一原则：这是一个 AI Native 产品。
 
-一、开始前必须完整读取和核验
+- Agent 是主要执行者，不是传统后台里的附加聊天框。
+- 用户通过自然语言表达目标；Agent 必须读取 Context、规划任务、调用受控工具、生成 Artifact、接受 Reviewer 审查，并根据反馈继续推进。
+- Context、Tool、Observation、Action、Permission、Artifact、Gate、Reviewer 和反馈循环都是产品核心。
+- 确定性控制面负责状态、Gate、权限、预算、幂等和审计，为 Agent 自主行动提供安全边界；模型不能自由修改业务状态。
+- 不得把产品降级为“固定表单或 CRUD 工作流 + AI 聊天框”。完成标准是真实跑通：理解 → 行动 → 产物 → 审查 → 修订或恢复。
 
-1. 完整读取根目录 AGENTS.md。
-2. 严格按 AGENTS.md 顺序完整读取：
-   - README.md
-   - docs/handoff.md
-   - 产品工厂Agent/spec/README.md
-   - docs/PRD.md
-   - 产品工厂Agent/spec/Technical-Adaptation.md
-3. 按工作线继续读取：
-   - Agent 编排：Context-Schema、State-Machine-and-Gates、Capability-Registry、Tool-and-Permission-Policy、Harness-Reference-Assessment。
-   - 前端：Interaction-Spec、Frontend-Implementation-Spec、Acceptance-Test-Plan、design-qa.md。
-   - 工程实施：Engineering-Schedule。
-   - 对应 Agent：spec/prompts/ 中对应 Prompt。
-4. 检查 git status、remote、真实代码、migration/API/Event 投影、PostgreSQL/服务状态和现有浏览器状态，保留所有现有修改。
-5. 浏览器只能使用 ego-lite / ego-browser，不得使用 Chrome、Playwright 或其他浏览器工具。
+开始前完整读取：
+1. AGENTS.md
+2. README.md
+3. docs/handoff.md
+4. docs/environments.md
+5. docs/HANDOFF_PROMPT.md
+6. docs/PRD.md
+7. 产品工厂Agent/spec/README.md
+8. 产品工厂Agent/spec/Technical-Adaptation.md
+9. 产品工厂Agent/spec/Engineering-Schedule.md
+10. 产品工厂Agent/spec/Acceptance-Test-Plan.md
 
-二、当前真实状态
+然后核验：
+- 当前代码和全部 Git 修改；工作区当前尚未形成可依赖的普通 Git tracked 基线，不得 reset、清空或重新初始化。
+- 内部与用户 PostgreSQL 的真实数据和隔离边界。
+- Alembic migration/head。
+- Web、Python、PostgreSQL 测试和 production build。
+- 内部环境真实 URL、页面、健康检查、日志和认证。
+- GitHub Connector 远端 head 与 Draft PR；远端写入前必须重新核验。
 
-- `/`、`/projects/{projectId}`、`/settings` 属于同一个 Next.js 应用；曾验证的生产入口为 http://127.0.0.1:3100/，接手时必须重新核验。
-- Web 已接真实 FastAPI/PostgreSQL，不是 demoProject 或静态 mock。当前旧项目中的消息和样例 Artifact 仍可能是人工/控制面验证数据，不能冒充 Runtime Agent 生成。
-- “销售复盘 Agent”已完成 Brief v1、用户批准 G0、Evidence Index/MRD v2、Red Team Review v2、用户批准 G1，当前为 `prd / Context v3`。两项已知问题必须保留：引用粒度待用户访谈验证；Gong 定价和客户规模缺少直接证据。
-- 当前 Web/API/PostgreSQL 已恢复该真实项目，可读取 Artifact v1/v2、历史 G1、两项 known issues、执行/恢复、Gate decisions 和 Session 投影；不得用“D3 双栏交互验收”代替 D5/D6 业务验收。
-- 用户已确认当前前端没有问题。桌面为最新约 30/70 双栏，12 阶段 6×2，移动 390×844 使用“群聊 / 产物”切换。底层 2500ms cursor 短轮询仍是 AG-UI/SSE 未完成前的降级方案；可见提示标签已删除。
-- GitHub Connector 安全快照已完成：仓库 `HiWhaleW/product-factory-agent`、分支 `codex/initial-import`、Draft PR #1；已有写入均使用 `force:false`，未使用 `gh`。接手时仍须重新核对远端 head 后再写。
-- PRD 专用 Schema、确定性提交和 `prd-review/v1` clean-review 已真实运行：AI PM Run `9c7ffc14…`、PRD v1 `71d3b81a…`、Reviewer Run `6442a2fa…`、PRD Review v1 `44c79e5a…` 已落库；G2 `fdac9cd1…` 为 `open`，尚未由用户决定。
-- 可回收 Gate/Permission fixture `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001` 已有数据，浏览器联合验收仍待完成；不得拿真实业务 G2 做破坏性测试。
-- Builder、MVP、种子内测、商业 BRD/G6、发布和线上地址仍未完成。
+当前真实状态：
+- 销售复盘 Agent 为 seed_beta / Context v10 / iteration v1，处于第 9/12 阶段“种子用户内测”。
+- G0–G5 已由用户批准；G6 尚未打开。
+- 后端开发、前端开发、MVP、内部验收和 Beta Candidate 已完成。
+- Builder/Codex、DeepSeek、博查、AG-UI/SSE、认证强制执行、真实用户和项目归属均有真实证据。
+- 最新自动化验证：Web 26/26、Python 86/86、PostgreSQL 48/48、production build 通过、Alembic 20260823_0010 (head)。项目软删除、用户隔离回收箱、幂等恢复、删除/恢复审计和 API Key 设置已通过真实测试；保留 1 条 Starlette/httpx 弃用警告。
+- 内部环境最近一次健康检查通过：Web http://127.0.0.1:3200，API http://127.0.0.1:8200。
+- 当前内部与用户环境均绑定发布包 20260823T155102Z。
+- 用户数据库已迁移到 20260823_0010；Secret Store、备份恢复和 095514Z ↔ 155102Z 双向回滚验收通过，最终保持新包。
 
-三、GitHub 操作边界
+当前 Web 结构：
+- `/` 是独立首页，不显示项目列表。
+- `/projects` 是“真实项目”页面，承载项目创建、项目列表和待处理事项。
+- `/projects/{projectId}` 是现有 30/70 双栏 Agent 工作区。
+- `/settings` 只保留用户 API Key 管理。
+- 顶部导航顺序是“首页 / 项目列表 / 设置”；“个人信息”承载用户、角色、用户 ID、运行模式、Session、安全说明和退出登录。
+- 邀请码登录成功后统一打开 `/` 首页；普通用户个人信息显示角色“用户”和“用户工作空间”。
+- “去处理”和“继续项目”尺寸一致、文字居中。
+- 首次引导只在首次登录首页自动出现，并提示用户配置自己的 API。
 
-1. 只能使用 GitHub 插件/Connector 完成远端读取、建/更新分支、上传/提交文件和 PR 更新；不得使用 gh CLI。
-2. 安全快照已存在；先用插件重新核验默认分支、`codex/initial-import` 和 Draft PR #1 的当前 head，再决定是否追加非破坏性提交。
-3. 不得 force push、重建仓库、覆盖远端其他任务线或未经审查整包提交全部 untracked 文件。
-4. 推送前执行秘密与本机路径检查，严格遵循 .gitignore。不得上传 .env、.runtime、.venv、node_modules、.next、Artifact/Workspace、缓存、SecretRef 原值、本机来源路径和敏感 QA 文件。
-5. GitHub 插件未安装、不可调用或无写权限时，停止远端写入并请求安装/授权；不得回退到 gh。
-6. 每次写入后记录 repo、分支、commit/PR 链接、插件证据、上传清单和排除清单。
+用户模型 API 当前实现：
+- 用户可添加、替换、删除自己的 API Key，并配置接口名称、HTTPS Base URL 和模型名。
+- Runtime 按当前项目 owner 使用用户配置，不再把普通用户固定到 DeepSeek。
+- 当前真实支持边界是 OpenAI-compatible API，不得虚报支持所有厂商私有协议。
+- Key 原文只进入分环境、分用户、权限为 0600 的 Secret Store；PostgreSQL 只保存 SecretRef、指纹、脱敏尾号和非敏感接口元数据。
+- HTTP、本机和直接内网 IP 的模型地址会被拒绝；普通用户未配置时 fail closed；本地 DEEPSEEK_API_KEY 只允许内部验证账号测试回退。
+- 任意第三方兼容服务的真实模型效果仍需用用户提供的有效 Key 做真实任务验证。
 
-四、已经完成的统一跨层基线
+两套独立环境：
+- 内部验证环境：3200/8200，保留销售复盘 Agent 与内部验收数据。
+- 独立用户环境：3300/8300，独立数据库、Artifact、Workspace、日志、用户 Secret Store、Session Secret 和邀请码；首次登录项目为空。
+- 两套环境不能共享业务数据或秘密。
+- 任何新版本必须先在内部环境完成迁移、测试、build、健康和用户浏览器验收，再迁移并绑定到用户环境。
+- 用户已明确确认本次内部浏览器验收通过；不得把该确认扩大解释为 G6 批准。
+- 用户环境已经可用于受控种子内测，但不得伪造真实用户、任务或反馈数据。
 
-1. “销售复盘 Agent”已恢复到 Web 当前使用的同一 PostgreSQL/API，前端可读取 Evidence Index v2、MRD v2/v1、Red Team Review v2 和真实 G1 卡。
-2. G1 返回结构化 known_issues[]，至少包含 issue、severity、evidence_refs/source_refs、status；不得让前端从正文猜字段。
-3. 补 Artifact 真实版本索引：version、status、created_at、created_by/agent、content availability；latest v2 必须能核验真实历史版本。
-4. 已提供 membership、Run、Task、Step、Tool、recovery/cursor 投影；可回收 PermissionRequest/Gate fixture 数据已存在但浏览器联合验收仍缺；完整 streaming/AG-UI 仍未完成。
-5. 对齐 Project iteration_version、Graph owner/agent、created_at，以及登录/Session、/me、logout、过期原因契约。
-6. 明确 2500ms cursor 轮询只是降级；AG-UI/SSE 完成前不得宣称实时 transport 已完成。
+下一步顺序：
+1. 邀请真实种子用户，用真实任务开展内测；收集成功、失败、使用和反馈数据，不得伪造。
+2. 验证 Reviewer 已知问题、真实 429、博查费用/账单、来源质量和第三方 OpenAI-compatible 模型效果。
+3. 证据达到退出阈值后生成 BRD / 商业模式确认并打开 G6。
+4. 等待用户决定 G6；G6 批准后才正式发布 / 交接。
+5. 收集发布后数据与反馈，创建下一轮迭代。
 
-五、当前必须按 Gate 推进的任务
+固定边界：
+- Gate 只能由用户批准，Agent 不得代批。
+- G6 前不得正式发布。
+- 前端现有其他内容默认固定；确需修改必须提前告诉用户。
+- 不修改冻结的 4 份 Agent Prompt。
+- 不使用 mock、删测试、隐藏错误或降低验收标准。
+- 不拆 Runtime、后端、前端任务线，不等待并线。
+- Builder 不得自动 push、deploy 或删除工作区。
+- GitHub 只能使用 Connector；写入前重新核验 head，使用 force:false，不得使用 gh。
+- AG-UI/SSE 是事件主通道；2500ms cursor 轮询只能在断线时降级，恢复后停止。
+- 认证、用户归属和资源隔离必须 fail closed；不得由前端 owner 参数代替后端 Session 身份。
+- 不得泄露或复制邀请码、Session Secret、API Key、内部项目或本机敏感路径。
 
-1. 等待用户决定真实 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`；不得由 Agent、Runtime 或测试 fixture 代批。
-2. G2 批准后进入方案/G3；G2 退回时保留 PRD v1 历史并创建新版本。
-3. G3 后进入技术栈/G4；G4 前不得启动 Builder。
-4. G4 后固定按后端开发 → 前端开发推进，分别提供 Execution Task、AgentRun、RunStep、测试和 ArtifactVersion 证据。
-5. 再进入 MVP、内部验收/G5、种子内测、商业 BRD/G6、发布/交接和反馈迭代。
-6. 完成 fixture 浏览器联合验收，并由同一任务逐项闭环 AG-UI/SSE 与认证强制执行；不得新开 Runtime/后端/前端并行线，也不得记录“等待并线”。
-7. Builder、MVP、内测或发布没有真实证据前不得宣布完成。
-
-六、前端冻结边界与验收
-
-- 唯一权威交互视觉基线是根目录 产品工厂Agent_Harness表.html；用户最新明确标注优先于基线中的历史视觉比例，但不授权重做交互流程。
-- 保持左群聊/右产物 DAG、12 阶段 6×2、移动切换、页面级不滚动、Artifact 拖动仅改本地视图、抽象 MiniMap，以及现有 Gate/Permission/预览/参与者/输入逻辑。
-- 不修改 4 个 Agent、12 阶段、G0-G6、技术栈和业务状态契约。
-- 同一任务按顺序修改 Runtime、API 和 Web，并在一个切片内闭环；必须保持确定性状态机/权限契约，同步单元、集成、前端和浏览器证据，不得在前端伪造后端字段。
-- 每轮前端修改后用 ego-lite 在生产模式验证 1440×900 和 390×844，运行 pnpm lint:web、pnpm typecheck、pnpm test:web、pnpm build，并同步 design-qa.md/html 和 docs/evidence。
-- 不可逆 Gate 只能用专用可回收验收项目；没有安全样本时记录未测，不得代批。
-
-七、最终汇报必须包含
-
-- GitHub 插件核验与安全推送结果；repo、分支、commit/PR 链接及排除项。
-- 当前统一工作区新增/修改的 Runtime、后端、前端字段清单和仍未解决的契约缺口。
-- 当前项目阶段、下一 Gate、后续执行顺序和明确禁止越过的边界。
-- 实际代码/文档修改、测试和 ego-lite 证据。
-- 尚未完成、未安全测试或需要用户决定的事项。
-
-没有插件证据不得声称 GitHub 已同步；没有真实模型/数据库/浏览器证据，不得借其他任务线证据宣布对应能力完成。
+最终汇报只需简单说明：
+1. 当前阶段。
+2. 完成了什么。
+3. 真实验证结果。
+4. 当前等待哪个 Gate 或用户验收。
+5. 后面还剩哪些流程。
+6. 哪些事项仍未完成。
 ```
 
-## 交接边界摘要
+## 当前边界摘要
 
-- 本交接从“前端视觉线”升级为项目级正式交接。
-- 下一位直接在当前统一工作区等待并执行用户 G2 决定；批准后再按方案/G3→技术栈/G4→Builder→G6 顺序推进，不等待跨线并入。
-- 前端当前确认稿已通过，不是静态原型；后续如有修改仍只做增量并保留真实 API 投影。
-- 人工 Gate、秘密、真实证据和现有工作区修改是不可越过的边界。
+- 当前不是等待 G5；G5 已批准，G6 尚未打开。
+- 当前用户环境已就绪，下一步是开展真实种子用户任务并收集证据。
+- 本次用户 API 支持不同 OpenAI-compatible 模型，不等于支持所有私有协议。
+- 没有真实种子用户数据前，不得生成已确认的商业结论。
+- G6 未批准前不得正式发布。

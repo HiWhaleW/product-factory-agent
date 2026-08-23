@@ -5,6 +5,8 @@ from fastapi.responses import JSONResponse
 from app.api.agent_router import router as agent_router
 from app.api.router import router
 from app.core.request_logging import structured_request_log
+from app.core.security_headers import add_security_headers
+from app.core.session_middleware import enforce_session_auth
 
 app = FastAPI(
     title="Product Factory API",
@@ -16,7 +18,28 @@ app = FastAPI(
 )
 app.include_router(router)
 app.include_router(agent_router)
+app.middleware("http")(enforce_session_auth)
 app.middleware("http")(structured_request_log)
+app.middleware("http")(add_security_headers)
+
+SENSITIVE_INPUT_NAMES = frozenset(
+    {"api_key", "invite_code", "password", "secret", "token"}
+)
+
+
+def redact_validation_errors(errors: list[dict]) -> list[dict]:
+    redacted: list[dict] = []
+    for item in errors:
+        safe = dict(item)
+        location = [str(part).lower() for part in safe.get("loc", ())]
+        if any(
+            sensitive in part
+            for part in location
+            for sensitive in SENSITIVE_INPUT_NAMES
+        ):
+            safe["input"] = "[REDACTED]"
+        redacted.append(safe)
+    return redacted
 
 
 @app.exception_handler(HTTPException)
@@ -42,7 +65,7 @@ async def validation_error(request: Request, exc: RequestValidationError) -> JSO
                 "user_message": "请求字段不符合确定性 API 契约。",
                 "retryable": False,
                 "request_id": request_id,
-                "fields": exc.errors(include_url=False),
+                "fields": redact_validation_errors(exc.errors(include_url=False)),
             }
         },
     )

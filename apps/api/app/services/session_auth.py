@@ -11,8 +11,12 @@ class SessionTokenError(ValueError):
         self.reason = reason
 
 
+def hash_invite_code(invite_code: str) -> str:
+    return hashlib.sha256(invite_code.encode()).hexdigest()
+
+
 def invite_code_matches(invite_code: str, expected_hash: str) -> bool:
-    actual = hashlib.sha256(invite_code.encode()).hexdigest()
+    actual = hash_invite_code(invite_code)
     return hmac.compare_digest(actual, expected_hash)
 
 

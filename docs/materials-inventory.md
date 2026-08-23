@@ -1,6 +1,6 @@
 # 产品工厂 Agent - 素材全量索引
 
-> 盘点日期：2026-08-22  
+> 盘点日期：2026-08-23  
 > 状态含义：`权威` = 后续开发的契约；`参考` = 提供默认和方法；`原型` = 用于交互理解，不是代码基础；`交接` = 当前阶段事实。
 > HTML 阅读版：[materials-inventory.html](./materials-inventory.html)
 
@@ -14,9 +14,11 @@
 | [`docs/handoff.md`](./handoff.md) | 人类/接手者 | 交接 | 完成/未完成、决策、风险、开工顺序 |
 | [`docs/handoff.html`](./handoff.html) | 人类评审 | 交接 | 交接状态、素材、架构、Prompt 和 Roadmap 可视化 |
 | [`docs/HANDOFF_PROMPT.md`](./HANDOFF_PROMPT.md) | 下一位 Agent | 交接 | 可直接粘贴的交接提示词 |
-| [`docs/HANDOFF_PROMPT.html`](./HANDOFF_PROMPT.html) | 人类评审 | 交接 | 正式项目交接：GitHub 插件安全入库、Runtime/后端并线与后续 Gate 安排 |
+| [`docs/HANDOFF_PROMPT.html`](./HANDOFF_PROMPT.html) | 人类评审 | 交接 | 当前种子内测、双环境、G6 边界与后续流程 |
+| [`docs/environments.md`](./environments.md) / [HTML](./environments.html) | 开发/运维/接手者 | 权威交接 | 内部验证与独立用户环境的入口、数据边界、发布顺序和运维命令 |
+| [`docs/evidence/user-environment-acceptance-2026-08-23.md`](./evidence/user-environment-acceptance-2026-08-23.md) / [HTML](./evidence/user-environment-acceptance-2026-08-23.html) | 开发/评审 | 真实证据 | 用户与项目归属、独立数据库、空项目、安全、恢复和首版回滚保护 |
 | [`docs/evidence/d3-d4-closure-2026-08-21.md`](./evidence/d3-d4-closure-2026-08-21.md) / [HTML](./evidence/d3-d4-closure-2026-08-21.html) | 开发/评审 | 工程证据 | D3–D4 退出命令、测试、ego-lite 交互和未完成边界 |
-| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 当前用户确认稿、统一导航、核心交互、桌面/移动生产截图与 JSON；`final result: passed`，仍允许后续视觉增量修改 |
+| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 历史浏览器基线通过；本次首页、项目列表、个人信息和通用 API 设置为 `pending_user_acceptance` |
 | [`docs/architecture.md`](./architecture.md) | 开发/架构 | 权威摘要 | 当前决策、系统边界、数据流和技术栈 |
 | [`docs/operator-runbook.md`](./operator-runbook.md) | 开发/运维 | 交接 | 环境、开工前置、未来运行和故障边界 |
 | [`docs/product-lifecycle.md`](./product-lifecycle.md) / [HTML](./product-lifecycle.html) | 全员 | 权威 | 12 阶段、后端→前端、G0-G6、D1-D10 与 B1-Bn 的唯一生命周期口径 |
@@ -45,10 +47,10 @@
 | [`spec/Competitor-and-OpenSource-Research.md`](../产品工厂Agent/spec/Competitor-and-OpenSource-Research.md) | 参考 | Atoms、Replit Agent、Lovable、Bolt、v0 等竞品；LangGraph/React Flow/CopilotKit/AG-UI 等技术决策 |
 | [`spec/Agent-Prompt-Gap-Report.md`](../产品工厂Agent/spec/Agent-Prompt-Gap-Report.md) | 权威报告 | V1 Prompt 覆盖和原 17 岗位缺口 |
 | [`spec/Harness-Reference-Assessment.md`](../产品工厂Agent/spec/Harness-Reference-Assessment.md) | 权威报告 | `learn-claude-code-main` 新主线 s01-s17 机制裁决、反方测试和 D1-D2 规格增量 |
-| [`spec/prompts/factory-lead.prompt.md`](../产品工厂Agent/spec/prompts/factory-lead.prompt.md) | v0.2 待评测 | 主 Agent 状态/路由/Context/闸/工具约束 |
-| [`spec/prompts/ai-pm.prompt.md`](../产品工厂Agent/spec/prompts/ai-pm.prompt.md) | v0.2 待评测 | MRD/PRD、种子内测分析、商业 BRD、范围与验收 |
-| [`spec/prompts/builder.prompt.md`](../产品工厂Agent/spec/prompts/builder.prompt.md) | v0.2 待评测 | 技术适配、纵向切片、Codex Adapter 和工程证据 |
-| [`spec/prompts/reviewer.prompt.md`](../产品工厂Agent/spec/prompts/reviewer.prompt.md) | v0.2 待评测 | 清洁上下文的文档/模型/工程/浏览器审核 |
+| [`spec/prompts/factory-lead.prompt.md`](../产品工厂Agent/spec/prompts/factory-lead.prompt.md) | v0.2 冻结 | 主 Agent 状态/路由/Context/闸/工具约束；已有真实运行证据 |
+| [`spec/prompts/ai-pm.prompt.md`](../产品工厂Agent/spec/prompts/ai-pm.prompt.md) | v0.2 冻结 | MRD/PRD、种子内测分析、商业 BRD、范围与验收；已有真实运行证据 |
+| [`spec/prompts/builder.prompt.md`](../产品工厂Agent/spec/prompts/builder.prompt.md) | v0.2 冻结 | 技术适配、纵向切片、Codex Adapter 和工程证据；已有真实运行证据 |
+| [`spec/prompts/reviewer.prompt.md`](../产品工厂Agent/spec/prompts/reviewer.prompt.md) | v0.2 冻结 | 清洁上下文的文档/模型/工程/浏览器审核；已有真实运行证据 |
 
 ## 4. HTML 产物
 
@@ -58,7 +60,7 @@
 | [`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html`](../产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html) | 生命周期适配投影 | 将 12 阶段、G0-G6、后端→前端与内测后 BRD 投影到既有交互；不得替代根目录视觉基线 |
 | [`产品工厂Agent/spec/index.html`](../产品工厂Agent/spec/index.html) | 权威可视化 | D1-D2 规格、Roadmap、通俗技术架构、RAG/Agent Loop/LangGraph 边界、开源复用、竞品、Prompt 和验收入口 |
 | [`产品工厂Agent/spec/Harness-Reference-Assessment.html`](../产品工厂Agent/spec/Harness-Reference-Assessment.html) | 权威可视化 | 标准 Harness 机制、双 DAG、6 项规格增量和不可照搬实现 |
-| [`产品工厂Agent/spec/Engineering-Schedule.html`](../产品工厂Agent/spec/Engineering-Schedule.html) | 权威可视化 | 10 工作日关键路径、每日任务、人工闸、依赖和风险缓冲 |
+| [`产品工厂Agent/spec/Engineering-Schedule.html`](../产品工厂Agent/spec/Engineering-Schedule.html) | 权威可视化 | D1–D10 已完成工程主线、当前 G5 和 B1–Bn 后续流程 |
 | [`docs/PRD-Agent-Blueprint-Adaptation.html`](./PRD-Agent-Blueprint-Adaptation.html) | 已冻结补充规格可视化 | `agent-blueprint` 适配 PRD 的 7 层架构、数据流、真相源、组件裁决和分层验收 |
 | [`产品工厂Agent/spec/Frontend-Implementation-Spec.html`](../产品工厂Agent/spec/Frontend-Implementation-Spec.html) | 已冻结规格可视化 | 页面线框、组件树、事件/状态投影、前端排期和放行矩阵；不是已实现页面 |
 | [`产品工厂Agent/spec/Technical-Adaptation.html`](../产品工厂Agent/spec/Technical-Adaptation.html) | 已冻结规格可视化 | 技术边界、真相源、分阶段环境值和开源复用分级；不是运行证据 |
@@ -82,18 +84,17 @@
 
 ## 7. 当前实现与仍未完成
 
-D3–D4 与当前 D5 基础已实现：Git/monorepo、Python/前端 lockfile、Next.js/FastAPI、PostgreSQL 16.15、SQLAlchemy 控制面、Alembic `20260822_0004`、42 项在线集成/并发/恢复测试、DeepSeek/博查 Adapter、有界 LangGraph Runtime、带 cursor 的 API/Event 投影、React Flow Artifact DAG、Gate/Permission 卡、Artifact 安全内容/下载和单屏双栏工作区。
+当前真实项目为 `seed_beta / Context v10 / iteration v1`。G0–G5、Builder 后端/前端开发、MVP、内部验收和 Beta Candidate 已完成。最新验证：Web 23/23、Python 86/86、PostgreSQL 48/48、production build 通过、Alembic `20260823_0010 (head)`。
 
-当前可视数据是 PostgreSQL 真实投影，但当前旧项目中的消息和 D4 样例 Artifact 是人工写入或明确标记的控制面验证数据，不是 Runtime Agent 生成结果；4 个 Agent 仍未进入当前项目群聊。SSE/AG-UI 当前使用 `2500ms` cursor 短轮询降级；用户要求删除了工作区可见标签，不代表 transport 已完成。
+真实群聊已包含 4 个 Agent 的入群记录和自我介绍；143 条执行记录已拆成 38 个消息间处理组。前端现有内容默认固定，后续如确需修改必须先告知用户。
 
-Git 本地当前为无 commit 的 `main`，安全项目文件均为 untracked；仅确认 `origin` 已配置。正式接手必须使用 GitHub 插件/Connector 核验远端并推送安全快照，不得使用 `gh` CLI、force push 或上传秘密/本机文件。
+当前有两套独立本机环境：内部验证 `3200/8200` 使用发布包 `20260823T143242Z` 并保留销售复盘 Agent；用户环境 `3300/8300` 仍使用旧包 `20260823T095514Z`，采用独立数据库、文件与密钥，首次登录项目为空。AG-UI/SSE、认证强制执行、真实用户和项目归属已完成；登录成功统一打开首页；项目删除进入按用户隔离的回收箱，可幂等恢复到原阶段，V1 不提供永久删除。
 
-以下内容仍不存在或未通过真实集成，不得在交接中当作已完成：
+仍未完成：
 
-- DeepSeek 真实 429、博查费用/账单和来源质量人工评审；配置名与 Provider 返回模型名差异仍待确认。
-- 当前项目群聊接入 4 个 Runtime Agent；已有独立真模型冒烟不能冒充该接入完成。
-- Codex CLI Builder 完整执行、Capability Registry 运行时和 Tool Policy 执行器。
-- 用户已确认当前前端无问题；如有后续视觉标注仍需增量修改与复验，当前确认稿的生产模式桌面/移动 QA 已归档并通过。
-- “销售复盘 Agent”恢复到 Web 同源 API；Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、Artifact 版本索引和真实 Runtime 事件的前端投影验收。
-- AI PM PRD Run、确定性 PRD 持久化和 G2；之后仍须按 G3、G4 和人工闸顺序推进。
-- 线上部署、真实 URL、企业内部 dogfood/种子内测数据、BRD/G6 和反馈迭代。
+- 真实种子用户任务、使用和反馈数据。
+- 本次项目删除、回收箱恢复、顶栏精简、首页、真实项目页、个人信息和通用 API 设置的用户浏览器验收，以及通过后的用户环境迁移与同步。
+- 商业 BRD/G6、正式发布/交接和反馈迭代。
+- 公网域名、HTTPS、外部可访问部署和真实跨版本回滚。
+- DeepSeek 真实 429、博查费用/账单、来源质量人工评审和模型路由差异确认。
+- GitHub 远端写入前仍须使用 Connector 重新核验 head；不得使用 `gh`、force push 或上传秘密/本机文件。

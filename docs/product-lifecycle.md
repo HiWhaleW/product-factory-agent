@@ -1,7 +1,7 @@
 # 产品工厂 Agent - 产品生命周期与 Gate 映射
 
 > 版本：v0.2  
-> 日期：2026-08-20  
+> 日期：2026-08-23  
 > 状态：用户已明确修订阶段顺序；本文件是阶段顺序的权威入口  
 > HTML 阅读版：[product-lifecycle.html](./product-lifecycle.html)
 
@@ -77,12 +77,14 @@ alignment → mrd → prd → solution_confirmation → tech_stack_confirmation
 
 不得把 D10 日期当成真实种子数据、商业模式或发布完成的证据。
 
-## 6. 当前实现边界（2026-08-22）
+## 6. 当前实现边界（2026-08-23）
 
-- 确定性控制面、PostgreSQL 16.15、FastAPI、Next.js、DeepSeek/博查 Adapter、有界 LangGraph Runtime、Run/Step/checkpoint、真实 API/Event 投影和 Artifact 安全内容已实现，并有在线集成/并发/恢复证据。
-- Web 已移除 `demoProject`，统一首页、项目工作区和设置页；当前桌面采用用户最新确认的约 `30/70` 双栏，移动采用“群聊 / 产物”同屏切换。生产模式 ego-lite 桌面/移动证据已归档，用户已确认当前前端无问题。
-- “销售复盘 Agent”已经过 G0/G1，当前为 `prd / Context v3`；Evidence Index v2、MRD v2、Red Team Review v2 和两项 known issues 已有独立真实证据，但仍需恢复到 Web 当前同源 API 做纵向投影验收。
-- 当前 `2500ms` cursor 短轮询是 AG-UI/SSE 未完成前的降级实现；可见提示标签已删除不代表 transport 完成。
-- 当前尚未完成 AI PM PRD Run、确定性 PRD 持久化、G2；G4 前不得启动 Builder。Codex Adapter 仍只有只读版本 smoke，没有完整 Builder 执行证据。
-- 当前尚未完成真实项目 4 Agent 群聊接入、可回收 Permission/Gate 联合样本、种子用户、商业 BRD/G6、部署和正式发布。
-- `docs/evidence/` 中的历史 mock/原型截图只能证明对应页面当时可见；不得用 mock、“D3 双栏交互验收”或其他任务线的独立证据冒充 D5 业务验收。
+- “销售复盘 Agent”为 `seed_beta / Context v10 / iteration v1`，处于第 9/12 阶段。
+- G0–G5、后端开发、前端开发、MVP 和内部验收已完成；Builder/Codex 已真实执行，Beta Candidate 已生成。
+- G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` 已由用户批准；G6 尚未打开。
+- 最新验证为 Web 22/22、Python 77/77、PostgreSQL 47/47、Alembic `20260823_0007 (head)`、production build 通过。
+- 主/子 Agent 入群互动、自我介绍和消息间执行过程已接入真实群聊；技术事件已改为通俗中文。
+- AG-UI/SSE 已是事件主通道，`2500ms` cursor 轮询只在断线时降级；认证强制执行、真实用户和项目归属已完成。
+- 内部验证环境 `3200/8200` 保留销售复盘 Agent；独立用户环境 `3300/8300` 使用独立数据库且首次登录项目为空。
+- 当前可以开展真实种子用户内测，但真实任务/反馈数据、商业 BRD/G6、正式发布/交接和数据反馈尚未完成。
+- 历史 mock/原型证据仍只证明对应历史页面，不得冒充当前真实验收。

@@ -8,6 +8,7 @@ import {
   projectFilter,
   projectNextAction,
 } from "../lib/home";
+import { onboardingAllowed, onboardingSteps, shouldAutoOpenOnboarding } from "../lib/onboarding";
 
 const project: Project = {
   id: "project-1",
@@ -53,8 +54,7 @@ describe("home project projections", () => {
   it("keeps the header menus mutually exclusive and toggles the active menu closed", () => {
     expect(nextHeaderPopover(null, "notifications")).toBe("notifications");
     expect(nextHeaderPopover("notifications", "identity")).toBe("identity");
-    expect(nextHeaderPopover("identity", "help")).toBe("help");
-    expect(nextHeaderPopover("help", "help")).toBeNull();
+    expect(nextHeaderPopover("identity", "identity")).toBeNull();
   });
 
   it("only counts real open Gate and Permission requests", () => {
@@ -74,5 +74,24 @@ describe("home project projections", () => {
 
   it("formats real activity timestamps in the product timezone", () => {
     expect(formatProjectActivity(project.updated_at)).toMatch(/08.*21.*16.*09/);
+  });
+
+  it("never opens onboarding over an enforced unauthenticated login page", () => {
+    const loggedOut = { auth_enforced: true, authenticated: false };
+    const loggedIn = { auth_enforced: true, authenticated: true };
+
+    expect(onboardingAllowed(loggedOut)).toBe(false);
+    expect(shouldAutoOpenOnboarding(loggedOut, "/", false)).toBe(false);
+    expect(shouldAutoOpenOnboarding(loggedIn, "/", false)).toBe(true);
+    expect(shouldAutoOpenOnboarding(loggedIn, "/", true)).toBe(false);
+  });
+
+  it("guides first-time users to configure their own API key", () => {
+    expect(onboardingSteps).toHaveLength(5);
+    expect(onboardingSteps[1]).toMatchObject({
+      title: "先连接你的 AI",
+      settingsLink: true,
+    });
+    expect(onboardingSteps[1].body).toContain("专属于你的 API Key");
   });
 });

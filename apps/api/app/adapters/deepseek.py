@@ -203,6 +203,31 @@ class DeepSeekAdapter:
             ),
         )
 
+    @classmethod
+    def from_api_key(
+        cls,
+        settings: Settings,
+        api_key: str,
+        *,
+        model: str | None = None,
+        base_url: str | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> DeepSeekAdapter:
+        """Build an OpenAI-compatible request adapter without copying the key into Settings."""
+        config = DeepSeekConfig.from_settings(settings)
+        if model is not None or base_url is not None:
+            config = DeepSeekConfig(
+                model=model or config.model,
+                base_url=base_url or config.base_url,
+                api_key_ref="USER_MODEL_API_KEY",
+                timeout_seconds=config.timeout_seconds,
+            )
+        return cls(
+            config,
+            transport=transport,
+            secret_resolver=lambda _: api_key,
+        )
+
     def _client(self, timeout_seconds: float | None = None) -> httpx.AsyncClient:
         timeout = timeout_seconds or self.config.timeout_seconds
         return httpx.AsyncClient(

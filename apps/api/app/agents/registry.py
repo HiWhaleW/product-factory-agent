@@ -109,3 +109,22 @@ def require_d5_agent(agent_id: str, stage: str) -> AgentDefinition:
     if stage not in definition.allowed_stages:
         raise AgentRegistryError(f"Agent {agent_id} is not allowed in stage {stage}.")
     return definition
+
+
+def require_runtime_agent(agent_id: str, stage: str) -> AgentDefinition:
+    """Allow active agents plus Builder's document-only G2→G4 definition tasks."""
+    if agent_id not in AGENT_REGISTRY:
+        raise AgentRegistryError("Unknown core Agent.")
+    definition = AGENT_REGISTRY[agent_id]  # type: ignore[index]
+    if stage not in definition.allowed_stages:
+        raise AgentRegistryError(f"Agent {agent_id} is not allowed in stage {stage}.")
+    if definition.d5_active:
+        return definition
+    if definition.id == "builder" and stage in {
+        "solution_confirmation",
+        "tech_stack_confirmation",
+    }:
+        return definition
+    raise AgentRegistryError(
+        "Builder may prepare definition documents after G2, but cannot develop before G4."
+    )

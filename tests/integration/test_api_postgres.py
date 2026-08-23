@@ -32,6 +32,7 @@ from app.domain.models import (
     TaskDependency,
 )
 from app.main import app
+from app.services.ag_ui_events import encode_ag_ui_sse
 from fastapi.testclient import TestClient
 from sqlalchemy import delete, select
 
@@ -198,8 +199,8 @@ def test_runtime_status_checks_codex_without_exposing_secrets() -> None:
     body = response.json()
     assert body["database"] == "postgresql"
     assert body["codex"]["configured"] is True
-    assert body["event_transport"] == "sse_cursor"
-    assert body["short_polling_degraded"] is True
+    assert body["event_transport"] == "ag_ui_sse"
+    assert body["short_polling_degraded"] is False
     assert "api_key" not in response.text.lower()
 
 
@@ -376,9 +377,6 @@ def test_g0_approve_versions_context_joins_ai_pm_and_supports_exact_retrieval(
         resumed = client.get(
             f"/api/v1/projects/{project_id}/events", params={"cursor": cursor}
         )
-        sse = client.get(
-            f"/api/v1/projects/{project_id}/events/stream", params={"cursor": cursor}
-        )
     assert project.json()["state"] == "mrd"
     assert project.json()["context_version"] == 2
     assert context.json()["stage"] == "mrd"
@@ -386,8 +384,15 @@ def test_g0_approve_versions_context_joins_ai_pm_and_supports_exact_retrieval(
     assert exact.json()["primary_resource"]["version"] == 1
     assert wrong_version.status_code == 404
     assert resumed.json()[0]["sequence"] == cursor + 1
-    assert sse.headers["content-type"].startswith("text/event-stream")
-    assert f"id: {cursor + 1}" in sse.text
+    with SessionLocal() as session:
+        first_recovered_event = session.scalar(
+            select(Event).where(
+                Event.project_id == project_id, Event.sequence == cursor + 1
+            )
+        )
+        assert first_recovered_event is not None
+        encoded = encode_ag_ui_sse(first_recovered_event)
+    assert encoded.startswith(f"id: {cursor + 1}\nevent: ag-ui\n")
     event_types = [event["event_type"] for event in events.json()]
     assert "context.updated" in event_types
     assert "context.pack_created" in event_types

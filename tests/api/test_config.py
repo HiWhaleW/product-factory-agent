@@ -63,3 +63,31 @@ def test_valid_d3_runtime_configuration_loads(tmp_path: Path) -> None:
     assert settings.MODEL_PROVIDER == "deepseek"
     assert settings.ARTIFACT_ROOT.is_absolute()
     assert settings.WORKSPACE_ROOT.is_absolute()
+
+
+def test_production_requires_auth_enforcement(tmp_path: Path) -> None:
+    values = settings_values(tmp_path)
+    values["APP_ENV"] = "production"
+
+    with pytest.raises(ValidationError, match="AUTH_ENFORCED must be true in production"):
+        Settings(_env_file=None, **values)
+
+
+@pytest.mark.parametrize(
+    ("invite_hash", "session_secret"),
+    [("", "test-session-secret"), ("a" * 64, None)],
+)
+def test_auth_enforcement_requires_invite_hash_and_session_secret(
+    tmp_path: Path, invite_hash: str, session_secret: str | None
+) -> None:
+    values = settings_values(tmp_path)
+    values.update(
+        {
+            "AUTH_ENFORCED": True,
+            "INVITE_CODE_HASH": invite_hash,
+            "SESSION_SECRET": session_secret,
+        }
+    )
+
+    with pytest.raises(ValidationError, match="AUTH_ENFORCED requires"):
+        Settings(_env_file=None, **values)

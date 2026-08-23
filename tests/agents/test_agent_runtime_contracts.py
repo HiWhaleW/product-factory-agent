@@ -4,17 +4,27 @@ from datetime import UTC, datetime
 import pytest
 from app.adapters.bocha import BochaSearchResponse, BochaSearchResult, BochaTimeoutError
 from app.adapters.deepseek import DeepSeekResponse, DeepSeekSchemaError, DeepSeekUsage
+from app.agents.builder_contracts import BuilderCodexOutput
 from app.agents.checkpoint import CheckpointArchive
 from app.agents.context import ApprovedContextPack, ContextBoundaryError
 from app.agents.graph import _research_query, build_agent_graph
 from app.agents.outputs import (
     AiPmMrdOutput,
     AiPmPrdOutput,
+    BuilderSolutionOutput,
+    BuilderTechnicalOutput,
     ReviewerMrdOutput,
     ReviewerPrdOutput,
+    ReviewerSolutionOutput,
+    ReviewerTechnicalOutput,
 )
 from app.agents.policy import ToolRequest, evaluate_tool_policy
-from app.agents.registry import AgentRegistryError, load_frozen_prompt, require_d5_agent
+from app.agents.registry import (
+    AgentRegistryError,
+    load_frozen_prompt,
+    require_d5_agent,
+    require_runtime_agent,
+)
 from app.domain.schemas import ContextPackRead, ContextResourceRef
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
@@ -208,7 +218,7 @@ def ai_pm_output() -> dict:
                 "evidence_refs": [evidence_ref],
                 "assumptions": [],
                 "status": "waiting_review",
-            }
+            },
         ],
         "verified_fact_proposals": [],
         "open_questions": [],
@@ -220,9 +230,7 @@ def test_ai_pm_mrd_schema_rejects_generic_or_incomplete_artifacts() -> None:
     valid = ai_pm_output()
     generic = {
         **valid,
-        "artifact_proposals": [
-            {**valid["artifact_proposals"][0], "kind": "markdown"}
-        ],
+        "artifact_proposals": [{**valid["artifact_proposals"][0], "kind": "markdown"}],
     }
     incomplete = {**valid, "artifact_proposals": [valid["artifact_proposals"][0]]}
     duplicate = {
@@ -287,9 +295,7 @@ def reviewer_mrd_output() -> dict:
 
 def test_reviewer_mrd_schema_requires_one_evidence_backed_red_team_review() -> None:
     valid = reviewer_mrd_output()
-    assert ReviewerMrdOutput.model_validate(valid).artifact_proposals[0].kind == (
-        "red_team_review"
-    )
+    assert ReviewerMrdOutput.model_validate(valid).artifact_proposals[0].kind == ("red_team_review")
     with pytest.raises(ValueError):
         ReviewerMrdOutput.model_validate({**valid, "artifact_proposals": []})
     with pytest.raises(ValueError):
@@ -298,9 +304,7 @@ def test_reviewer_mrd_schema_requires_one_evidence_backed_red_team_review() -> N
         ReviewerMrdOutput.model_validate(
             {
                 **valid,
-                "artifact_proposals": [
-                    {**valid["artifact_proposals"][0], "kind": "markdown"}
-                ],
+                "artifact_proposals": [{**valid["artifact_proposals"][0], "kind": "markdown"}],
             }
         )
 
@@ -340,6 +344,8 @@ def test_reviewer_fabricated_candidate_ref_retries_then_hands_back() -> None:
     assert completed["status"] == "waiting_human"
     assert completed["error_code"] == "DEEPSEEK_SCHEMA_INVALID"
     assert completed["retries_used"] == 2
+    assert f"bocha:web:{'a' * 64}" in completed["validation_feedback"]
+    assert fabricated_ref in completed["validation_feedback"]
     assert provider.calls == 2
 
 
@@ -417,9 +423,10 @@ def reviewer_prd_output() -> dict:
 
 def test_prd_schemas_are_stage_specific_and_do_not_propose_gate_transition() -> None:
     assert AiPmPrdOutput.model_validate(ai_pm_prd_output()).artifact_proposals[0].kind == "prd"
-    assert ReviewerPrdOutput.model_validate(
-        reviewer_prd_output()
-    ).artifact_proposals[0].kind == "prd_review"
+    assert (
+        ReviewerPrdOutput.model_validate(reviewer_prd_output()).artifact_proposals[0].kind
+        == "prd_review"
+    )
     invalid = ai_pm_prd_output()
     invalid["artifact_proposals"][0]["kind"] = "mrd"
     with pytest.raises(ValueError):
@@ -472,6 +479,115 @@ def test_registry_loads_frozen_prompts_and_builder_is_inactive() -> None:
     assert len(prompt_hash) == 64
     with pytest.raises(AgentRegistryError, match="cannot execute"):
         require_d5_agent("builder", "development_backend")
+    assert require_runtime_agent("builder", "solution_confirmation").id == "builder"
+    with pytest.raises(AgentRegistryError, match="cannot develop before G4"):
+        require_runtime_agent("builder", "development_backend")
+
+
+def test_solution_output_contracts_require_documents_and_forbid_tools() -> None:
+    prd_ref = "artifact:11111111-1111-1111-1111-111111111111:v1"
+    flow_ref = "artifact:22222222-2222-2222-2222-222222222222:v1"
+    design_ref = "artifact:33333333-3333-3333-3333-333333333333:v1"
+    builder = BuilderSolutionOutput.model_validate(
+        {
+            "message": "仅提交方案，不写代码。",
+            "technical_decisions": [],
+            "tool_requests": [],
+            "artifact_proposals": [
+                {
+                    "kind": "user_flow",
+                    "title": "User Flow",
+                    "content": f"来源：{prd_ref}",
+                    "evidence_refs": [prd_ref],
+                },
+                {
+                    "kind": "solution_design",
+                    "title": "方案说明",
+                    "content": f"来源：{prd_ref}",
+                    "evidence_refs": [prd_ref],
+                },
+            ],
+            "test_results": [],
+            "known_issues": [],
+            "gate_request": None,
+            "transition_proposal": None,
+        }
+    )
+    assert {item.kind for item in builder.artifact_proposals} == {
+        "user_flow",
+        "solution_design",
+    }
+    reviewer = ReviewerSolutionOutput.model_validate(
+        {
+            "message": "方案可进入 G3。",
+            "verdict": "pass",
+            "findings": [],
+            "evidence_refs": [flow_ref, design_ref],
+            "artifact_proposals": [
+                {
+                    "kind": "solution_review",
+                    "title": "Solution Review",
+                    "content": f"User Flow：{flow_ref}；方案：{design_ref}",
+                    "evidence_refs": [flow_ref, design_ref],
+                }
+            ],
+            "transition_proposal": None,
+        }
+    )
+    assert reviewer.verdict == "pass"
+
+
+def test_technical_output_contracts_require_documents_and_forbid_tools() -> None:
+    source_ref = "artifact:11111111-1111-1111-1111-111111111111:v1"
+    adaptation_ref = "artifact:22222222-2222-2222-2222-222222222222:v1"
+    api_ref = "artifact:33333333-3333-3333-3333-333333333333:v1"
+    builder = BuilderTechnicalOutput.model_validate(
+        {
+            "message": "仅提交技术定义，不写代码。",
+            "technical_decisions": [],
+            "tool_requests": [],
+            "artifact_proposals": [
+                {
+                    "kind": "technical_adaptation",
+                    "title": "Technical Adaptation",
+                    "content": f"来源：{source_ref}",
+                    "evidence_refs": [source_ref],
+                },
+                {
+                    "kind": "api_contract",
+                    "title": "API Contract",
+                    "content": f"来源：{source_ref}",
+                    "evidence_refs": [source_ref],
+                },
+            ],
+            "test_results": [],
+            "known_issues": [],
+            "gate_request": None,
+            "transition_proposal": None,
+        }
+    )
+    assert {item.kind for item in builder.artifact_proposals} == {
+        "technical_adaptation",
+        "api_contract",
+    }
+    reviewer = ReviewerTechnicalOutput.model_validate(
+        {
+            "message": "技术定义可进入 G4。",
+            "verdict": "pass",
+            "findings": [],
+            "evidence_refs": [adaptation_ref, api_ref],
+            "artifact_proposals": [
+                {
+                    "kind": "technical_review",
+                    "title": "Technical Review",
+                    "content": f"适配：{adaptation_ref}；API：{api_ref}",
+                    "evidence_refs": [adaptation_ref, api_ref],
+                }
+            ],
+            "transition_proposal": None,
+        }
+    )
+    assert reviewer.verdict == "pass"
 
 
 def test_context_pack_rejects_secret_values_and_unapproved_versions() -> None:
@@ -512,9 +628,7 @@ def test_tool_policy_returns_allow_ask_and_deny() -> None:
 
 
 def test_langgraph_retries_schema_once_and_stops_with_structured_output() -> None:
-    provider = FakeProvider(
-        [DeepSeekSchemaError("invalid"), factory_output()]
-    )
+    provider = FakeProvider([DeepSeekSchemaError("invalid"), factory_output()])
     graph = build_agent_graph(provider)
     result = asyncio.run(
         graph.ainvoke(initial_state(runtime_pack()), {"configurable": {"thread_id": "retry"}})
@@ -602,9 +716,7 @@ def test_ai_pm_research_is_ask_then_runs_bocha_after_permission() -> None:
     assert "query_sha256" in waiting["__interrupt__"][0].value["parameters"]
     assert research.calls == model.calls == 0
 
-    completed = asyncio.run(
-        graph.ainvoke(Command(resume={"decision": "allow"}), config)
-    )
+    completed = asyncio.run(graph.ainvoke(Command(resume={"decision": "allow"}), config))
 
     assert completed["status"] == "succeeded"
     assert completed["tool_calls_used"] == 1
@@ -625,9 +737,7 @@ def test_ai_pm_uses_explicit_research_query_without_sending_task_instructions() 
     config = {"configurable": {"thread_id": "ai-pm-explicit-query"}}
 
     waiting = asyncio.run(graph.ainvoke(state, config))
-    assert waiting["__interrupt__"][0].value["parameters"]["query_sha256"] == _hash_for_test(
-        query
-    )
+    assert waiting["__interrupt__"][0].value["parameters"]["query_sha256"] == _hash_for_test(query)
 
     completed = asyncio.run(graph.ainvoke(Command(resume={"decision": "allow"}), config))
     assert completed["status"] == "succeeded"
@@ -665,9 +775,7 @@ def test_ai_pm_research_timeout_retries_once_then_succeeds() -> None:
     config = {"configurable": {"thread_id": "ai-pm-retry"}}
     asyncio.run(graph.ainvoke(initial_state(research_pack()), config))
 
-    completed = asyncio.run(
-        graph.ainvoke(Command(resume={"decision": "allow"}), config)
-    )
+    completed = asyncio.run(graph.ainvoke(Command(resume={"decision": "allow"}), config))
 
     assert completed["status"] == "succeeded"
     assert completed["research_retries_used"] == 1
@@ -687,12 +795,30 @@ def test_ai_pm_fabricated_evidence_ref_retries_model_without_repeating_search() 
     config = {"configurable": {"thread_id": "ai-pm-provenance"}}
     asyncio.run(graph.ainvoke(initial_state(research_pack()), config))
 
-    completed = asyncio.run(
-        graph.ainvoke(Command(resume={"decision": "allow"}), config)
-    )
+    completed = asyncio.run(graph.ainvoke(Command(resume={"decision": "allow"}), config))
 
     assert completed["status"] == "succeeded"
     assert completed["turns_used"] == 2
     assert completed["retries_used"] == 1
     assert research.calls == 1
     assert model.calls == 2
+
+
+def test_builder_codex_output_schema_requires_every_declared_property() -> None:
+    schema = BuilderCodexOutput.model_json_schema()
+
+    def assert_strict_object(node: object) -> None:
+        if isinstance(node, list):
+            for item in node:
+                assert_strict_object(item)
+            return
+        if not isinstance(node, dict):
+            return
+        properties = node.get("properties")
+        if isinstance(properties, dict):
+            assert set(node.get("required") or []) == set(properties)
+            assert node.get("additionalProperties") is False
+        for value in node.values():
+            assert_strict_object(value)
+
+    assert_strict_object(schema)

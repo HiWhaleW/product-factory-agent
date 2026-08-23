@@ -3,18 +3,24 @@
 ## 当前事实
 
 - 日期：2026-08-23。
+- 产品工厂 Agent 是 **AI Native 产品**：Agent 是主要执行者，不是普通后台上的聊天插件；自然语言、Context、Tool、Artifact、Gate、Reviewer 和反馈闭环共同构成产品核心。
 - D1-D2 规格冻结包、独立工程排期、竞品/GitHub/标准 Harness 参考评估、4 份核心 Prompt 和 HTML 已生成。
-- 四项 Spec Freeze 已于 2026-08-20 获用户明确批准；D3–D4 已于 2026-08-21 收口，D5 正在进行。
-- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、D5 确定性控制面、Alembic `20260822_0006`、60 项 Python 单测、44 项在线 PostgreSQL 集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
-- DeepSeek、博查 Adapter、有界 LangGraph Runtime 和 Run/Step/checkpoint 已存在。销售复盘 Agent 虚拟产品已完成“模糊输入 → 3 个澄清 → Brief v1 → 用户批准 G0 → 博查/AI PM → Reviewer reject → Evidence/MRD v2 修订 → Reviewer pass_with_known_issues → 用户批准 G1 → 真实 PRD → Reviewer pass → G2 open”。项目仍为 `prd / Context v3`，G2 未决定。Codex Builder 完整执行、部署和线上地址仍不存在。
-- 真实 AI PM PRD Run `9c7ffc14…`、PRD v1 `71d3b81a…`、Reviewer Run `6442a2fa…`、PRD Review v1 `44c79e5a…` 和 G2 `fdac9cd1…` 已落同源 PostgreSQL。首次 PRD 模型 Run 因输出缺少必填状态被确定性提交接口拒绝，未创建 Artifact/G2；修正严格 Schema 后才重新真实运行成功。
-- 可回收前端联合验收项目固定为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`，包含开放 G2、开放 PermissionRequest、历史 pause/resume/tool 事件和当前可恢复 Run；它是测试 fixture，不得冒充真实业务项目。
+- 四项 Spec Freeze 已于 2026-08-20 获用户明确批准；D1–D10 工程主线已推进到内部验收。
+- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、确定性控制面、真实用户/项目归属、用户模型凭据、Alembic `20260823_0010`、86 项 Python 测试、48 项在线 PostgreSQL 集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
+- 2026-08-23 最新核验：Web 26/26、Python 86/86、PostgreSQL 48/48、production build 通过，Alembic 为 `20260823_0010 (head)`。项目软删除、用户隔离回收箱、幂等恢复、删除/恢复审计和 API Key 表单校验已通过真实 PostgreSQL 与浏览器 QA；保留 1 条 Starlette/httpx 弃用警告。
+- DeepSeek、博查 Adapter、有界 LangGraph Runtime、Run/Step/checkpoint 和 Codex Builder 真实执行已存在。销售复盘 Agent 已依次完成 G0–G5、后端开发、前端开发、MVP 与内部验收，当前为 `seed_beta / Context v10 / iteration v1`。
+- 用户已于 2026-08-23 批准 G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a`，并于 2026-08-24 明确确认本次内部浏览器验收通过。内部验证环境 `127.0.0.1:3200/8200` 保留销售复盘 Agent；独立用户环境 `127.0.0.1:3300/8300` 使用独立数据库且首次登录为空项目。两套环境现均绑定已验收发布包 `20260823T155102Z`；用户数据库已迁移到 `20260823_0010`，Secret Store、备份恢复和 `095514Z ↔ 155102Z` 双向回滚演练通过，最终恢复到新包。G6 尚未打开，不得正式发布。
+- 可回收前端联合验收项目固定为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`；它是测试 fixture，不得冒充真实业务项目。
 - 后续不会再分别启动 Agent Runtime、后端、前端三条并行任务线，也不存在后续“并线”步骤。当前工作区是唯一实现真相源；由同一个 coding task 按 Gate 串行完成 Runtime → API/数据库 → Web 投影 → 测试/浏览器 QA → 文档闭环。
+- GitHub Connector 本地可核验的最后安全快照是 `db39b5dd…` / Draft PR #1。任务表中无证据的 `4cac2589…` 已删除；下一位在任何远端写入前必须用 GitHub Connector 重新核验真实 head。
 - 唯一权威交互视觉基线是根目录 `产品工厂Agent_Harness表.html`。`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html` 只是把 12 阶段生命周期投影到该交互范式的修订版，不得反向覆盖视觉基线。
-- 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects/{projectId}` 双栏工作区和 `/settings` 设置页；接入真实项目创建/列表、群聊输入、参与者、Event cursor、Gate/Permission 和 React Flow Artifact DAG。
+- 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects` 真实项目列表、`/projects/{projectId}` 双栏工作区和 `/settings` API 设置页；顶部为“首页 / 项目列表 / 设置 / 个人信息”，无效“帮助”和虚假快捷键说明已移除。个人信息承载用户与 Session 内容；设置页只承载 API Key 的添加、替换和删除。真实项目支持受控软删除、用户隔离回收箱和恢复，不提供永久删除。
 - 当前桌面工作区按用户最新确认稿采用约 `30/70` 双栏（左侧群聊、右侧产物画布）；根目录 Harness 的 `38/62` 是交互视觉基线的历史比例，不能反向覆盖用户最新确认。12 阶段仍为 `6×2`，移动 `390×844` 仍使用“群聊 / 产物”同屏切换。
-- 2026-08-22 已用 ego-lite 在生产模式完成桌面 `1440×900`、移动 `390×844` 的统一导航、工作区切换、Artifact 拖动/预览、Gate 按钮 hover、参与者 hover 和真实 404 错误态验证，并归档截图与 JSON；用户已明确当前前端没有问题，`design-qa.md` 为 `passed`。这只代表当前确认稿和已测试范围通过，不能写成视觉永久冻结或完整产品验收完成。
-- 工作区顶部“事件同步：cursor 短轮询 · 降级方案”可见标签已按用户标注删除；底层 `2500ms` cursor 短轮询仍是 AG-UI/SSE 未完成前的降级实现，只能在交接/QA 中说明，不能写成传输层已完成。
+- 用户已明确前端现有内容默认固定；本次首页、项目列表、设置页、个人信息、登录后返回首页及项目操作按钮修改已提前告知并获授权。设置页现可添加/替换/删除用户自己的 API Key，并配置 OpenAI-compatible HTTPS 接口和模型名；用户已确认本次内部浏览器验收通过，`design-qa.md` 状态为 `user_accepted / user_environment_ready`。
+- AG-UI/SSE 已成为事件主通道：持久化事件使用 AG-UI CUSTOM envelope，SSE `id` 绑定数据库 sequence，支持 cursor/`Last-Event-ID`、心跳、断线降级和自动重连；`2500ms` cursor 轮询只在断线时启用，恢复后停止。
+- 认证强制执行已完成：生产环境必须开启认证并配置邀请哈希/Session Secret；受保护 API 使用 HttpOnly Session，缺失、无效或过期均 fail closed。真实 `.env` 未被本轮修改。
+- 用户 API Key 原文只保存在分环境、分用户、权限为 `0600` 的 Secret Store；PostgreSQL 保存 SecretRef、SHA-256 指纹、脱敏尾号及非敏感的接口名称/Base URL/模型名，API/校验错误不返回 Key 原文。Runtime 优先按项目 owner 使用用户配置的 OpenAI-compatible HTTPS 接口；普通用户未配置时 fail closed；`DEEPSEEK_API_KEY` 只允许内部管理员本地测试回退。
+- Factory Lead 现有能力可以澄清输入，并受 `maxTurns/maxRetries/timeout/tool budget` 限制，但尚无确定性 feasibility/preflight 分类器；不得声称它能可靠识别所有“绝对不可能目标”或在模型调用前自动省下 Token。
 - `docs/evidence/app-*.png`、`harness-mobile.png` 仍是历史 mock/原型快照；最新前端证据以 `design-qa.md` 和 `docs/evidence/d5-*-production-*-2026-08-22.png` 为准。
 - DeepSeek 渠道、模型名、Base URL 和本地 SecretRef 已配置并真实冒烟；配置名 `deepseek-chat` 与流式返回元数据 `deepseek-v4-flash` 的差异待确认，不得据此虚报完整 Agent 效果通过。
 - `产品工厂Agent/spec/Technical-Adaptation.md` 中未被代码、migration 或真实运行证据覆盖的 API/数据库/环境变量仍是未来契约，不是已实现事实。
@@ -23,9 +29,10 @@
 
 1. `README.md`
 2. `docs/handoff.md`
-3. `产品工厂Agent/spec/README.md`
-4. `docs/PRD.md`
-5. `产品工厂Agent/spec/Technical-Adaptation.md`
+3. `docs/environments.md`
+4. `产品工厂Agent/spec/README.md`
+5. `docs/PRD.md`
+6. `产品工厂Agent/spec/Technical-Adaptation.md`
 
 然后按当前任务加载：
 
@@ -42,10 +49,11 @@
 完成上述阅读和真实状态核验后，下一位接手者必须按顺序执行：
 
 1. **把当前工作区作为唯一真相源。** 不再创建 Runtime、后端或前端并行任务，不等待后续并线；不覆盖现有实现，也不把某一层的局部通过当作端到端完成。
-2. **等待用户决定真实 G2。** PRD 切片已完成且 G2 仅为 `open`；不得代批、不得在 G2 决定前进入方案确认。
-3. **再按 Gate 串行推进。** 用户批准 G2 后进入方案/G3，G3 后技术栈/G4；G4 前禁止 Builder。G4 后固定后端开发 → 前端开发，每段都要有 Execution Task、AgentRun、RunStep、ArtifactVersion 和测试证据。
-4. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。
-5. **GitHub 仍只用 Connector。** 现有安全快照和 Draft PR 已建立；后续推送前重新核对远端 head、扫描秘密与本机路径，并继续使用 `force:false`，不得使用 `gh`。
+2. **使用已验收的用户环境开展测试。** 内部和用户环境现均为 `20260823T155102Z`；用户环境迁移、Secret Store、恢复和跨版本回滚已验收。不得把用户环境反向作为内部开发数据源。
+3. **开展真实种子用户内测。** G5 已由用户批准；只收集真实任务、使用、失败和反馈数据，不得伪造内测证据。
+4. **继续按 Gate 串行推进。** 真实内测证据达标后再做 BRD 并打开 G6；G6 批准后才发布/交接。
+5. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。
+6. **GitHub 仍只用 Connector。** 现有安全快照和 Draft PR 已建立；后续推送前重新核对远端 head、扫描秘密与本机路径，并继续使用 `force:false`，不得使用 `gh`。
 
 ## 已批准的 V1 产品边界
 
@@ -61,6 +69,8 @@
 
 ## 硬性约束
 
+- 不得把产品降级为“传统 CRUD 工作流 + AI 聊天框”。每个核心闭环都应体现 Agent 感知上下文、受控行动、产生可追溯产物、接受独立审查、恢复执行和基于反馈迭代。
+- 确定性控制面不是削弱 AI Native，而是为 Agent 的自主行动提供可信边界；业务状态和权限仍不能交给模型自由决定。
 - 状态转移、工具权限、预算、幂等和人工闸由确定性代码执行，不依赖 Prompt 自律。
 - Tool 权限必须输出 allow/ask/deny；产品 Gate 与一次性 PermissionRequest 不得混用。
 - Agent Run 必须有可恢复 Journal/Step；恢复外部副作用前先按幂等键对账。
@@ -79,17 +89,19 @@
 - CopilotKit 1.68.1 + AG-UI 0.0.58 作 Agent UI/事件契约。
 - FastAPI 0.141.1 / Pydantic 2.13.4 / LangGraph 1.2.11。
 - PostgreSQL 16.x / SQLAlchemy 2.0.52 / Alembic 1.19.1。
-- Codex CLI Adapter；D3–D4 历史只读检查为 `0.148.0-alpha.15`，2026-08-22 设置页运行态检测为 `0.148.0-alpha.21`；路径通过 `CODEX_CLI_PATH` 配置，不在代码硬编码。版本漂移不等于 Builder 已完成。
+- Codex CLI Adapter 路径通过 `CODEX_CLI_PATH` 配置，不在代码硬编码；Builder 已有真实执行证据，但 V1 仍禁止自动 push/deploy/删除工作区。
 
 ## 下一阶段任务
 
-D3-D4 已收口，D5 正在进行。销售复盘 Agent 已真实生成 PRD 并经 Reviewer `pass`，G2 已打开但未决定，项目仍为 `prd / Context v3`。真实 429、博查费用/账单、来源质量人工评审和模型路由差异保持未验证。
+销售复盘 Agent 当前为 `seed_beta / Context v10 / iteration v1`。G0–G5、后端、前端、MVP、内部验收、Beta Candidate 和本机内测环境验收已完成；真实 429、博查费用/账单、来源质量人工评审和模型路由差异保持未验证。
 
-1. 等待用户人工决定 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`；Runtime 和后续接手者不得代批。
-2. 用户批准 G2 后，才生成方案确认产物并申请 G3；G2 退回时保留 PRD v1 历史并创建新版本。
-3. 保留 Reviewer 的两项 P2 已知问题：引用粒度待用户访谈验证，Gong 定价和客户规模缺少直接证据。
-4. G2 未由用户批准前不进入方案；G4 未批准前 Builder 保持禁用。
-5. `2500ms` cursor 轮询仍是降级方案，AG-UI/SSE 未完成；同一任务线继续负责 Runtime、后端、前端、测试和文档闭环。
+平台现有两套独立本机环境：内部验证环境 `3200/8200` 与用户环境 `3300/8300`。用户环境的数据库、Artifact、Workspace、日志、Session Secret 和邀请码均独立；用户环境已有 current `20260823T155102Z` 与 previous `20260823T095514Z`，双向回滚已真实演练并最终恢复到新包。公网域名、HTTPS 和真实种子用户数据尚未完成。
+
+1. 使用真实种子用户和真实任务，按既定退出阈值收集成功、失败、使用和反馈数据。
+2. 保留 Reviewer 的已知问题，并在真实内测中验证。
+3. 内测证据达标后才生成商业 BRD 并打开 G6；G6 未批准前不得正式发布。
+4. 前端非必要不动；确需修改必须提前告知用户。
+5. AG-UI/SSE 和认证强制执行已完成；后续不得把 `2500ms` cursor 轮询重新降级为主通道。
 
 ## 交接提示词
 

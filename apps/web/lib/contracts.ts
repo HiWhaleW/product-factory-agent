@@ -9,6 +9,10 @@ export type Project = {
   updated_at: string;
 };
 
+export type DeletedProject = Project & {
+  deleted_at: string;
+};
+
 export type Message = {
   id: string;
   project_id: string;
@@ -116,6 +120,8 @@ export type RuntimeStatus = {
   workspace_root_configured: boolean;
   model_provider: string;
   model_configured: boolean;
+  event_transport: "ag_ui_sse";
+  short_polling_degraded: boolean;
   codex: {
     configured: boolean;
     executable: boolean;
@@ -129,9 +135,22 @@ export type RuntimeStatus = {
 export type SessionStatus = {
   authenticated: boolean;
   user_id: string | null;
+  display_name: string | null;
+  role: "admin" | "user" | null;
   expires_at: string | null;
-  reason: "active" | "missing" | "invalid" | "expired" | "auth_not_configured" | "logged_out";
+  reason: "active" | "missing" | "invalid" | "expired" | "auth_not_configured" | "logged_out" | "user_inactive";
   auth_enforced: boolean;
+};
+
+export type ProviderCredentialStatus = {
+  provider: "openai_compatible";
+  configured: boolean;
+  provider_name: string | null;
+  base_url: string | null;
+  model_name: string | null;
+  masked_hint: string | null;
+  updated_at: string | null;
+  internal_test_fallback: boolean;
 };
 
 export type ApiError = {

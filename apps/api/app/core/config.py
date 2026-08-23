@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ARTIFACT_ROOT: Path
     WORKSPACE_ROOT: Path
+    USER_SECRET_ROOT: Path | None = None
 
     MODEL_PROVIDER: str = "deepseek"
     MODEL_NAME: str = ""
@@ -40,6 +41,9 @@ class Settings(BaseSettings):
     INVITE_CODE_HASH: str = ""
     SESSION_SECRET: SecretStr | None = Field(default=None, repr=False, exclude=True)
     SESSION_TTL_SECONDS: int = Field(default=28_800, ge=300, le=604_800)
+    AUTH_ENFORCED: bool = False
+    EVENT_STREAM_POLL_INTERVAL_SECONDS: float = Field(default=0.5, ge=0.1, le=5)
+    EVENT_STREAM_HEARTBEAT_SECONDS: int = Field(default=15, ge=5, le=60)
 
     @field_validator("DATABASE_URL")
     @classmethod
@@ -55,15 +59,21 @@ class Settings(BaseSettings):
             raise ValueError("V1 MODEL_PROVIDER is frozen to deepseek")
         return value
 
-    @field_validator("ARTIFACT_ROOT", "WORKSPACE_ROOT", "CODEX_CLI_PATH")
+    @field_validator("ARTIFACT_ROOT", "WORKSPACE_ROOT", "CODEX_CLI_PATH", "USER_SECRET_ROOT")
     @classmethod
-    def require_absolute_path(cls, value: Path) -> Path:
+    def require_absolute_path(cls, value: Path | None) -> Path | None:
+        if value is None:
+            return None
         if not value.is_absolute():
             raise ValueError("runtime paths must be absolute")
         return value.resolve(strict=False)
 
     @model_validator(mode="after")
     def validate_runtime_paths(self) -> "Settings":
+        if self.USER_SECRET_ROOT is None:
+            self.USER_SECRET_ROOT = (self.ARTIFACT_ROOT.parent / "secrets").resolve(
+                strict=False
+            )
         if self.ARTIFACT_ROOT == self.WORKSPACE_ROOT:
             raise ValueError("ARTIFACT_ROOT and WORKSPACE_ROOT must be different directories")
         if not self.ARTIFACT_ROOT.is_dir():
@@ -74,6 +84,12 @@ class Settings(BaseSettings):
             raise ValueError("CODEX_CLI_PATH must point to an existing file")
         if self.CODEX_CLI_PATH.stat().st_mode & 0o111 == 0:
             raise ValueError("CODEX_CLI_PATH must be executable")
+        if self.APP_ENV == "production" and not self.AUTH_ENFORCED:
+            raise ValueError("AUTH_ENFORCED must be true in production")
+        if self.AUTH_ENFORCED and not self.session_auth_ready:
+            raise ValueError(
+                "AUTH_ENFORCED requires INVITE_CODE_HASH and SESSION_SECRET"
+            )
         return self
 
     @property

@@ -1,49 +1,90 @@
-# 产品工厂 Agent - 开发/运维交接
+# 产品工厂 Agent - 开发与运维手册
 
 > 同步日期：2026-08-23  
-> 当前状态：D3–D4 已收口，D5–D6 定义链路进行中；PostgreSQL migration `20260822_0006`、DeepSeek/博查 Runtime、Factory Lead 和 AI PM→Reviewer 确定性契约已存在；“销售复盘 Agent”为 `prd / Context v3 / iteration v1` 并已投影到 Web；真实 PRD/Review v1 已落库，G2 已打开但未决定；Builder 和部署未开始。
+> 当前状态：`seed_beta / Context v10 / iteration v1`；G5 已批准；内部验证环境与独立用户环境均已建立；G6 尚未打开。  
+> 环境拓扑：[双环境运行说明](./environments.html)
 
-## 1. 本机已检测环境
+## 1. 当前运行基线
 
-| 工具 | 路径/版本 | 判断 |
-|---|---|---|
-| Codex CLI | `CODEX_CLI_PATH` / 当前运行态 `0.148.0-alpha.21` | 可用；D3–D4 历史证据为 `.15`，路径由环境变量配置，不硬编码 |
-| Node.js | `PATH` / `24.19.0` | 可用 |
-| npm | `PATH` / `10.9.8` | 可用 |
-| pnpm | 本机可用，项目已生成 `pnpm-lock.yaml` | 依赖已锁定；构建脚本仅允许必要原生依赖脚本 |
-| uv | `PATH` / `0.12.1` | 可用 |
-| 项目 Python | `.venv` / `3.12.13` | 由 uv 管理；不用系统 Python 3.9.6 |
-| Docker | 未检测到 | 不阻塞 V1；V2 沙箱化再引入 |
-| Git | 本地已初始化；`origin` 指向 `https://github.com/HiWhaleW/product-factory-agent.git` | Connector 已将 `codex/initial-import` 以 `force:false` 快进到 `db39b5dd…`；Draft PR #1 仍 open/draft；本地 main 仍无 commit |
+| 项目 | 当前事实 |
+|---|---|
+| Web | Next.js 16.3.1 / React 19.2.8 / Tailwind 4.3.3 |
+| API | FastAPI 0.141.1 / Pydantic 2.13.4 |
+| Runtime | LangGraph 1.2.11 / DeepSeek / 博查 / Codex CLI Adapter |
+| 数据库 | PostgreSQL 16.15 / Alembic `20260823_0010 (head)` |
+| 测试 | Web 23/23、Python 86/86、PostgreSQL 48/48 |
+| 构建 | production build 通过 |
+| 当前 Gate | G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` approved；G6 未打开 |
 
-## 2. 当前可打开的静态产物
+保留 1 条 Starlette/httpx 弃用警告。AG-UI/SSE 已是主通道；`2500ms` cursor 轮询只在断线时降级，SSE 自动恢复后停止。认证强制执行已完成，生产环境缺少认证配置会拒绝启动。
 
-不需要服务器：
+当前内部发布包为 `20260823T143242Z`；独立用户环境仍绑定旧包 `20260823T095514Z`、数据库仍为 `20260823_0008`。用户明确确认内部浏览器验收通过前，不得迁移或绑定用户环境。
 
-- `产品工厂Agent_Harness表.html`（唯一权威交互视觉基线）
-- `产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html`（12 阶段生命周期适配投影，不替代视觉基线）
-- `产品工厂Agent/spec/index.html`
-- `docs/handoff.html`
+## 2. 启动前检查
 
-它们是交互/规格/交接可视化，不会启动 Agent、修改数据库或调用外部 API。
+1. 读取 `AGENTS.md`、`README.md`、`docs/handoff.md`。
+2. 检查 `git status`，保留已有修改。
+3. 检查 PostgreSQL 16.15、Alembic head、Artifact Root、Workspace Root 和 `CODEX_CLI_PATH`。
+4. 确认密钥只存在后端环境，不进入前端、仓库、日志、Context Pack 或 Artifact。
+5. 任何 GitHub 远端写入前，用 Connector 核验当前 head 和 Draft PR #1；不得使用 `gh`。
 
-## 3. Spec Freeze 批准记录
+## 3. 标准命令
 
-- [x] Spec Freeze Review 通过。
-- [x] V1 仅单用户/单管理员。
-- [x] V1 仅 DeepSeek 一个模型供应商；接入渠道、模型名和 Base URL 最晚 D5 真模型切片前锁定并真实冒烟。
-- [x] V1 Builder 使用本地 Codex CLI。
-- [x] V1 本机/内网运行，不引入 SSO、多租户或云代码沙箱。
+```bash
+env UV_CACHE_DIR=.uv-cache uv sync --locked
+pnpm install --frozen-lockfile
+env CI=true pnpm check
+pnpm test:api:integration
+env CI=true NEXT_TELEMETRY_DISABLED=1 pnpm build
+env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current
+pnpm dev
+```
 
-## 4. 分阶段环境值
+普通 Python 单测不会隐式运行在线 PostgreSQL 集成测试；集成测试必须使用 `pnpm test:api:integration` 单独执行。
 
-PostgreSQL 16.15、Artifact/Workspace Root 和 Codex CLI 已在本机配置并验证：根目录 `artifacts/` 与 `workspaces/` 相互独立且被 Git 忽略，Codex CLI 路径存在、可执行；D3–D4 历史证据记录 `0.148.0-alpha.15`，2026-08-22 设置页运行态检测为 `0.148.0-alpha.21`。DeepSeek 渠道、`MODEL_NAME`、`MODEL_BASE_URL` 已配置并完成脱敏真实冒烟；正式发布宿主机/URL 在 B1-Bn 真实内测证据达标、G6 前就绪。
+不要在主库执行 downgrade。migration 往返测试必须使用临时空库。
+
+### 3.1 内部验证环境
+
+```bash
+scripts/seed-beta/configure.sh
+scripts/seed-beta/release.sh
+scripts/seed-beta/start.sh
+scripts/seed-beta/health-check.sh
+scripts/seed-beta/backup.sh
+scripts/seed-beta/restore-check.sh
+scripts/seed-beta/rollback.sh
+scripts/seed-beta/stop.sh
+```
+
+内部凭据、PID、日志、发布包和备份只保存在被 Git 忽略的 `.runtime/seed-beta/`。该环境保留销售复盘 Agent 与内部验收数据。`restore-check.sh` 只恢复到固定前缀临时数据库，核对后删除，不修改主库。`rollback.sh` 只切换受控 current/previous 发布包，不覆盖工作区源码。
+
+### 3.2 独立用户环境
+
+```bash
+scripts/user-beta/configure.sh
+scripts/user-beta/release.sh
+scripts/user-beta/start.sh
+scripts/user-beta/health-check.sh
+scripts/user-beta/acceptance.sh
+scripts/user-beta/backup.sh
+scripts/user-beta/restore-check.sh
+scripts/user-beta/rollback.sh
+scripts/user-beta/stop.sh
+```
+
+用户环境固定使用独立数据库 `product_factory_user_beta` 和 `.runtime/user-beta/` 下的 Artifact、Workspace、日志、PID、备份与密钥。`release.sh` 只能绑定内部环境已经生成并验收通过的 `current` 发布包。`acceptance.sh` 必须验证真实用户已记录、项目列表为空、内部项目未泄露。
+
+用户环境当前只有首个版本，没有 `previous`。此时 `rollback.sh` 必须在停止服务前安全拒绝；下一版先通过内部环境并发布后，才能演练真实跨版本回滚。
+
+## 4. 本地配置
 
 ```env
 APP_ENV=development
 DATABASE_URL=postgresql+psycopg://...
 ARTIFACT_ROOT=/absolute/approved/path
 WORKSPACE_ROOT=/absolute/approved/path
+USER_SECRET_ROOT=/absolute/approved/path/user-secrets
 
 MODEL_PROVIDER=deepseek
 MODEL_NAME=
@@ -54,7 +95,6 @@ DEEPSEEK_API_KEY=
 WEB_RESEARCH_PROVIDER=bocha
 WEB_RESEARCH_BASE_URL=https://api.bochaai.com/v1
 WEB_RESEARCH_API_KEY_REF=BOCHA_API_KEY
-WEB_RESEARCH_TIMEOUT_SECONDS=30
 BOCHA_API_KEY=
 
 CODEX_CLI_PATH=/absolute/path/to/codex
@@ -63,90 +103,64 @@ CODEX_TASK_TIMEOUT_SECONDS=1800
 
 INVITE_CODE_HASH=
 SESSION_SECRET=
+AUTH_ENFORCED=false
+SESSION_TTL_SECONDS=28800
+
+EVENT_STREAM_POLL_INTERVAL_SECONDS=0.5
+EVENT_STREAM_HEARTBEAT_SECONDS=15
 ```
 
-密钥值不写进文档、群聊、Prompt、命令输出或 Git，也不要求用户在聊天中粘贴；只在批准的后端 Secret 管理位置配置并传递 SecretRef。
+文档只能写变量名和 SecretRef，不能写真实密钥。
 
-## 5. D3-D4 执行与剩余顺序
+用户 API Key 由设置页写入 `USER_SECRET_ROOT`，根目录/用户目录权限必须为 `0700`，Key 文件权限必须为 `0600`。PostgreSQL 的 `user_provider_credentials` 保存 SecretRef、SHA-256 指纹、脱敏尾号及非敏感的接口名称/HTTPS Base URL/模型名。Runtime 使用用户配置的 OpenAI-compatible 接口；普通用户没有 Key 时 Agent 必须拒绝执行；`DEEPSEEK_API_KEY` 仅供内部验证账号测试回退，不能下发给普通用户。
 
-详细每日工程排期、依赖和退出证据以 [Engineering-Schedule.md](../产品工厂Agent/spec/Engineering-Schedule.md) 为准；本节仅保留环境/运维顺序摘要。
+生产环境必须设置 `AUTH_ENFORCED=true`，并配置 SHA-256 邀请码哈希与 Session Secret。Session 只通过 HttpOnly Cookie 传递；不要把令牌或邀请码写入前端环境变量。
 
-```text
-1. [完成] 初始化 Git，保留用户已有文件
-2. [完成] 用 uv 安装/锁定 Python 3.12
-3. [完成] 创建 Next.js + FastAPI monorepo 骨架
-4. [完成] PostgreSQL 16.15 在线，migration 到 20260822_0006 (head)，Artifact/Workspace/Codex 路径已验证
-5. [完成基础切片] Project/Message/Event/Graph/Gate/Permission API 与 Task 原子认领
-6. [完成基础切片] 状态迁移、Permission 不推进阶段、过期/旧 Context 拒绝和并发幂等
-7. [完成基础切片] 真实单屏 UI 展示 12 阶段、群聊、Gate/Permission 与 React Flow Artifact DAG
-8. [已验证] PostgreSQL 集成 44/44；DeepSeek/博查/Factory Lead/AI PM→Reviewer 真实冒烟已有脱敏证据；销售复盘项目 G0/G1 已由用户决定
-9. [完成统一投影] 销售复盘项目、Artifact v1/v2、历史 G1、执行/恢复、Gate 决定和 Session 契约已接入 Web
-10. [完成] 真实 AI PM PRD Run、确定性提交、Reviewer clean-review、PRD/Review v1 与 G2 open；G2 未由用户决定
-11. [数据完成、浏览器待验] 可回收 Gate/Permission fixture `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`
-12. [待完成] AG-UI/SSE、认证强制执行；G4 前禁止 Codex Builder
-```
+## 5. 当前业务操作边界
 
-### 5.1 正式接手的 GitHub 操作边界
+- G5 已由用户批准，当前允许使用真实用户、真实任务和明确退出阈值开展内测，不能用 mock 数据。
+- 内测证据达标后才能生成商业 BRD 并打开 G6。
+- G6 未批准前不得正式部署、发布或交接。
+- 前端现有内容默认固定；确需修改必须提前告诉用户。
+- 冻结的 4 份 Agent Prompt 不得修改。
+- 新版本必须先在内部环境完成迁移、测试、build、健康和浏览器验收，再发布到独立用户环境。
+- 两套环境不得共享数据库、Artifact、Workspace、日志、Session Secret 或邀请码。
+- 项目删除必须进入按 Session owner 隔离的回收箱；恢复回到删除前阶段并写入审计事件，重复恢复保持幂等。V1 不提供永久删除，Run、Gate、Artifact、Context 和审计链必须保留。
 
-- 远端读取、分支、提交/文件上传和 PR 更新必须使用 GitHub 插件/Connector，不得使用 `gh` CLI。
-- Connector 已核验默认分支 `main`、`codex/initial-import` 和 open Draft PR #1；推送前再次核对 PR head，使用 `force:false`。
-- 推送前按 `.gitignore`、秘密和本机路径扫描形成安全清单；不得上传 `.env`、Runtime、虚拟环境、依赖/缓存、Artifact/Workspace 或 SecretRef 原值。
-- 不得 force push、重建仓库或覆盖其他任务线。插件缺失或无写权限时停止远端写入并请求安装/授权。
+## 6. 浏览器检查
 
-## 6. 当前标准检查命令
+每次前端变更后至少检查桌面 `1440×900`、移动 `390×844` 和用户标注视口。当前最新额外检查为 `819×749`，warning/error 为 0。
 
-以下命令当前可执行；在线 PostgreSQL 测试必须使用专用命令，不由普通 pytest 隐式运行：
+重点检查：
 
-```bash
-env UV_CACHE_DIR=.uv-cache uv sync --locked
-pnpm install --frozen-lockfile
-env CI=true pnpm check
-env CI=true NEXT_TELEMETRY_DISABLED=1 pnpm build
-pnpm test:api:integration
-env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current
-pnpm dev
-```
+- 阶段点击能跳到对应产物和该阶段聊天开头。
+- 主 Agent 邀请子 Agent，子 Agent 入群后自我介绍。
+- 执行过程显示在用户消息与 Agent 回复之间。
+- 工具过程使用普通人能懂的中文，不显示杂乱技术事件。
+- 时间、标题和说明不遮挡。
+- 无限画布缩放无黑框动效。
+- 未登录访问受保护 API 返回 401，首页只显示邀请码登录。
+- 登录后 `/events/stream` 保持 `text/event-stream` 长连接；断线显示降级提示并启动轮询，SSE 恢复后提示消失且轮询停止。
 
-本轮 migration 往返命令：
+## 7. 排障
 
-```bash
-env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini downgrade 20260822_0003
-pnpm db:migrate
-```
-
-Reviewer 对接字段和错误码见 [D5 AI PM→Reviewer→G1 契约](./contracts/d5-review-candidate-contract-2026-08-22.md)。
-
-当前统一工作区已把“销售复盘 Agent”恢复到 Web 同源 API，并提供 Evidence Index v2、MRD v2、Red Team Review v2、G1 两项 known issues、PRD/Review v1、G2 open、Artifact 版本索引、`gate-decisions`、真实 membership/run/task/step/tool/recovery 投影与 Session 契约。完整读取接口见 [D5 Web / 后端真实投影契约](./contracts/d5-web-backend-projection-contract-2026-08-23.md)。可回收 Gate/Permission fixture 数据已存在，仍缺浏览器联合验收、认证强制执行和 AG-UI/SSE；`2500ms` cursor 轮询仍是降级。“D3 双栏交互验收”仅可用于前端回归。
-
-末次验证记录（2026-08-23）：当前统一工作区 `pnpm check` 通过；Web ESLint、TypeScript、Vitest 13/13，Ruff 与 Python 60/60；PostgreSQL 在线集成 44/44；production build 通过；主库 Alembic 为 `20260822_0006 (head)`。临时空库的 `upgrade head → downgrade 0004 → upgrade head` 历史验证通过；保留 1 条 Starlette/httpx 弃用警告。受限沙箱内的本机 TCP 失败不计为断言失败，授权连接 PostgreSQL 后全部通过。
-
-后续不再启动 Runtime、后端和前端三条并行任务，也不存在后续并线。任何跨层改动由一个 coding task 在同一工作区按 Runtime → API/数据库 → Web 投影 → 全量检查/浏览器 QA → 文档的顺序闭环；不得用“等待并线”解释未完成项。
-
-## 7. D9-D10 内部验收与发布前健康检查
-
-D9-D10 只完成内部 QA 和 G5/Beta Candidate，必须包含：
-
-- 本机/内网访问控制、数据归属；正式 HTTPS/发布目标在 G6 前确认。
-- PostgreSQL 备份和恢复。
-- Artifact Store 原子写入、哈希、路径逃逸防护和内容消毒。
-- Agent 事件断线/cursor 恢复。
-- 工具超时、预算、重试和幂等。
-- 真实模型冒烟、真实浏览器 QA 和 G5 内部验收。
-- 真实种子内测与商业 BRD/G6 未通过前禁止正式发布。
-
-## 8. 已知风险/排障路由
-
-| 现象 | 首先检查 | 不要做 |
+| 现象 | 先检查 | 不要做 |
 |---|---|---|
-| Agent 使用旧事实 | Context Pack `contextVersion`、已批决定和 stale handoff | 不手工将新老草稿拼成一份 |
-| 审批重复执行 | `gate_id + context_version` 幂等键 | 不盲目重试发布/计费动作 |
-| DAG 缺节点 | Artifact/Event 后端事实 | 不只修前端画布状态 |
-| Codex 越工作区 | 解析后路径、软链接、Tool Policy | 不靠 Prompt “请不要越界” |
-| 页面显示完成但无产物 | ArtifactVersion/测试/人工闸证据 | 不降低完成定义 |
-| 密钥出现在日志 | 立即停止、脱敏并轮换密钥 | 不把日志继续传入 Agent |
+| 页面状态和数据库不一致 | Project/Event/Gate/Artifact 真相源 | 不在前端写假状态 |
+| Agent 使用旧事实 | ContextVersion、stale handoff | 不拼接新旧草稿 |
+| Gate 重复执行 | Gate ID、ContextVersion、幂等键 | 不盲目重试 |
+| Codex 越工作区 | 解析后路径、软链接、Tool Policy | 不靠 Prompt 自律 |
+| 页面显示完成但无证据 | RunStep、ArtifactVersion、测试、Gate | 不降低验收 |
+| 日志出现密钥 | 立即停止、脱敏、轮换 | 不继续传播日志 |
+| 用户首页出现内部项目 | 检查用户数据库、Session 用户和 owner 过滤 | 不在前端隐藏泄露结果冒充隔离 |
+| 用户环境发布失败 | 保持原 current，检查内部发布包和 preflight | 不直接从工作区启动未验收代码 |
 
-## 9. 部署边界
+## 8. 发布边界
 
-- V1 本机/内网运行 Web、API、PostgreSQL 和 Codex CLI Adapter。
-- 根目录 veFaaS 手册只作将来 Web/API 部署参考；不用 veFaaS 函数运行本地 Builder 工作区。
-- V2 再评估 OpenHands/ACP/E2B/企业 Docker/Kubernetes 沙箱。
+- V1 运行于本机/内网。
+- Builder 禁止自动 push、deploy 或删除工作区。
+- 正式发布必须等待真实种子内测、商业 BRD 和 G6。
+- 发布后必须保存 Deployment Record、真实 URL、健康检查、回滚方案和反馈分支。
+- `http://127.0.0.1:3200` / `8200` 是内部验证环境；`http://127.0.0.1:3300` / `8300` 是独立用户环境。
+- 两套地址目前都是本机回环 URL；跨设备或公网访问前必须配置受信任 HTTPS、production Cookie 策略和独立部署边界。
+- 用户环境首版没有可回滚的 previous；只有下一版完成内部验收并发布后，才具备真实跨版本回滚条件。

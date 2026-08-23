@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-23",
+  "tool": "ego-browser",
+  "task_space_closed": true,
+  "viewports": [
+    {"name": "desktop", "width": 1440, "height": 900},
+    {"name": "mobile", "width": 390, "height": 844}
+  ],
+  "files": [
+    "README.html",
+    "docs/handoff.html",
+    "docs/HANDOFF_PROMPT.html",
+    "docs/operator-runbook.html",
+    "产品工厂Agent/spec/Engineering-Schedule.html"
+  ],
+  "result": {
+    "page_level_horizontal_overflow": 0,
+    "missing_href_attributes": 0,
+    "expected_titles_and_h1_present": true
+  },
+  "scope_note": "仅验证本次交接文档的本地 HTML 阅读版，不代表产品 Web 功能验收。"
+}

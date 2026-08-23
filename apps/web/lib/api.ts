@@ -1,11 +1,14 @@
 import "server-only";
 
+import { cookies } from "next/headers";
+
 import type {
   ArtifactContent,
   ArtifactGraph,
   GateRequest,
   Message,
   PermissionRequest,
+  ProviderCredentialStatus,
   Project,
   ProjectEvent,
   RuntimeStatus,
@@ -24,7 +27,11 @@ export class ApiRequestError extends Error {
 }
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, { cache: "no-store" });
+  const cookieHeader = (await cookies()).toString();
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    cache: "no-store",
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
+  });
   if (!response.ok) {
     let message = `API request failed (${response.status})`;
     try {
@@ -43,8 +50,19 @@ export const getProject = (projectId: string) =>
   apiFetch<Project>(`/api/v1/projects/${encodeURIComponent(projectId)}`);
 export const getMessages = (projectId: string) =>
   apiFetch<Message[]>(`/api/v1/projects/${encodeURIComponent(projectId)}/messages`);
-export const getEvents = (projectId: string) =>
-  apiFetch<ProjectEvent[]>(`/api/v1/projects/${encodeURIComponent(projectId)}/events`);
+export async function getEvents(projectId: string) {
+  const encodedProjectId = encodeURIComponent(projectId);
+  const events: ProjectEvent[] = [];
+  let cursor = 0;
+  while (true) {
+    const page = await apiFetch<ProjectEvent[]>(
+      `/api/v1/projects/${encodedProjectId}/events?cursor=${cursor}&limit=500`,
+    );
+    events.push(...page);
+    if (page.length < 500) return events;
+    cursor = page.at(-1)?.sequence ?? cursor;
+  }
+}
 export const getGraph = (projectId: string) =>
   apiFetch<ArtifactGraph>(`/api/v1/projects/${encodeURIComponent(projectId)}/graph`);
 export const getGates = (projectId: string, status: "open" | "all" = "open") =>
@@ -62,6 +80,8 @@ export const getHealth = () =>
   }>("/health");
 export const getRuntimeStatus = () => apiFetch<RuntimeStatus>("/api/v1/runtime/status");
 export const getMe = () => apiFetch<SessionStatus>("/api/v1/me");
+export const getProviderCredential = () =>
+  apiFetch<ProviderCredentialStatus>("/api/v1/me/provider-credentials/model-api");
 export const getArtifactContent = (artifactId: string, version?: number) =>
   apiFetch<ArtifactContent>(
     `/api/v1/artifacts/${encodeURIComponent(artifactId)}/content${version ? `?version=${version}` : ""}`,

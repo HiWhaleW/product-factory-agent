@@ -18,7 +18,7 @@ from app.adapters.deepseek import DeepSeekAdapter
 from app.agents.checkpoint import CheckpointArchive, CheckpointArchiveError
 from app.agents.context import ApprovedContextPack, ContextBoundaryError
 from app.agents.graph import ModelProvider, ResearchProvider, build_agent_graph
-from app.agents.registry import require_d5_agent
+from app.agents.registry import require_runtime_agent
 from app.core.config import Settings
 from app.core.database import SessionLocal
 from app.domain.models import (
@@ -87,6 +87,7 @@ class AgentRuntimeService:
         research_provider: ResearchProvider | None = None,
         session_factory: sessionmaker[Session] = SessionLocal,
         available_tool_ids: frozenset[str] = frozenset(),
+        owner_user_id: str | None = None,
     ) -> None:
         self.settings = settings
         self.provider = provider or DeepSeekAdapter.from_settings(settings)
@@ -95,6 +96,7 @@ class AgentRuntimeService:
         self.available_tool_ids = available_tool_ids | (
             frozenset({"web_research"}) if research_provider is not None else frozenset()
         )
+        self.owner_user_id = owner_user_id
         self.archive = CheckpointArchive(settings.ARTIFACT_ROOT)
 
     async def start(
@@ -106,7 +108,7 @@ class AgentRuntimeService:
         self._reject_secret_like_input(user_input)
         with self.session_factory.begin() as session:
             loaded = self._load_approved_pack(session, context_pack_id)
-            definition = require_d5_agent(loaded.agent_id, loaded.pack.stage)
+            definition = require_runtime_agent(loaded.agent_id, loaded.pack.stage)
             self._check_tool_preconditions(loaded.pack)
             input_hash = self._input_hash(loaded.pack, user_input, definition.prompt_version)
             task = AgentTask(
@@ -198,6 +200,8 @@ class AgentRuntimeService:
             task = session.get(AgentTask, run.task_id) if run else None
             project = session.get(Project, task.project_id) if task else None
             if run is None or task is None or project is None:
+                raise AgentRuntimeError("RUN_NOT_FOUND", "Agent Run does not exist.")
+            if self.owner_user_id is not None and project.owner_user_id != self.owner_user_id:
                 raise AgentRuntimeError("RUN_NOT_FOUND", "Agent Run does not exist.")
             if task.context_version != project.context_version:
                 raise AgentRuntimeError("STALE_CONTEXT", "Run Context is stale.")
@@ -318,11 +322,14 @@ class AgentRuntimeService:
             task = session.get(AgentTask, task_id)
             if run is None or task is None:
                 raise AgentRuntimeError("RUN_NOT_FOUND", "Run disappeared during persistence.")
-            tool_steps = session.scalar(
-                select(func.count())
-                .select_from(RunStep)
-                .where(RunStep.run_id == run_id, RunStep.step_type == "tool")
-            ) or 0
+            tool_steps = (
+                session.scalar(
+                    select(func.count())
+                    .select_from(RunStep)
+                    .where(RunStep.run_id == run_id, RunStep.step_type == "tool")
+                )
+                or 0
+            )
             tool_calls_used = int(result.get("tool_calls_used") or 0)
             tool_results = result.get("tool_results") or []
             tool_output_hash = (
@@ -341,9 +348,7 @@ class AgentRuntimeService:
                     step_type="tool",
                     state="completed" if completed else "failed",
                     input_hash=run.input_hash,
-                    output_ref=(
-                        f"evidence-set://{tool_output_hash}" if completed else None
-                    ),
+                    output_ref=(f"evidence-set://{tool_output_hash}" if completed else None),
                     idempotency_key=f"web_research:{run_id}:{attempt + 1}",
                     external_effect_confirmed=completed,
                 )
@@ -373,11 +378,14 @@ class AgentRuntimeService:
                         "result_ref": tool_run.result_ref,
                     },
                 )
-            model_steps = session.scalar(
-                select(func.count())
-                .select_from(RunStep)
-                .where(RunStep.run_id == run_id, RunStep.step_type == "model")
-            ) or 0
+            model_steps = (
+                session.scalar(
+                    select(func.count())
+                    .select_from(RunStep)
+                    .where(RunStep.run_id == run_id, RunStep.step_type == "model")
+                )
+                or 0
+            )
             turns_used = int(result.get("turns_used") or 0)
             for attempt in range(model_steps, turns_used):
                 final_attempt = attempt == turns_used - 1
@@ -386,9 +394,7 @@ class AgentRuntimeService:
                     run_id=run_id,
                     step_type="model",
                     state=(
-                        "completed"
-                        if final_attempt and result.get("observed_model")
-                        else "failed"
+                        "completed" if final_attempt and result.get("observed_model") else "failed"
                     ),
                     input_hash=run.input_hash,
                     output_ref=(
@@ -497,6 +503,8 @@ class AgentRuntimeService:
         )
         if pack is None or project is None or context is None:
             raise AgentRuntimeError("CONTEXT_PACK_NOT_FOUND", "Approved Context Pack is missing.")
+        if self.owner_user_id is not None and project.owner_user_id != self.owner_user_id:
+            raise AgentRuntimeError("CONTEXT_PACK_NOT_FOUND", "Approved Context Pack is missing.")
         if (
             pack.approval_status != "approved"
             or pack.context_version != project.context_version
@@ -560,6 +568,18 @@ class AgentRuntimeService:
         input_contract = pack.policy.get("input_contract")
         if input_contract == "prd-review/v1":
             return self._load_prd_review_candidate(
+                session,
+                project=project,
+                pack=pack,
+            )
+        if input_contract == "solution-review/v1":
+            return self._load_solution_review_candidates(
+                session,
+                project=project,
+                pack=pack,
+            )
+        if input_contract == "technical-review/v1":
+            return self._load_technical_review_candidates(
                 session,
                 project=project,
                 pack=pack,
@@ -637,6 +657,162 @@ class AgentRuntimeService:
                     "content": content,
                     "content_hash": version.content_hash,
                 }
+            )
+        return loaded
+
+    def _load_solution_review_candidates(
+        self,
+        session: Session,
+        *,
+        project: Project,
+        pack: ContextPack,
+    ) -> list[dict[str, Any]]:
+        candidates = pack.policy.get("review_candidates")
+        if not isinstance(candidates, list) or len(candidates) != 2:
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_UNAVAILABLE",
+                "Reviewer Context Pack must bind User Flow and Solution Design.",
+            )
+        loaded: list[dict[str, Any]] = []
+        expected_kinds = {"user_flow", "solution_design"}
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise AgentRuntimeError("REVIEW_INPUT_INVALID", "Solution candidate is invalid.")
+            artifact_id = candidate.get("artifact_id")
+            version_number = candidate.get("version")
+            artifact = session.get(Artifact, artifact_id) if isinstance(artifact_id, str) else None
+            version = (
+                session.scalar(
+                    select(ArtifactVersion).where(
+                        ArtifactVersion.artifact_id == artifact_id,
+                        ArtifactVersion.version == version_number,
+                    )
+                )
+                if artifact is not None and isinstance(version_number, int)
+                else None
+            )
+            if (
+                artifact is None
+                or version is None
+                or artifact.project_id != project.id
+                or artifact.kind not in expected_kinds
+                or artifact.stage != "solution_confirmation"
+                or version.context_version != project.context_version
+                or version.approval_status != "draft"
+                or version.content_hash != candidate.get("content_hash")
+            ):
+                raise AgentRuntimeError(
+                    "REVIEW_INPUT_STALE",
+                    "Solution review candidate is missing, stale, or not reviewable.",
+                )
+            try:
+                _, content = read_verified_artifact(
+                    self.settings.ARTIFACT_ROOT,
+                    version.content_ref,
+                    version.content_hash,
+                )
+            except ArtifactStoreError as exc:
+                raise AgentRuntimeError(
+                    "REVIEW_INPUT_INVALID",
+                    "Solution candidate failed integrity checks.",
+                ) from exc
+            self._reject_secret_like_input(content)
+            loaded.append(
+                {
+                    "resource_type": "review_candidate_artifact",
+                    "review_status": "waiting_reviewer",
+                    "resource_id": artifact.id,
+                    "version": version.version,
+                    "kind": artifact.kind,
+                    "title": artifact.title,
+                    "artifact_ref": f"artifact:{artifact.id}:v{version.version}",
+                    "evidence_refs": list(candidate.get("evidence_refs") or []),
+                    "content": content,
+                    "content_hash": version.content_hash,
+                }
+            )
+        if {item["kind"] for item in loaded} != expected_kinds:
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_INVALID",
+                "Solution review requires one User Flow and one Solution Design.",
+            )
+        return loaded
+
+    def _load_technical_review_candidates(
+        self,
+        session: Session,
+        *,
+        project: Project,
+        pack: ContextPack,
+    ) -> list[dict[str, Any]]:
+        candidates = pack.policy.get("review_candidates")
+        if not isinstance(candidates, list) or len(candidates) != 2:
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_UNAVAILABLE",
+                "Reviewer Context Pack must bind Technical Adaptation and API Contract.",
+            )
+        loaded: list[dict[str, Any]] = []
+        expected_kinds = {"technical_adaptation", "api_contract"}
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise AgentRuntimeError("REVIEW_INPUT_INVALID", "Technical candidate is invalid.")
+            artifact_id = candidate.get("artifact_id")
+            version_number = candidate.get("version")
+            artifact = session.get(Artifact, artifact_id) if isinstance(artifact_id, str) else None
+            version = (
+                session.scalar(
+                    select(ArtifactVersion).where(
+                        ArtifactVersion.artifact_id == artifact_id,
+                        ArtifactVersion.version == version_number,
+                    )
+                )
+                if artifact is not None and isinstance(version_number, int)
+                else None
+            )
+            if (
+                artifact is None
+                or version is None
+                or artifact.project_id != project.id
+                or artifact.kind not in expected_kinds
+                or artifact.stage != "tech_stack_confirmation"
+                or version.context_version != project.context_version
+                or version.approval_status != "draft"
+                or version.content_hash != candidate.get("content_hash")
+            ):
+                raise AgentRuntimeError(
+                    "REVIEW_INPUT_STALE",
+                    "Technical review candidate is missing, stale, or not reviewable.",
+                )
+            try:
+                _, content = read_verified_artifact(
+                    self.settings.ARTIFACT_ROOT,
+                    version.content_ref,
+                    version.content_hash,
+                )
+            except ArtifactStoreError as exc:
+                raise AgentRuntimeError(
+                    "REVIEW_INPUT_INVALID",
+                    "Technical candidate failed integrity checks.",
+                ) from exc
+            self._reject_secret_like_input(content)
+            loaded.append(
+                {
+                    "resource_type": "review_candidate_artifact",
+                    "review_status": "waiting_reviewer",
+                    "resource_id": artifact.id,
+                    "version": version.version,
+                    "kind": artifact.kind,
+                    "title": artifact.title,
+                    "artifact_ref": f"artifact:{artifact.id}:v{version.version}",
+                    "evidence_refs": list(candidate.get("evidence_refs") or []),
+                    "content": content,
+                    "content_hash": version.content_hash,
+                }
+            )
+        if {item["kind"] for item in loaded} != expected_kinds:
+            raise AgentRuntimeError(
+                "REVIEW_INPUT_INVALID",
+                "Technical review requires one Technical Adaptation and one API Contract.",
             )
         return loaded
 

@@ -606,6 +606,7 @@ def _persist_artifact(
     kind: str,
     owner_agent: str,
     summary: str,
+    stage: str = "prd",
 ) -> tuple[Artifact, ArtifactVersion]:
     artifact = session.get(Artifact, proposal.artifact_id) if proposal.artifact_id else None
     if proposal.artifact_id and artifact is None:
@@ -614,13 +615,13 @@ def _persist_artifact(
         existing = session.scalar(
             select(Artifact).where(
                 Artifact.project_id == project.id,
-                Artifact.stage == "prd",
+                Artifact.stage == stage,
                 Artifact.kind == kind,
             )
         )
         if existing is not None:
             raise PrdDefinitionError(
-                "ARTIFACT_ID_REQUIRED", "该 PRD 产物已存在，修订时必须传 artifact_id。"
+                "ARTIFACT_ID_REQUIRED", "该阶段产物已存在，修订时必须传 artifact_id。"
             )
         if proposal.expected_previous_version != 0:
             raise PrdDefinitionError("ARTIFACT_VERSION_CONFLICT", "新产物前置版本必须为 0。")
@@ -628,7 +629,7 @@ def _persist_artifact(
             project_id=project.id,
             title=proposal.title,
             kind=kind,
-            stage="prd",
+            stage=stage,
             status="waiting_review",
             latest_version=0,
             owner_agent=owner_agent,
@@ -637,7 +638,7 @@ def _persist_artifact(
         session.flush()
     elif (
         artifact.project_id != project.id
-        or artifact.stage != "prd"
+        or artifact.stage != stage
         or artifact.kind != kind
     ):
         raise PrdDefinitionError("ARTIFACT_BINDING_INVALID", "Artifact 身份或阶段不匹配。")
@@ -1022,11 +1023,11 @@ def _authorize_artifact_store(pack: ContextPack, *, agent_id: str):
     )
     decision = evaluate_tool_policy(
         agent_id=agent_id,
-        stage="prd",
+        stage=pack.stage,
         context_pack=runtime_pack,
         request=ToolRequest(
             tool_id="artifact_store",
-            parameters={"content": "redacted", "stage": "prd"},
+            parameters={"content": "redacted", "stage": pack.stage},
             side_effect="reversible",
         ),
         tool_calls_used=0,

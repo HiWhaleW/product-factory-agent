@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { WorkspaceClient } from "@/app/projects/[projectId]/workspace-client";
 import {
@@ -26,6 +26,7 @@ async function loadWorkspace(projectId: string) {
       getPermissions(projectId),
     ]);
   } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 401) redirect("/");
     if (error instanceof ApiRequestError && error.status === 404) notFound();
     throw error;
   }

@@ -123,9 +123,7 @@ class AiPmMrdOutput(AiPmOutput):
     def requires_evidence_index_and_mrd(self) -> AiPmMrdOutput:
         kinds = {artifact.kind for artifact in self.artifact_proposals}
         if len(self.artifact_proposals) != 2 or kinds != {"evidence_index", "mrd"}:
-            raise ValueError(
-                "MRD stage requires exactly one Evidence Index and one MRD proposal."
-            )
+            raise ValueError("MRD stage requires exactly one Evidence Index and one MRD proposal.")
         return self
 
 
@@ -162,6 +160,41 @@ class BuilderOutput(StrictModel):
     known_issues: list[dict[str, Any]] = Field(default_factory=list)
     gate_request: dict[str, Any] | None = None
     transition_proposal: dict[str, Any] | None = None
+
+
+class BuilderSolutionArtifactProposal(ArtifactProposal):
+    kind: Literal["user_flow", "solution_design"]
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+    status: Literal["waiting_review"] = "waiting_review"
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> BuilderSolutionArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Solution EvidenceRef values must be unique.")
+        if any(ref not in self.content for ref in self.evidence_refs):
+            raise ValueError("Every declared solution EvidenceRef must appear verbatim in content.")
+        return self
+
+
+class BuilderSolutionOutput(BuilderOutput):
+    tool_requests: list[ToolRequestOutput] = Field(default_factory=list, max_length=0)
+    artifact_proposals: list[BuilderSolutionArtifactProposal] = Field(
+        min_length=2,
+        max_length=2,
+    )
+    gate_request: None = None
+    transition_proposal: None = None
+
+    @model_validator(mode="after")
+    def requires_user_flow_and_solution(self) -> BuilderSolutionOutput:
+        if {artifact.kind for artifact in self.artifact_proposals} != {
+            "user_flow",
+            "solution_design",
+        }:
+            raise ValueError(
+                "Solution stage requires exactly one User Flow and one Solution Design."
+            )
+        return self
 
 
 class ReviewerFinding(StrictModel):
@@ -254,6 +287,101 @@ class ReviewerPrdOutput(ReviewerOutput):
         return self
 
 
+class ReviewerSolutionArtifactProposal(ArtifactProposal):
+    kind: Literal["solution_review"]
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+    status: Literal["waiting_review"] = "waiting_review"
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> ReviewerSolutionArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Solution Review EvidenceRef values must be unique.")
+        if any(ref not in self.content for ref in self.evidence_refs):
+            raise ValueError(
+                "Every declared Solution Review EvidenceRef must appear verbatim in content."
+            )
+        return self
+
+
+class ReviewerSolutionOutput(ReviewerOutput):
+    evidence_refs: list[str] = Field(min_length=2, max_length=100)
+    artifact_proposals: list[ReviewerSolutionArtifactProposal] = Field(
+        min_length=1,
+        max_length=1,
+    )
+    transition_proposal: None = None
+
+    @model_validator(mode="after")
+    def evidence_refs_are_unique(self) -> ReviewerSolutionOutput:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Reviewer Solution EvidenceRef values must be unique.")
+        return self
+
+
+class BuilderTechnicalArtifactProposal(ArtifactProposal):
+    kind: Literal["technical_adaptation", "api_contract"]
+    evidence_refs: list[str] = Field(min_length=1, max_length=100)
+    status: Literal["waiting_review"] = "waiting_review"
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> BuilderTechnicalArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Technical EvidenceRef values must be unique.")
+        if any(ref not in self.content for ref in self.evidence_refs):
+            raise ValueError("Every technical EvidenceRef must appear verbatim in content.")
+        return self
+
+
+class BuilderTechnicalOutput(BuilderOutput):
+    tool_requests: list[ToolRequestOutput] = Field(default_factory=list, max_length=0)
+    artifact_proposals: list[BuilderTechnicalArtifactProposal] = Field(
+        min_length=2,
+        max_length=2,
+    )
+    gate_request: None = None
+    transition_proposal: None = None
+
+    @model_validator(mode="after")
+    def requires_technical_pair(self) -> BuilderTechnicalOutput:
+        if {artifact.kind for artifact in self.artifact_proposals} != {
+            "technical_adaptation",
+            "api_contract",
+        }:
+            raise ValueError(
+                "Technical stage requires one Technical Adaptation and one API Contract."
+            )
+        return self
+
+
+class ReviewerTechnicalArtifactProposal(ArtifactProposal):
+    kind: Literal["technical_review"]
+    evidence_refs: list[str] = Field(min_length=2, max_length=100)
+    status: Literal["waiting_review"] = "waiting_review"
+
+    @model_validator(mode="after")
+    def evidence_refs_are_inline(self) -> ReviewerTechnicalArtifactProposal:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Technical Review EvidenceRef values must be unique.")
+        if any(ref not in self.content for ref in self.evidence_refs):
+            raise ValueError("Every Technical Review EvidenceRef must appear verbatim in content.")
+        return self
+
+
+class ReviewerTechnicalOutput(ReviewerOutput):
+    evidence_refs: list[str] = Field(min_length=2, max_length=100)
+    artifact_proposals: list[ReviewerTechnicalArtifactProposal] = Field(
+        min_length=1,
+        max_length=1,
+    )
+    transition_proposal: None = None
+
+    @model_validator(mode="after")
+    def evidence_refs_are_unique(self) -> ReviewerTechnicalOutput:
+        if len(self.evidence_refs) != len(set(self.evidence_refs)):
+            raise ValueError("Reviewer technical EvidenceRef values must be unique.")
+        return self
+
+
 OUTPUT_MODELS = {
     "factory-lead": FactoryLeadOutput,
     "ai-pm": AiPmOutput,
@@ -271,4 +399,12 @@ def output_model_for(agent_id: str, stage: str) -> type[BaseModel]:
         return AiPmPrdOutput
     if agent_id == "reviewer" and stage == "prd":
         return ReviewerPrdOutput
+    if agent_id == "builder" and stage == "solution_confirmation":
+        return BuilderSolutionOutput
+    if agent_id == "reviewer" and stage == "solution_confirmation":
+        return ReviewerSolutionOutput
+    if agent_id == "builder" and stage == "tech_stack_confirmation":
+        return BuilderTechnicalOutput
+    if agent_id == "reviewer" and stage == "tech_stack_confirmation":
+        return ReviewerTechnicalOutput
     return OUTPUT_MODELS[agent_id]

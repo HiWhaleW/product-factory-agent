@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>产品工厂 Agent · 双环境运行说明</title>
+  <style>
+    :root{color-scheme:light;--bg:#f5f3ed;--card:#fffdf8;--ink:#20231f;--muted:#626860;--line:#c9c7bd;--yellow:#f4d84c;--green:#dff3e8;--green-ink:#146c43;--warn:#fff0cf}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}main{width:min(1120px,calc(100% - 32px));margin:28px auto 64px}header,.card{background:var(--card);border:1px solid var(--line);padding:24px;margin-bottom:16px}h1,h2,h3{line-height:1.2}h1{margin:8px 0;font-size:clamp(30px,5vw,52px)}h2{margin-top:0}.status{display:inline-block;background:var(--green);color:var(--green-ink);padding:5px 10px;font-weight:750}.meta{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.env{border-top:8px solid var(--yellow)}.metric{padding:10px 12px;border-left:5px solid var(--yellow);background:#fff;margin:8px 0}.metric strong{display:block;font-size:20px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px}pre{white-space:pre-wrap;background:#20231f;color:#fff;padding:16px;overflow:auto}.flow{font-weight:700;background:var(--warn)}code{overflow-wrap:anywhere}a{color:#175b87}a:focus-visible{outline:3px solid #111;outline-offset:3px}@media(max-width:720px){main{width:min(100% - 20px,1120px);margin-top:10px}.grid{grid-template-columns:1fr}header,.card{padding:18px}table{display:block;overflow-x:auto}}
+  </style>
+</head>
+<body><main>
+  <header><span class="status">两套环境已建立</span><h1>双环境运行说明</h1><p class="meta">2026-08-24 · 内部 20260823T155102Z / 用户 20260823T155102Z · G5 已批准 / G6 未打开</p><p>用户已确认内部浏览器验收；同一发布包已同步到独立用户环境。数据库、文件和密钥始终完全隔离。</p></header>
+  <section class="grid">
+    <article class="card env"><h2>内部验证环境</h2><div class="metric"><strong>Web · 3200</strong><code>http://127.0.0.1:3200</code></div><div class="metric"><strong>API · 8200</strong><code>http://127.0.0.1:8200</code></div><p>保留销售复盘 Agent、内部验收项目和证据。运行目录：<code>.runtime/seed-beta/</code>。</p></article>
+    <article class="card env"><h2>独立用户环境</h2><div class="metric"><strong>Web · 3300</strong><code>http://127.0.0.1:3300</code></div><div class="metric"><strong>API · 8300</strong><code>http://127.0.0.1:8300</code></div><p>独立数据库 <code>product_factory_user_beta</code>；首次登录项目为空。运行目录：<code>.runtime/user-beta/</code>。</p></article>
+  </section>
+  <section class="card flow"><h2>固定发布顺序</h2><p>工作区实现 → 内部迁移/测试/build/浏览器验收 → 内部 current 发布包 → 用户环境 preflight → 绑定同一发布包 → 用户环境健康/安全/隔离/恢复验收 → 邀请真实用户。</p></section>
+  <section class="card"><h2>隔离规则</h2><table><thead><tr><th>对象</th><th>规则</th></tr></thead><tbody><tr><td>用户和项目</td><td>HttpOnly Session 绑定数据库用户；项目和全部下游资源由后端校验归属</td></tr><tr><td>数据库</td><td>用户环境使用独立数据库；不能复制销售复盘 Agent 或 fixture</td></tr><tr><td>文件</td><td>Artifact、Workspace、日志和备份分环境保存</td></tr><tr><td>用户 API Key</td><td>原文只进权限 0600 的用户 Secret Store；数据库和响应只含脱敏元数据；普通用户没有内部 Key 回退</td></tr><tr><td>环境密钥</td><td>Session Secret 与邀请码分环境保存；邀请码入库只留哈希</td></tr><tr><td>回滚</td><td>current 155102Z / previous 095514Z；双向回滚已通过并最终恢复到新包</td></tr></tbody></table></section>
+  <section class="grid"><article class="card"><h2>内部环境命令</h2><pre>scripts/seed-beta/release.sh
+scripts/seed-beta/start.sh
+scripts/seed-beta/health-check.sh
+scripts/seed-beta/backup.sh
+scripts/seed-beta/restore-check.sh
+scripts/seed-beta/rollback.sh</pre></article><article class="card"><h2>用户环境命令</h2><pre>scripts/user-beta/release.sh
+scripts/user-beta/start.sh
+scripts/user-beta/health-check.sh
+scripts/user-beta/acceptance.sh
+scripts/user-beta/backup.sh
+scripts/user-beta/restore-check.sh
+scripts/user-beta/rollback.sh</pre></article></section>
+  <section class="card"><h2>当前验证与边界</h2><ul><li>Web 26/26、Python 86/86、PostgreSQL 48/48、Alembic 0010、production build 通过。</li><li>项目软删除、用户隔离回收箱与恢复审计通过。</li><li>API Key 添加、响应脱敏、0600 权限和删除无残留通过。</li><li>用户数据库迁移后备份恢复到隔离临时库通过。</li><li>用户环境 <code>095514Z ↔ 155102Z</code> 双向回滚通过，最终为新包。</li><li>用户 Web/API 健康、强制认证、HttpOnly Session、空项目和内部项目不泄露通过。</li><li>当前仍是本机 URL；公网 HTTPS 和外部部署尚未完成。</li></ul><p><a href="./environments.md">完整 Markdown</a> · <a href="./evidence/user-environment-acceptance-2026-08-23.html">验收证据</a></p></section>
+</main></body></html>

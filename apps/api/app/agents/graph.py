@@ -28,7 +28,7 @@ from app.adapters.deepseek import (
 from app.agents.context import ApprovedContextPack
 from app.agents.outputs import output_model_for
 from app.agents.policy import ToolRequest, evaluate_tool_policy
-from app.agents.registry import CoreAgentId, load_frozen_prompt, require_d5_agent
+from app.agents.registry import CoreAgentId, load_frozen_prompt, require_runtime_agent
 
 
 class ModelProvider(Protocol):
@@ -215,7 +215,7 @@ def build_agent_graph(
 
     async def model_node(state: RuntimeGraphState) -> RuntimeGraphState:
         pack = ApprovedContextPack.model_validate(state["context_pack"])
-        definition = require_d5_agent(state["agent_id"], state["stage"])
+        definition = require_runtime_agent(state["agent_id"], state["stage"])
         turns = state.get("turns_used", 0)
         if turns >= pack.budget.max_turns:
             return {
@@ -260,6 +260,40 @@ def build_agent_graph(
                 "Cite the candidate artifact_ref and only refs present in review_candidates. "
                 "Do not approve G2 or propose a state transition."
             )
+        if definition.id == "builder" and state["stage"] == "solution_confirmation":
+            system += (
+                "\nSolution-only contract: produce exactly one User Flow and one Solution "
+                "Design based only on the approved PRD and PRD Review. Preserve the frozen "
+                "frontend and describe only the minimum product flow, states, accessibility, "
+                "key trade-offs, and scope impact. Do not request tools, write code, change the "
+                "frontend, choose the technical stack, approve G3, or propose a transition. "
+                "Cite only exact artifact_ref values present in approved_materials and place "
+                "every declared ref inline."
+            )
+        if definition.id == "reviewer" and state["stage"] == "solution_confirmation":
+            system += (
+                "\nSolution clean-review contract: review only the deterministically bound "
+                "User Flow and Solution Design against the approved PRD. Produce exactly one "
+                "Solution Review, cite both candidate artifact_ref values, and do not approve "
+                "G3 or propose a transition."
+            )
+        if definition.id == "builder" and state["stage"] == "tech_stack_confirmation":
+            system += (
+                "\nTechnical-definition-only contract: produce exactly one Technical "
+                "Adaptation and one API Contract. Inherit the approved solution and frozen "
+                "project stack. Cover exact versions, runtime/API/database boundaries, cost, "
+                "security, observability, rollback, migration, failure modes, and acceptance "
+                "evidence. Do not request tools, write code, change the frontend, approve G4, "
+                "or propose a transition. Cite only exact artifact_ref values present in "
+                "approved_materials and place every declared ref inline."
+            )
+        if definition.id == "reviewer" and state["stage"] == "tech_stack_confirmation":
+            system += (
+                "\nTechnical clean-review contract: review only the deterministically bound "
+                "Technical Adaptation and API Contract against the approved solution. Produce "
+                "exactly one Technical Review, cite both candidate artifact_ref values, and "
+                "do not approve G4 or propose a transition."
+            )
         user_payload = {
             "context_pack": pack.model_payload(),
             "approved_materials": state.get("approved_materials") or [],
@@ -279,8 +313,8 @@ def build_agent_graph(
                 ],
                 max_tokens=(
                     8192
-                    if state["stage"] in {"mrd", "prd"}
-                    and definition.id in {"ai-pm", "reviewer"}
+                    if state["stage"] in {"mrd", "prd", "solution_confirmation"}
+                    and definition.id in {"ai-pm", "builder", "reviewer"}
                     else 4096
                 ),
                 temperature=0,
@@ -300,11 +334,7 @@ def build_agent_graph(
             return {
                 "turns_used": turns + 1,
                 "retries_used": retries,
-                "status": (
-                    "retrying"
-                    if retries <= pack.budget.max_retries
-                    else "waiting_human"
-                ),
+                "status": ("retrying" if retries <= pack.budget.max_retries else "waiting_human"),
                 "error_code": exc.code,
                 "error_retryable": True,
                 "validation_feedback": (
@@ -478,7 +508,7 @@ def _validate_evidence_provenance(
     approved_materials: list[dict[str, Any]],
     review_candidates: list[dict[str, Any]],
 ) -> None:
-    if stage not in {"mrd", "prd"} or agent_id not in {"ai-pm", "reviewer"}:
+    if stage not in {"mrd", "prd", "solution_confirmation", "tech_stack_confirmation"}:
         return
     if stage == "mrd" and agent_id == "ai-pm":
         allowed = {
@@ -515,7 +545,7 @@ def _validate_evidence_provenance(
             ]
             if value
         }
-    else:
+    elif stage == "prd":
         allowed = {
             str(value)
             for material in review_candidates
@@ -529,12 +559,31 @@ def _validate_evidence_provenance(
             ]
             if value
         }
+    elif agent_id == "builder":
+        allowed = {
+            str(material.get("artifact_ref"))
+            for material in approved_materials
+            if material.get("artifact_ref")
+        }
+    elif agent_id == "reviewer":
+        allowed = {
+            str(material.get("artifact_ref"))
+            for material in review_candidates
+            if material.get("artifact_ref")
+        }
+    else:
+        return
     proposed = set(output.get("evidence_refs") or [])
     for artifact in output.get("artifact_proposals") or []:
         proposed.update(artifact.get("evidence_refs") or [])
     for finding in output.get("findings") or []:
         proposed.update(finding.get("evidence_refs") or [])
-    if not proposed or not proposed.issubset(allowed):
+    invalid = proposed - allowed
+    if not proposed or invalid:
+        allowed_hint = ", ".join(sorted(allowed)) or "(none)"
+        invalid_hint = ", ".join(sorted(invalid)) or "(missing)"
         raise DeepSeekSchemaError(
-            "Agent output contains missing or unverified EvidenceRef values."
+            "Agent output contains missing or unverified EvidenceRef values. "
+            f"Allowed EvidenceRef values: {allowed_hint}. "
+            f"Invalid or missing values: {invalid_hint}."
         )

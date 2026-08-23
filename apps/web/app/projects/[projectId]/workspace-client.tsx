@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -14,14 +15,21 @@ import type {
   Project,
   ProjectEvent,
 } from "@/lib/contracts";
+import { eventStreamSync, parseAgUiProjectEvent } from "@/lib/ag-ui-events";
 import { projectStageIndex, projectStageLabel, projectStages } from "@/lib/stages";
-import { localUser } from "@/lib/identity";
 import {
+  agentIntroduction,
   composeReferencedMessage,
-  cursorPollingSync,
   eventPresentation,
+  friendlyProcessStep,
   formatProjectVersion,
+  groupProcessEventsForConversation,
+  isChatMilestoneEvent,
   parseReferencedMessage,
+  projectAgentProfile,
+  projectAgentProfiles,
+  processActorProfile,
+  stageStartEventId,
 } from "@/lib/workspace";
 
 const ArtifactDag = dynamic(
@@ -29,12 +37,6 @@ const ArtifactDag = dynamic(
   { ssr: false, loading: () => <div className="dag-loading">正在载入产物画布…</div> },
 );
 
-const participantRoster = [
-  { name: "Factory Lead", label: "主 Agent", avatar: "主", tone: "lead", aliases: ["factory lead", "factory-lead", "factory_lead"] },
-  { name: "AI PM", label: "AI PM", avatar: "PM", tone: "pm", aliases: ["ai pm", "ai-pm", "ai_pm"] },
-  { name: "Builder", label: "Builder", avatar: "建", tone: "builder", aliases: ["builder"] },
-  { name: "Reviewer", label: "Reviewer", avatar: "审", tone: "reviewer", aliases: ["reviewer"] },
-] as const;
 const timeFormatter = new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit" });
 const dateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
   month: "2-digit",
@@ -51,16 +53,14 @@ type TimelineItem =
   | { type: "message"; id: string; createdAt: string; message: Message }
   | { type: "event"; id: string; createdAt: string; event: ProjectEvent }
   | { type: "gate"; id: string; createdAt: string; gate: GateRequest }
-  | { type: "permission"; id: string; createdAt: string; permission: PermissionRequest };
+  | { type: "permission"; id: string; createdAt: string; permission: PermissionRequest }
+  | { type: "process"; id: string; createdAt: string; events: ProjectEvent[]; label: string; state: string };
 
 function messageIdentity(message: Message) {
   if (message.actor_type === "user") {
     return { avatar: "我", label: "你", tone: "user" };
   }
-  const actorId = message.actor_id.toLowerCase();
-  const participant = participantRoster.find((item) => (
-    item.aliases.some((alias) => actorId === alias || actorId.includes(alias))
-  ));
+  const participant = projectAgentProfile(message.actor_id);
   return participant
     ? { avatar: participant.avatar, label: participant.label, tone: participant.name.toLowerCase().replace(" ", "-") }
     : { avatar: "A", label: message.actor_id || "Agent", tone: "agent" };
@@ -87,29 +87,77 @@ function ConversationMessage({ message }: { message: Message }) {
   );
 }
 
-function ConversationEvent({ event }: { event: ProjectEvent }) {
+function ConversationEvent({ elementId, event }: { elementId: string; event: ProjectEvent }) {
   const presentation = eventPresentation(event);
   if (presentation.tone === "agent") {
+    const introduction = agentIntroduction(event);
+    if (introduction) {
+      const isLead = introduction.profile.id === "factory-lead";
+      return (
+        <section className="agent-join-sequence" id={elementId}>
+          <article className={`conversation-agent-arrival arrival-${introduction.profile.tone}`}>
+            <div aria-hidden="true" className="agent-arrival-visual">
+              <span className="arrival-avatar arrival-host">主</span>
+              <span className="arrival-route"><i>✦</i><i>·</i><i>·</i><i>➜</i></span>
+              <span className="arrival-avatar arrival-guest">{introduction.profile.avatar}</span>
+            </div>
+            <p>{isLead
+              ? <><strong>Factory Lead</strong> 创建了项目群聊，团队集合中</>
+              : <><strong>Factory Lead</strong> 邀请 <strong>{introduction.profile.label}</strong> 加入群聊</>}</p>
+            <time>{formatTime(event.created_at)}</time>
+          </article>
+          <article className={`conversation-message actor-${introduction.profile.name.toLowerCase().replace(" ", "-")}`}>
+            <span aria-hidden="true" className="conversation-avatar">{introduction.profile.avatar}</span>
+            <div className="conversation-message-body">
+              <header><strong>{introduction.profile.label}</strong><time>{formatTime(event.created_at)}</time></header>
+              <div className="conversation-bubble"><p>{introduction.text}</p></div>
+            </div>
+          </article>
+        </section>
+      );
+    }
     return (
-      <article className="conversation-narration">
+      <article className="conversation-narration" id={elementId}>
         <span aria-hidden="true" />
         <p>{presentation.summary}</p>
         <span aria-hidden="true" />
       </article>
     );
   }
-  const iconSrc = event.event_type.startsWith("artifact.")
-    ? "/icon-artifact-event.png"
-    : event.event_type.startsWith("gate.") || event.event_type.startsWith("permission.")
-      ? "/icon-gate-event.png"
-      : "/icon-project-event.png";
   return (
-    <article className={`conversation-event tone-${presentation.tone}`}>
-      <Image alt="" className="conversation-event-icon" height={42} src={iconSrc} width={42} />
-      <strong>{presentation.label}</strong>
+    <article className="conversation-narration" id={elementId}>
+      <span aria-hidden="true" />
       <p>{presentation.summary}</p>
-      <time>{formatTime(event.created_at)}</time>
+      <span aria-hidden="true" />
     </article>
+  );
+}
+
+function ProcessLedger({ events, label, state }: { events: ProjectEvent[]; label: string; state: string }) {
+  const actor = processActorProfile(events);
+  const processTitle = actor ? `${actor.label} 的处理过程` : "系统处理过程";
+  return (
+    <details className="conversation-process-ledger" data-stage={state}>
+      <summary>
+        <span>{label}</span>
+        <strong>{processTitle}</strong>
+        <small>{events.length} 步</small>
+      </summary>
+      <ol>
+        {events.map((event) => {
+          const step = friendlyProcessStep(event);
+          return (
+            <li key={event.id}>
+              <time>{formatTime(event.created_at)}</time>
+              <div>
+                <strong>{step.label}</strong>
+                <p>{step.summary}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </details>
   );
 }
 
@@ -243,6 +291,7 @@ export function WorkspaceClient({
   initialGates: GateRequest[];
   initialPermissions: PermissionRequest[];
 }) {
+  const router = useRouter();
   const [project, setProject] = useState(initialProject);
   const [messages, setMessages] = useState(initialMessages);
   const [events, setEvents] = useState(initialEvents);
@@ -258,12 +307,18 @@ export function WorkspaceClient({
   const [connection, setConnection] = useState<"live" | "stale">("live");
   const [mobileView, setMobileView] = useState<"chat" | "artifacts">("chat");
   const [referencedArtifact, setReferencedArtifact] = useState<ArtifactNode | null>(null);
+  const [stageFocus, setStageFocus] = useState<{ requestId: number; states: string[] } | null>(null);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
-  const cursor = events.at(-1)?.sequence ?? 0;
+  const pendingStageChatEventId = useRef<string | null>(null);
+  const cursorRef = useRef(events.at(-1)?.sequence ?? 0);
 
   const timeline = useMemo<TimelineItem[]>(() => {
+    const milestoneEvents = events.filter((event) => (
+      event.event_type !== "message.created" && isChatMilestoneEvent(event)
+    ));
+    const processGroups = groupProcessEventsForConversation(events);
     const items: TimelineItem[] = [
       ...messages.map((message) => ({
         type: "message" as const,
@@ -271,8 +326,7 @@ export function WorkspaceClient({
         createdAt: message.created_at,
         message,
       })),
-      ...events
-        .filter((event) => event.event_type !== "message.created")
+      ...milestoneEvents
         .map((event) => ({
           type: "event" as const,
           id: event.id,
@@ -291,9 +345,17 @@ export function WorkspaceClient({
         createdAt: permission.created_at,
         permission,
       })),
+      ...processGroups.map((group) => ({
+        type: "process" as const,
+        id: group.id,
+        createdAt: group.events.at(0)?.created_at ?? project.created_at,
+        events: group.events,
+        label: group.label,
+        state: group.state,
+      })),
     ];
     return items.sort((left, right) => left.createdAt.localeCompare(right.createdAt));
-  }, [events, gates, messages, permissions]);
+  }, [events, gates, messages, permissions, project.created_at]);
 
   const joinedAgents = useMemo(() => {
     const names = events
@@ -304,47 +366,173 @@ export function WorkspaceClient({
     return new Set(names);
   }, [events]);
 
+  function scrollChatToEvent(eventId: string, behavior: ScrollBehavior) {
+    const list = messageListRef.current;
+    const marker = document.getElementById(`timeline-event-${eventId}`);
+    if (!list || !marker) return;
+    const listRect = list.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    list.scrollTo({
+      behavior,
+      top: list.scrollTop + markerRect.top - listRect.top - 8,
+    });
+  }
+
+  function showChat() {
+    setMobileView("chat");
+    const eventId = pendingStageChatEventId.current;
+    if (!eventId) return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollChatToEvent(eventId, "auto"));
+    });
+  }
+
+  function focusCompletedStage(states: readonly string[]) {
+    const isMobile = window.innerWidth <= 900;
+    const eventId = stageStartEventId(events, states);
+    if (eventId) {
+      pendingStageChatEventId.current = eventId;
+      scrollChatToEvent(eventId, isMobile ? "auto" : "smooth");
+    }
+    setStageFocus((current) => ({
+      requestId: (current?.requestId ?? 0) + 1,
+      states: [...states],
+    }));
+    if (isMobile) setMobileView("artifacts");
+  }
+
   useEffect(() => {
     const list = messageListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [timeline.length]);
 
   useEffect(() => {
-    const timer = window.setInterval(async () => {
+    let active = true;
+    let fallbackTimer: number | null = null;
+    let reconnectTimer: number | null = null;
+    let snapshotTimer: number | null = null;
+    let stream: EventSource | null = null;
+
+    function mergeEvents(incoming: ProjectEvent[]) {
+      if (!incoming.length) return;
+      cursorRef.current = Math.max(
+        cursorRef.current,
+        ...incoming.map((event) => event.sequence),
+      );
+      setEvents((current) => {
+        const known = new Set(current.map((event) => event.id));
+        return [...current, ...incoming.filter((event) => !known.has(event.id))].sort(
+          (left, right) => left.sequence - right.sequence,
+        );
+      });
+    }
+
+    async function refreshSnapshot() {
+      const [messageResponse, graphResponse, projectResponse, gateResponse, permissionResponse] = await Promise.all([
+        fetch(`/api/control/api/v1/projects/${project.id}/messages`, { cache: "no-store" }),
+        fetch(`/api/control/api/v1/projects/${project.id}/graph`, { cache: "no-store" }),
+        fetch(`/api/control/api/v1/projects/${project.id}`, { cache: "no-store" }),
+        fetch(`/api/control/api/v1/projects/${project.id}/gates?status=all`, { cache: "no-store" }),
+        fetch(`/api/control/api/v1/projects/${project.id}/permissions`, { cache: "no-store" }),
+      ]);
+      if (!active) return;
+      if ([messageResponse, graphResponse, projectResponse, gateResponse, permissionResponse]
+        .some((response) => response.status === 401)) {
+        router.push("/");
+        router.refresh();
+        return;
+      }
+      if (messageResponse.ok) setMessages((await messageResponse.json()) as Message[]);
+      if (graphResponse.ok) setGraph((await graphResponse.json()) as ArtifactGraph);
+      if (projectResponse.ok) setProject((await projectResponse.json()) as Project);
+      if (gateResponse.ok) setGates((await gateResponse.json()) as GateRequest[]);
+      if (permissionResponse.ok) setPermissions((await permissionResponse.json()) as PermissionRequest[]);
+    }
+
+    function scheduleSnapshotRefresh() {
+      if (snapshotTimer !== null) window.clearTimeout(snapshotTimer);
+      snapshotTimer = window.setTimeout(() => {
+        snapshotTimer = null;
+        void refreshSnapshot().catch(() => setConnection("stale"));
+      }, 100);
+    }
+
+    async function pollFallback() {
       try {
         const response = await fetch(
-          `/api/control/api/v1/projects/${project.id}/events?cursor=${cursor}`,
+          `/api/control/api/v1/projects/${project.id}/events?cursor=${cursorRef.current}`,
           { cache: "no-store" },
         );
-        if (!response.ok) throw new Error("event poll failed");
-        const incoming = (await response.json()) as ProjectEvent[];
-        if (incoming.length) {
-          setEvents((current) => {
-            const known = new Set(current.map((event) => event.id));
-            return [...current, ...incoming.filter((event) => !known.has(event.id))].sort(
-              (left, right) => left.sequence - right.sequence,
-            );
-          });
-          const [messageResponse, graphResponse, projectResponse, gateResponse, permissionResponse] = await Promise.all([
-            fetch(`/api/control/api/v1/projects/${project.id}/messages`, { cache: "no-store" }),
-            fetch(`/api/control/api/v1/projects/${project.id}/graph`, { cache: "no-store" }),
-            fetch(`/api/control/api/v1/projects/${project.id}`, { cache: "no-store" }),
-            fetch(`/api/control/api/v1/projects/${project.id}/gates?status=all`, { cache: "no-store" }),
-            fetch(`/api/control/api/v1/projects/${project.id}/permissions`, { cache: "no-store" }),
-          ]);
-          if (messageResponse.ok) setMessages((await messageResponse.json()) as Message[]);
-          if (graphResponse.ok) setGraph((await graphResponse.json()) as ArtifactGraph);
-          if (projectResponse.ok) setProject((await projectResponse.json()) as Project);
-          if (gateResponse.ok) setGates((await gateResponse.json()) as GateRequest[]);
-          if (permissionResponse.ok) setPermissions((await permissionResponse.json()) as PermissionRequest[]);
+        if (response.status === 401) {
+          router.push("/");
+          router.refresh();
+          return;
         }
-        setConnection("live");
+        if (!response.ok) throw new Error("event fallback failed");
+        const incoming = (await response.json()) as ProjectEvent[];
+        mergeEvents(incoming);
+        if (incoming.length) scheduleSnapshotRefresh();
       } catch {
-        setConnection("stale");
+        if (active) setConnection("stale");
       }
-    }, cursorPollingSync.intervalMs);
-    return () => window.clearInterval(timer);
-  }, [cursor, project.id]);
+    }
+
+    function startFallback() {
+      if (fallbackTimer !== null) return;
+      void pollFallback();
+      fallbackTimer = window.setInterval(
+        () => void pollFallback(),
+        eventStreamSync.fallbackIntervalMs,
+      );
+    }
+
+    function stopFallback() {
+      if (fallbackTimer === null) return;
+      window.clearInterval(fallbackTimer);
+      fallbackTimer = null;
+    }
+
+    function connectStream() {
+      if (!active) return;
+      stream?.close();
+      stream = new EventSource(
+        `/api/control/api/v1/projects/${project.id}/events/stream?cursor=${cursorRef.current}`,
+      );
+      stream.addEventListener("open", () => {
+        if (!active) return;
+        setConnection("live");
+        stopFallback();
+      });
+      stream.addEventListener("ag-ui", (event) => {
+        if (!active || !(event instanceof MessageEvent)) return;
+        const incoming = parseAgUiProjectEvent(event.data);
+        if (!incoming || incoming.project_id !== project.id) return;
+        mergeEvents([incoming]);
+        scheduleSnapshotRefresh();
+      });
+      stream.addEventListener("error", () => {
+        if (!active) return;
+        stream?.close();
+        setConnection("stale");
+        startFallback();
+        if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+        reconnectTimer = window.setTimeout(() => {
+          reconnectTimer = null;
+          connectStream();
+        }, 1000);
+      });
+    }
+
+    connectStream();
+
+    return () => {
+      active = false;
+      stream?.close();
+      stopFallback();
+      if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+      if (snapshotTimer !== null) window.clearTimeout(snapshotTimer);
+    };
+  }, [project.id, router]);
 
   function mention(name: string) {
     setDraft((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@${name} `);
@@ -397,7 +585,6 @@ export function WorkspaceClient({
           decision,
           context_version: gate.context_version,
           comment,
-          decided_by: localUser.id,
         }),
       });
       const body = (await response.json()) as ApiError;
@@ -421,7 +608,6 @@ export function WorkspaceClient({
         body: JSON.stringify({
           decision,
           input_hash: permission.input_hash,
-          decided_by: localUser.id,
         }),
       });
       const body = (await response.json()) as ApiError;
@@ -447,7 +633,6 @@ export function WorkspaceClient({
         body: JSON.stringify({
           client_message_id: crypto.randomUUID(),
           content,
-          actor_id: localUser.id,
         }),
       });
       const body = (await response.json()) as Message & ApiError;
@@ -477,12 +662,24 @@ export function WorkspaceClient({
       </header>
 
       <ol aria-label="项目阶段" className="stage-bar">
-        {projectStages.map((stage, index) => (
-          <li className={index < currentStage ? "done" : index === currentStage ? "current" : "future"} key={stage.name}>
-            <span>{index + 1}</span>
-            <div>{stage.displayName ?? stage.name}</div>
-          </li>
-        ))}
+        {projectStages.map((stage, index) => {
+          const isDone = index < currentStage;
+          const content = <><span>{index + 1}</span><div>{stage.displayName ?? stage.name}</div></>;
+          return (
+            <li className={isDone ? "done" : index === currentStage ? "current" : "future"} key={stage.name}>
+              {isDone ? (
+                <button
+                  aria-label={`定位${stage.name}阶段的群聊和产物`}
+                  className="stage-jump"
+                  onClick={() => focusCompletedStage(stage.states)}
+                  type="button"
+                >
+                  {content}
+                </button>
+              ) : <div className="stage-static">{content}</div>}
+            </li>
+          );
+        })}
       </ol>
 
       <section className={`workspace-grid view-${mobileView}`}>
@@ -490,7 +687,7 @@ export function WorkspaceClient({
           <button
             aria-controls="chat-workspace-panel"
             aria-selected={mobileView === "chat"}
-            onClick={() => setMobileView("chat")}
+            onClick={showChat}
             role="tab"
             type="button"
           >
@@ -513,7 +710,7 @@ export function WorkspaceClient({
           <div aria-label="项目参与者" className="participants">
             <strong className="participants-title">团队群聊</strong>
             <span className="participant participant-user is-present"><span className="presence-dot" />我</span>
-            {participantRoster.map((participant) => {
+            {projectAgentProfiles.map((participant) => {
               const isPresent = participant.aliases.some((alias) => joinedAgents.has(alias));
               return (
                 <button
@@ -536,7 +733,7 @@ export function WorkspaceClient({
                 return <ConversationMessage key={`message-${item.id}`} message={item.message} />;
               }
               if (item.type === "event") {
-                return <ConversationEvent event={item.event} key={`event-${item.id}`} />;
+                return <ConversationEvent elementId={`timeline-event-${item.id}`} event={item.event} key={`event-${item.id}`} />;
               }
               if (item.type === "gate") {
                 const gate = item.gate;
@@ -561,7 +758,7 @@ export function WorkspaceClient({
                   />
                 );
               }
-              return (
+              if (item.type === "permission") return (
                 <PermissionConversationCard
                   disabled={decisionPending !== null}
                   key={`permission-${item.id}`}
@@ -569,6 +766,7 @@ export function WorkspaceClient({
                   permission={item.permission}
                 />
               );
+              return <ProcessLedger events={item.events} key={item.id} label={item.label} state={item.state} />;
             }) : (
               <div className="chat-empty"><strong>群聊已就绪</strong><p>发送第一条项目指令。当前只做确定性持久化，不会伪造 Agent 回复。</p></div>
             )}
@@ -609,6 +807,7 @@ export function WorkspaceClient({
             <h2>{projectStageLabel(project.state)} {projectVersion}</h2>
           </div>
           <ArtifactDag
+            focusStage={stageFocus}
             graph={graph}
             onPrepareRevision={prepareRevision}
             onReferenceArtifact={referenceArtifact}

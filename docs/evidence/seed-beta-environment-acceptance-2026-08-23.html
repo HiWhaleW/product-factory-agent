@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>种子内测环境验收记录</title>
+  <style>
+    :root{color-scheme:light;--bg:#f6f3ed;--card:#fffdf8;--ink:#1f2420;--muted:#656b65;--line:#c9c7bd;--ok:#146c43;--warn:#8a5a00;--accent:#f4d84c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}main{width:min(1080px,calc(100% - 32px));margin:28px auto 64px}header,.card{background:var(--card);border:1px solid var(--line);padding:24px;margin-bottom:16px}h1,h2{line-height:1.2}h1{margin:0 0 8px;font-size:clamp(28px,5vw,48px)}h2{margin-top:0;font-size:22px}.status{display:inline-block;background:#dff3e8;color:var(--ok);padding:4px 10px;font-weight:700}.meta{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.metric{border-left:6px solid var(--accent);padding:10px 14px;background:#fff}.metric strong{display:block;font-size:22px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px}code{overflow-wrap:anywhere}.warn{border-left:6px solid #e4a72f}a{color:#175b87}a:focus-visible{outline:3px solid #111;outline-offset:3px}@media(max-width:720px){main{width:min(100% - 20px,1080px);margin-top:10px}.grid{grid-template-columns:1fr}header,.card{padding:18px}table{display:block;overflow-x:auto}}
+  </style>
+</head>
+<body><main>
+  <header><span class="status">通过 · 本机单用户种子内测</span><h1>种子内测环境验收记录</h1><p class="meta">2026-08-23 · 销售复盘 Agent · seed_beta / Context v10 / iteration v1</p><p>G5 已由用户批准；G6 尚未打开。本记录证明内测环境可用，不代表正式发布。</p></header>
+  <section class="grid">
+    <article class="card"><h2>真实入口</h2><div class="metric"><strong>Web · 3200</strong><code>http://127.0.0.1:3200</code></div><div class="metric"><strong>API · 8200</strong><code>http://127.0.0.1:8200</code></div><p>PostgreSQL 正常，Alembic 为 <code>20260822_0006 (head)</code>。</p></article>
+    <article class="card"><h2>安全</h2><ul><li>未登录受保护 API：401</li><li>邀请码登录与 HttpOnly Session：通过</li><li>CSP、防嵌入、MIME、Referrer、权限策略：通过</li><li>AG-UI/SSE 长连接与 Last-Event-ID：通过</li></ul></article>
+    <article class="card"><h2>恢复与回滚</h2><ul><li>763101 bytes PostgreSQL 自定义格式备份有效</li><li>独立临时库恢复并核对 G5、Context v10、Alembic head</li><li>临时库已清理，主库未 downgrade</li><li>应用从 082925Z 回滚至 082615Z，健康检查通过</li></ul></article>
+    <article class="card"><h2>真实验证</h2><ul><li>Web 21/21</li><li>Python 76/76</li><li>PostgreSQL 46/46</li><li>production build 通过</li><li>1440×900、390×844、819×749 无水平溢出；warning/error 0</li></ul></article>
+  </section>
+  <section class="card warn"><h2>边界与下一步</h2><p>当前 URL 是本机回环地址，满足 V1 单用户、本机种子内测边界，不是公网地址。跨设备内网访问前必须配置受信任 HTTPS 和 production Cookie 策略。</p><p>下一步是真实种子用户任务和反馈。达到退出阈值后才生成 BRD 并打开 G6；G6 仍只能由用户决定。</p></section>
+</main></body></html>

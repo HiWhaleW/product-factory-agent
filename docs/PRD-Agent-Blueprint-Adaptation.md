@@ -578,4 +578,4 @@ feedback.created / iteration.branched
 - 采用本文 7 层架构作为产品工厂的统一逻辑架构视图。
 - 本文保持独立补充规格，核心边界同步到 `Technical-Adaptation.md`。
 
-当前已进入 D3；仍不要求用户在聊天中粘贴 API Key。D3-D4 允许模型侧显式 mock，D5 前完成真实 DeepSeek 接入冒烟。
+实施状态更新（2026-08-23）：当前已完成 D1–D10 的工程主线并生成 Beta Candidate；销售复盘 Agent 为 `seed_beta / Context v10`，G5 已由用户批准。AG-UI/SSE、认证强制执行、真实用户/项目归属和内部/用户双环境已落地；真实种子用户任务数据、BRD/G6 和正式发布仍未完成。本文仍是冻结架构规格，不用当前实现状态反向改写原始决策。

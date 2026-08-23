@@ -1,4 +1,4 @@
-export type HeaderPopoverId = "notifications" | "help" | "identity";
+export type HeaderPopoverId = "notifications" | "identity";
 
 export function nextHeaderPopover(
   current: HeaderPopoverId | null,

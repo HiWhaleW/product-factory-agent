@@ -11,7 +11,14 @@ async function proxy(request: Request, context: Context): Promise<Response> {
   upstreamUrl.search = new URL(request.url).search;
 
   const headers = new Headers();
-  for (const name of ["content-type", "idempotency-key", "x-request-id"]) {
+  for (const name of [
+    "accept",
+    "content-type",
+    "cookie",
+    "idempotency-key",
+    "last-event-id",
+    "x-request-id",
+  ]) {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
@@ -22,11 +29,28 @@ async function proxy(request: Request, context: Context): Promise<Response> {
     body: request.method === "GET" || request.method === "HEAD" ? undefined : await request.text(),
     cache: "no-store",
   });
+  const responseHeaders = new Headers();
+  for (const name of [
+    "cache-control",
+    "content-type",
+    "set-cookie",
+    "x-accel-buffering",
+    "x-event-cursor",
+    "x-event-stream-mode",
+    "x-request-id",
+  ]) {
+    const value = upstream.headers.get(name);
+    if (value) responseHeaders.set(name, value);
+  }
   return new Response(upstream.body, {
     status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },
+    headers: responseHeaders,
   });
 }
 
 export const GET = proxy;
 export const POST = proxy;
+export const PUT = proxy;
+export const DELETE = proxy;
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";

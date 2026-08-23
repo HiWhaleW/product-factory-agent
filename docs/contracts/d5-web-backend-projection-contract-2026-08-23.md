@@ -2,7 +2,7 @@
 
 > 核验日期：2026-08-23  
 > 状态：后端接口与 PostgreSQL 数据已在线核验；前端可直接读取。  
-> 边界：不代表 PRD/G2、Builder、完整 AG-UI/SSE 或登录强制执行已完成。
+> 边界：销售复盘项目已真实完成 PRD/Review v1 并打开 G2，但 G2 尚未由用户决定；Builder、完整 AG-UI/SSE 和登录强制执行仍未完成。
 
 ## 1. 项目真相源
 
@@ -32,6 +32,8 @@
 | 登录 | `POST /api/v1/auth/session` | 邀请码换取 HttpOnly Session；未配置时返回 `AUTH_NOT_CONFIGURED` |
 | 退出 | `DELETE /api/v1/auth/session` | 清 Cookie，reason=`logged_out` |
 
+同一 Gate 接口现在也可读取真实 G2 `fdac9cd1-3cb8-4a98-b87d-18d8ef779e82`，状态为 `open`；该记录只能由用户决定。
+
 ## 3. Artifact 实际数据
 
 | Artifact | artifact_id | 历史版本 | v2 状态 | 创建 Agent |
@@ -39,8 +41,10 @@
 | Evidence Index | `ed02a37b-ce4b-4a20-b223-3c057ceaf932` | v1、v2 | approved | ai-pm |
 | MRD | `6170b1b6-0288-4a33-8358-afd4376f4e6b` | v1、v2 | approved | ai-pm |
 | Red Team Review | `e6eeff60-d498-499c-9855-4c45e0bc233e` | v1、v2 | approved | reviewer |
+| PRD | `71d3b81a-1d48-4501-9eb7-20209af85d1b` | v1 | waiting_gate | ai-pm |
+| PRD Review | `44c79e5a-d76c-4b1c-b9f3-b795142e2dc1` | v1 | waiting_gate / pass | reviewer |
 
-三个 Artifact 的 v1 均保留为 `draft`，v2 为 `approved`；六个版本的内容文件均在线可读。
+Evidence Index、MRD 和 Red Team Review 的 v1 均保留为 `draft`，v2 为 `approved`；PRD/Review v1 等待 G2。历史版本和当前内容均由同源接口读取。
 
 ## 4. G1 真实记录
 
@@ -60,18 +64,18 @@ Gate 与一次性 PermissionRequest 仍是两套独立记录；Permission 决定
 
 - Session 接口已实现，但当前运行环境返回 `auth_not_configured`，`auth_enforced=false`；因此不能声称登录已启用或访问控制已完成。
 - AG-UI 完整流式传输未完成；当前前端仍使用 `2500ms` cursor 短轮询降级。
-- 专用、可回收的开放 Gate/Permission 联合浏览器样本未完成。
-- PRD 确定性持久化与 G2 未完成；Builder、MVP、内测和发布均未完成。
-- 本轮只提供后端契约；未修改 `apps/web/**`。
+- 专用、可回收的开放 Gate/Permission fixture `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001` 数据已存在，桌面/移动联合浏览器验收仍未完成。
+- 真实项目 PRD/Review v1 与 G2 open 已完成；G2 用户决定、方案/G3 和技术栈/G4 尚未完成。
+- 当前统一工作区已包含 Web 真实投影；后续不再等待 Runtime、后端或前端独立并线。
 
 ## 6. 本轮验证和问题记录
 
 - 主 PostgreSQL 在线执行 `alembic upgrade head`，结果 `20260822_0006 (head)`。
 - 新临时数据库完成 `空库 → upgrade head → downgrade 0004 → upgrade head`，最终回到 `0006 (head)` 并删除临时数据库。
 - 往返测试先发现两项 migration 问题并已修复：空库不应写入不存在项目的恢复事件；降级不应误删 ToolRun/Permission 审计数据。
-- 本线完成时 `pnpm check` 曾通过：Web 13/13、Python 56/56，Ruff/ESLint/TypeScript 通过。随后并行 Runtime 线新增 PRD 路由，当前工作区最新一次 `pnpm check` 因其独立 `agent_router.py` 导入顺序失败；按并线约定本线未覆盖该文件，需 Runtime 线收口后重跑。
-- `pnpm test:api:integration`：42/42 通过，保留 1 条 Starlette/httpx 弃用警告。
-- 项目事件 sequence 为 `1..66`，共 66 条、无缺号；`cursor=60` 返回 61–66，`X-Event-Cursor=66`。
-- 首次直接运行 `pnpm` 因无 TTY 的依赖目录确认失败；CI 模式可执行。并行 Runtime 文件写入期间先后出现未定义名和导入顺序错误；本线仅把新增 `resume` Journal Step 写入测试期望，未覆盖 `agent_router.py` / `agent_runtime.py`。
+- 2026-08-23 当前统一工作区 `pnpm check`：Web 13/13、Python 60/60，Ruff/ESLint/TypeScript 全部通过。
+- `pnpm test:api:integration`：44/44 通过，保留 1 条 Starlette/httpx 弃用警告。
+- PRD 流程新增事件 sequence `67–82`，包含 Run、Tool、Artifact、Context、PRD、Review 和 Gate open，可按 cursor 恢复。
+- 首次直接运行 `pnpm` 因无 TTY 的依赖目录确认失败；使用 `CI=true` 后当前统一工作区全量检查通过。历史并行写入问题已收口，不再作为当前阻塞。
 
-HTML 阅读版已同步生成，但本轮未做独立桌面/移动浏览器预览，因此不宣称该文档视觉 QA 已通过。
+HTML 阅读版已同步，并于 2026-08-23 用 ego-browser 在 `1440×900` 与 `390×844` 复验：最新 G2 口径、统一工作区边界与 G4/Builder 阻断均可读，页面无横向溢出。

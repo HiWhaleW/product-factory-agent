@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 class ApiModel(BaseModel):
@@ -12,7 +12,11 @@ class ApiModel(BaseModel):
 
 class ProjectCreate(ApiModel):
     name: str = Field(min_length=1, max_length=200)
-    owner_user_id: str = Field(default="local-admin", min_length=1, max_length=64)
+    owner_user_id: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class ProjectDelete(ApiModel):
+    confirm_name: str = Field(min_length=1, max_length=200)
 
 
 class ProjectRead(ApiModel):
@@ -25,6 +29,10 @@ class ProjectRead(ApiModel):
     paused_from_state: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class ProjectTrashRead(ProjectRead):
+    deleted_at: datetime
 
 
 class MessageCreate(ApiModel):
@@ -182,9 +190,17 @@ class ArtifactGateRef(ApiModel):
 
 
 class GateOpenCreate(ApiModel):
-    gate_type: Literal["G0", "G1", "G2"]
+    gate_type: Literal["G0", "G1", "G2", "G3", "G4", "G5", "G6"]
     context_version: int = Field(ge=1)
-    target_state: Literal["mrd", "prd", "solution_confirmation"]
+    target_state: Literal[
+        "mrd",
+        "prd",
+        "solution_confirmation",
+        "tech_stack_confirmation",
+        "development_backend",
+        "seed_beta",
+        "release_handoff",
+    ]
     reason: str = Field(min_length=1, max_length=10_000)
     impacted_artifact_refs: list[ArtifactGateRef] = Field(default_factory=list, max_length=20)
 
@@ -412,9 +428,135 @@ class RuntimeStatusRead(ApiModel):
     workspace_root_configured: bool
     model_provider: str
     model_configured: bool
-    event_transport: Literal["sse_cursor"]
+    event_transport: Literal["ag_ui_sse"]
     short_polling_degraded: bool
     codex: dict[str, object]
+
+
+class BuilderRunCreate(ApiModel):
+    task_id: str = Field(min_length=1, max_length=36)
+    context_pack_id: str = Field(min_length=1, max_length=36)
+    expected_context_version: int = Field(ge=1)
+
+
+class BuilderRunRead(ApiModel):
+    run_id: str
+    task_id: str
+    state: str
+    context_version: int
+    tool_run_id: str | None = None
+    exit_code: int | None = None
+    workspace_manifest_hash: str | None = None
+    workspace_file_count: int | None = None
+    policy_violations: list[str] = Field(default_factory=list)
+    output: dict[str, Any] | None = None
+    error_code: str | None = None
+    idempotent: bool
+
+
+class BackendVerificationEvidence(ApiModel):
+    check: Literal["ruff", "pytest_postgresql", "alembic", "compileall"]
+    status: Literal["passed"]
+    summary: str = Field(min_length=1, max_length=5_000)
+    evidence_hash: str = Field(min_length=64, max_length=64)
+
+
+class BackendDeliveryCreate(ApiModel):
+    source_builder_run_id: str = Field(min_length=1, max_length=36)
+    expected_context_version: int = Field(ge=1)
+    workspace_manifest_hash: str = Field(min_length=64, max_length=64)
+    evidence: list[BackendVerificationEvidence] = Field(min_length=4, max_length=4)
+
+
+class BackendDeliveryRead(ApiModel):
+    delivery_run_id: str
+    review_task_id: str
+    source_builder_run_id: str
+    backend_implementation_artifact_id: str
+    backend_test_report_artifact_id: str
+    backend_review_artifact_id: str
+    verdict: Literal["pass_with_known_issues"]
+    target_state: Literal["development_frontend"]
+    context_version: int
+    frontend_context_pack_id: str
+    frontend_task_id: str
+    idempotent: bool
+
+
+class FrontendVerificationEvidence(ApiModel):
+    check: Literal[
+        "eslint",
+        "typecheck",
+        "vitest",
+        "next_build",
+        "browser_desktop",
+        "browser_mobile",
+    ]
+    status: Literal["passed"]
+    summary: str = Field(min_length=1, max_length=5_000)
+    evidence_hash: str = Field(min_length=64, max_length=64)
+
+
+class FrontendDeliveryCreate(ApiModel):
+    source_builder_run_id: str = Field(min_length=1, max_length=36)
+    expected_context_version: int = Field(ge=1)
+    workspace_manifest_hash: str = Field(min_length=64, max_length=64)
+    evidence: list[FrontendVerificationEvidence] = Field(min_length=6, max_length=6)
+
+
+class FrontendDeliveryRead(ApiModel):
+    delivery_run_id: str
+    review_task_id: str
+    source_builder_run_id: str
+    frontend_implementation_artifact_id: str
+    frontend_test_report_artifact_id: str
+    frontend_review_artifact_id: str
+    verdict: Literal["pass_with_known_issues"]
+    target_state: Literal["mvp"]
+    context_version: int
+    mvp_context_pack_id: str
+    mvp_review_task_id: str
+    idempotent: bool
+
+
+class InternalAcceptanceEvidence(ApiModel):
+    check: Literal[
+        "product_factory_control_plane",
+        "sales_review_backend",
+        "sales_review_frontend",
+        "postgres_backup_restore",
+        "browser_qa",
+        "deepseek_conclusions",
+        "deepseek_actions",
+    ]
+    status: Literal["passed"]
+    summary: str = Field(min_length=1, max_length=5_000)
+    evidence_hash: str = Field(min_length=64, max_length=64)
+
+
+class InternalAcceptanceCreate(ApiModel):
+    mvp_review_task_id: str = Field(min_length=1, max_length=36)
+    mvp_context_pack_id: str = Field(min_length=1, max_length=36)
+    expected_context_version: int = Field(ge=1)
+    workspace_manifest_hash: str = Field(min_length=64, max_length=64)
+    evidence: list[InternalAcceptanceEvidence] = Field(min_length=7, max_length=7)
+
+
+class InternalAcceptanceRead(ApiModel):
+    acceptance_run_id: str
+    mvp_review_task_id: str
+    mvp_candidate_artifact_id: str
+    qa_report_artifact_id: str
+    known_issues_artifact_id: str
+    seed_test_plan_artifact_id: str
+    telemetry_schema_artifact_id: str
+    verdict: Literal["beta_candidate_ready"]
+    target_state: Literal["internal_acceptance"]
+    context_version: int
+    gate_id: str
+    gate_type: Literal["G5"]
+    gate_status: Literal["open"]
+    idempotent: bool
 
 
 class SessionCreate(ApiModel):
@@ -424,9 +566,37 @@ class SessionCreate(ApiModel):
 class SessionRead(ApiModel):
     authenticated: bool
     user_id: str | None
+    display_name: str | None = None
+    role: Literal["admin", "user"] | None = None
     expires_at: datetime | None
-    reason: Literal["active", "missing", "invalid", "expired", "auth_not_configured", "logged_out"]
+    reason: Literal[
+        "active",
+        "missing",
+        "invalid",
+        "expired",
+        "auth_not_configured",
+        "logged_out",
+        "user_inactive",
+    ]
     auth_enforced: bool
+
+
+class ProviderCredentialUpdate(ApiModel):
+    provider_name: str = Field(min_length=1, max_length=80)
+    base_url: str = Field(min_length=8, max_length=500)
+    model_name: str = Field(min_length=1, max_length=120)
+    api_key: SecretStr = Field(min_length=8, max_length=512)
+
+
+class ProviderCredentialRead(ApiModel):
+    provider: Literal["openai_compatible"] = "openai_compatible"
+    configured: bool
+    provider_name: str | None = None
+    base_url: str | None = None
+    model_name: str | None = None
+    masked_hint: str | None = None
+    updated_at: datetime | None = None
+    internal_test_fallback: bool = False
 
 
 class AgentControlInput(ApiModel):

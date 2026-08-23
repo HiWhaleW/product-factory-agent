@@ -44,6 +44,40 @@ GATE_RULES: dict[str, dict[str, object]] = {
         "target_state": "solution_confirmation",
         "required_artifact_kinds": {"prd", "prd_review"},
     },
+    "G3": {
+        "source_state": "solution_confirmation",
+        "target_state": "tech_stack_confirmation",
+        "required_artifact_kinds": {"user_flow", "solution_design", "solution_review"},
+    },
+    "G4": {
+        "source_state": "tech_stack_confirmation",
+        "target_state": "development_backend",
+        "required_artifact_kinds": {
+            "technical_adaptation",
+            "api_contract",
+            "technical_review",
+        },
+    },
+    "G5": {
+        "source_state": "internal_acceptance",
+        "target_state": "seed_beta",
+        "required_artifact_kinds": {
+            "mvp_candidate",
+            "qa_report",
+            "known_issues",
+            "seed_test_plan",
+            "telemetry_schema",
+        },
+    },
+    "G6": {
+        "source_state": "brd",
+        "target_state": "release_handoff",
+        "required_artifact_kinds": {
+            "seed_test_report",
+            "commercial_brd",
+            "release_plan",
+        },
+    },
 }
 
 CONTROL_PLANE_EVENT_TYPES = {
@@ -82,9 +116,7 @@ class ControlPlaneError(ValueError):
 
 def validate_transition(current: str, target: str, approved_gate: str | None = None) -> None:
     if target not in PROJECT_TRANSITIONS.get(current, set()):
-        raise ControlPlaneError(
-            "INVALID_STATE_TRANSITION", f"不能从 {current} 直接进入 {target}。"
-        )
+        raise ControlPlaneError("INVALID_STATE_TRANSITION", f"不能从 {current} 直接进入 {target}。")
     required = GATE_REQUIRED_FOR_TARGET.get(target)
     if required and approved_gate != required:
         raise ControlPlaneError("GATE_REQUIRED", f"进入 {target} 前必须批准 {required}。")
@@ -95,7 +127,7 @@ def validate_gate_open(
 ) -> None:
     rule = GATE_RULES.get(gate_type)
     if rule is None:
-        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1/G2。")
+        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0-G6。")
     if not context_matches:
         raise ControlPlaneError("STALE_CONTEXT", "Gate 必须绑定项目当前 Context 版本。")
     if rule["source_state"] != current_state:
@@ -113,7 +145,7 @@ def validate_gate_open(
 def validate_gate_artifact_kinds(gate_type: str, artifact_kinds: set[str]) -> None:
     rule = GATE_RULES.get(gate_type)
     if rule is None:
-        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0/G1/G2。")
+        raise ControlPlaneError("GATE_TYPE_UNSUPPORTED", "当前纵向切片只开放 G0-G4。")
     missing = set(rule["required_artifact_kinds"]) - artifact_kinds
     if missing:
         raise ControlPlaneError(

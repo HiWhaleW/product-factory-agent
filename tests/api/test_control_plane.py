@@ -115,3 +115,17 @@ def test_g2_requires_prd_and_independent_review() -> None:
     with pytest.raises(ControlPlaneError) as error:
         validate_gate_artifact_kinds("G2", {"prd"})
     assert error.value.code == "GATE_EVIDENCE_MISSING"
+
+
+def test_g3_requires_user_flow_solution_and_independent_review() -> None:
+    validate_gate_open(
+        current_state="solution_confirmation",
+        gate_type="G3",
+        target_state="tech_stack_confirmation",
+        context_matches=True,
+    )
+    validate_gate_artifact_kinds("G3", {"user_flow", "solution_design", "solution_review"})
+    validate_gate_artifact_kinds("G4", {"technical_adaptation", "api_contract", "technical_review"})
+    with pytest.raises(ControlPlaneError) as error:
+        validate_gate_artifact_kinds("G3", {"user_flow", "solution_design"})
+    assert error.value.code == "GATE_EVIDENCE_MISSING"

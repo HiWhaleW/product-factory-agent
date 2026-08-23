@@ -37,6 +37,62 @@ class Project(Base):
     context_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     iteration_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     paused_from_state: Mapped[str | None] = mapped_column(String(64))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=new_id)
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserInvite(Base):
+    __tablename__ = "user_invites"
+    __table_args__ = (UniqueConstraint("code_hash", name="uq_user_invite_code_hash"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), index=True
+    )
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="user")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
+    max_uses: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    uses_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserProviderCredential(Base):
+    __tablename__ = "user_provider_credentials"
+    __table_args__ = (
+        UniqueConstraint("user_id", "provider", name="uq_user_provider_credential"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    provider_name: Mapped[str] = mapped_column(String(80), nullable=False, default="DeepSeek")
+    base_url: Mapped[str] = mapped_column(
+        String(500), nullable=False, default="https://api.deepseek.com"
+    )
+    model_name: Mapped[str] = mapped_column(String(120), nullable=False, default="deepseek-chat")
+    secret_ref: Mapped[str] = mapped_column(String(200), nullable=False)
+    masked_hint: Mapped[str] = mapped_column(String(40), nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now

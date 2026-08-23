@@ -15,6 +15,8 @@
 
 产品工厂 Agent 是面向企业内部产品负责人的 AI 产品交付工具。用户通过项目群聊与主 Agent 对齐目标；主 Agent 按阶段调用 AI PM、Builder、Reviewer 和受控工具；右侧累计 DAG 保留从 Brief、MRD、PRD、方案/技术决定、后端/前端代码、MVP、内测、商业 BRD 到发布、反馈与下一轮分支的全部可追溯产物。
 
+> 实施状态更新（2026-08-23）：销售复盘 Agent 已到 `internal_acceptance / Context v9`，G0–G4、Builder、MVP 和内部验收已完成，Beta Candidate 已生成；G5 open，种子内测未开始。规格本身仍保持 v0.2 冻结。
+
 ## 冻结决策
 
 | 维度 | V1 决策 |

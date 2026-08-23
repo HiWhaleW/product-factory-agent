@@ -45,11 +45,13 @@ type ArtifactFlowNode = Node<{
 }>;
 
 export function ArtifactDag({
+  focusStage,
   graph,
   referencedArtifactId,
   onPrepareRevision,
   onReferenceArtifact,
 }: {
+  focusStage: { requestId: number; states: string[] } | null;
   graph: ArtifactGraph;
   referencedArtifactId: string | null;
   onPrepareRevision: (artifact: ArtifactNode) => void;
@@ -65,6 +67,7 @@ export function ArtifactDag({
   const [stageFilter, setStageFilter] = useState("all");
   const [flowInstance, setFlowInstance] = useState<ReactFlowInstance<ArtifactFlowNode> | null>(null);
   const versionRequestId = useRef(0);
+  const handledFocusRequestId = useRef(0);
   const [initialViewport] = useState(() => (
     window.innerWidth <= 900
       ? { x: 24, y: 30, zoom: 0.45 }
@@ -136,6 +139,29 @@ export function ArtifactDag({
     })),
     [nodes, stageFilter],
   );
+
+  useEffect(() => {
+    if (!flowInstance || !focusStage) return;
+    if (handledFocusRequestId.current === focusStage.requestId) return;
+    if (stageFilter !== "all") {
+      const frame = window.requestAnimationFrame(() => setStageFilter("all"));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    const targetStates = new Set(focusStage.states);
+    handledFocusRequestId.current = focusStage.requestId;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const targetNodes = flowInstance.getNodes().filter((node) => targetStates.has(node.data.artifact.stage));
+        if (!targetNodes.length) return;
+        void flowInstance.fitView({ duration: 0, maxZoom: 1, nodes: targetNodes, padding: 0.24 });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [flowInstance, focusStage, stageFilter]);
   const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
   const edges = useMemo(() => graph.edges.filter(
     (edge) => visibleNodeIds.has(edge.source_id) && visibleNodeIds.has(edge.target_id),

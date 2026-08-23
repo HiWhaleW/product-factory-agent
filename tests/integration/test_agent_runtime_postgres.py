@@ -402,9 +402,12 @@ def test_ai_pm_bocha_permission_resume_persists_tool_journal(ai_pm_context_pack)
     assert [step.step_type for step in steps] == [
         "runtime_start",
         "checkpoint",
+        "resume",
         "tool",
         "model",
         "checkpoint",
     ]
-    assert steps[2].output_ref.startswith("evidence-set://")
+    assert steps[2].output_ref == steps[1].output_ref
     assert steps[2].external_effect_confirmed is True
+    assert steps[3].output_ref.startswith("evidence-set://")
+    assert steps[3].external_effect_confirmed is True

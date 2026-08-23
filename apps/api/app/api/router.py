@@ -1,7 +1,9 @@
+import asyncio
 import hashlib
 import json
 import re
 from datetime import UTC, datetime
+from time import monotonic
 from typing import Literal
 from uuid import uuid4
 
@@ -12,8 +14,9 @@ from sqlalchemy.orm import Session
 
 from app.adapters.codex_cli import smoke_codex_cli
 from app.core.config import Settings, get_settings
-from app.core.database import get_session
+from app.core.database import SessionLocal, get_session
 from app.core.request_logging import current_request_id
+from app.core.session_middleware import SESSION_COOKIE_NAME
 from app.domain.models import (
     AgentMembership,
     AgentRun,
@@ -44,6 +47,10 @@ from app.domain.schemas import (
     ArtifactContentRead,
     ArtifactVersionIndexRead,
     ArtifactVersionRead,
+    BackendDeliveryCreate,
+    BackendDeliveryRead,
+    BuilderRunCreate,
+    BuilderRunRead,
     ClarificationCreate,
     ClarificationRead,
     ContextPackCreate,
@@ -57,6 +64,8 @@ from app.domain.schemas import (
     DefinitionSubmissionRead,
     EventRead,
     ExecutionRunRead,
+    FrontendDeliveryCreate,
+    FrontendDeliveryRead,
     GateDecisionCreate,
     GateDecisionRead,
     GateOpenCreate,
@@ -64,6 +73,8 @@ from app.domain.schemas import (
     GraphEdge,
     GraphNode,
     GraphRead,
+    InternalAcceptanceCreate,
+    InternalAcceptanceRead,
     MessageCreate,
     MessageRead,
     PermissionDecisionCreate,
@@ -72,8 +83,12 @@ from app.domain.schemas import (
     ProjectBriefCreateResult,
     ProjectBriefVersionRead,
     ProjectCreate,
+    ProjectDelete,
     ProjectExecutionRead,
     ProjectRead,
+    ProjectTrashRead,
+    ProviderCredentialRead,
+    ProviderCredentialUpdate,
     RunRead,
     RunResumeCreate,
     RunStepRead,
@@ -84,7 +99,10 @@ from app.domain.schemas import (
     TaskRead,
     ToolRunRead,
 )
+from app.services.ag_ui_events import encode_ag_ui_sse
 from app.services.artifact_store import ArtifactStoreError, read_verified_artifact
+from app.services.backend_delivery import BackendDeliveryError, BackendDeliveryService
+from app.services.builder_runtime import BuilderRuntimeError, BuilderRuntimeService
 from app.services.control_plane import (
     ControlPlaneError,
     validate_context_binding,
@@ -98,15 +116,29 @@ from app.services.definition_chain import (
     submit_definition,
     submit_definition_review,
 )
+from app.services.frontend_delivery import FrontendDeliveryError, FrontendDeliveryService
+from app.services.internal_acceptance import (
+    InternalAcceptanceError,
+    InternalAcceptanceService,
+)
 from app.services.session_auth import (
     SessionTokenError,
-    invite_code_matches,
     issue_session_token,
     verify_session_token,
 )
+from app.services.user_credentials import (
+    UserCredentialError,
+    credential_status,
+    delete_credential,
+    save_credential,
+)
+from app.services.user_identity import (
+    UserIdentityError,
+    get_active_user,
+    resolve_invite_user,
+)
 
 router = APIRouter()
-SESSION_COOKIE_NAME = "product_factory_session"
 
 
 def api_error(code: str, user_message: str, http_status: int = 409) -> HTTPException:
@@ -156,6 +188,28 @@ def input_hash(body: object) -> str:
         body = body.model_dump(mode="json")  # type: ignore[attr-defined]
     value = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(value.encode()).hexdigest()
+
+
+def request_identity(request: Request) -> tuple[str, str]:
+    return (
+        getattr(request.state, "user_id", "local-admin"),
+        getattr(request.state, "user_role", "admin"),
+    )
+
+
+def provider_credential_read(
+    session: Session, *, settings: Settings, user_id: str, role: str
+) -> ProviderCredentialRead:
+    value = credential_status(session, settings=settings, user_id=user_id, role=role)
+    return ProviderCredentialRead(
+        configured=value.configured,
+        provider_name=value.provider_name,
+        base_url=value.base_url,
+        model_name=value.model_name,
+        masked_hint=value.masked_hint,
+        updated_at=value.updated_at,
+        internal_test_fallback=value.internal_test_fallback,
+    )
 
 
 def add_idempotency(
@@ -214,9 +268,7 @@ def create_context_version(
     return context
 
 
-def brief_read(
-    session: Session, version: ProjectBriefVersion
-) -> ProjectBriefVersionRead:
+def brief_read(session: Session, version: ProjectBriefVersion) -> ProjectBriefVersionRead:
     brief = session.get(ProjectBrief, version.brief_id)
     if brief is None:
         raise api_error("PROJECT_BRIEF_NOT_FOUND", "Project Brief 不存在。", 404)
@@ -375,24 +427,118 @@ def runtime_status(
         workspace_root_configured=settings.WORKSPACE_ROOT.is_dir(),
         model_provider=settings.MODEL_PROVIDER,
         model_configured=settings.model_ready,
-        event_transport="sse_cursor",
-        short_polling_degraded=True,
+        event_transport="ag_ui_sse",
+        short_polling_degraded=False,
         codex=smoke_codex_cli(settings).model_dump(),
     )
+
+
+@router.post(
+    "/api/v1/agent-runtime/projects/{project_id}/builder-runs",
+    response_model=BuilderRunRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def start_builder_run(
+    project_id: str,
+    body: BuilderRunCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    try:
+        return BuilderRuntimeService(settings).start(
+            project_id=project_id,
+            task_id=body.task_id,
+            context_pack_id=body.context_pack_id,
+            expected_context_version=body.expected_context_version,
+            idempotency_key=idempotency_key,
+        )
+    except BuilderRuntimeError as error:
+        raise api_error(error.code, str(error), 409) from error
+
+
+@router.post(
+    "/api/v1/agent-runtime/projects/{project_id}/backend-deliveries",
+    response_model=BackendDeliveryRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def complete_backend_delivery(
+    project_id: str,
+    body: BackendDeliveryCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    try:
+        return BackendDeliveryService(settings).complete(
+            project_id=project_id,
+            body=body,
+            idempotency_key=idempotency_key,
+        )
+    except BackendDeliveryError as error:
+        raise api_error(error.code, str(error), 409) from error
+
+
+@router.post(
+    "/api/v1/agent-runtime/projects/{project_id}/frontend-deliveries",
+    response_model=FrontendDeliveryRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def complete_frontend_delivery(
+    project_id: str,
+    body: FrontendDeliveryCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    try:
+        return FrontendDeliveryService(settings).complete(
+            project_id=project_id,
+            body=body,
+            idempotency_key=idempotency_key,
+        )
+    except FrontendDeliveryError as error:
+        raise api_error(error.code, str(error), 409) from error
+
+
+@router.post(
+    "/api/v1/agent-runtime/projects/{project_id}/internal-acceptances",
+    response_model=InternalAcceptanceRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def complete_internal_acceptance(
+    project_id: str,
+    body: InternalAcceptanceCreate,
+    idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    try:
+        return InternalAcceptanceService(settings).complete(
+            project_id=project_id,
+            body=body,
+            idempotency_key=idempotency_key,
+        )
+    except InternalAcceptanceError as error:
+        raise api_error(error.code, str(error), 409) from error
 
 
 @router.post("/api/v1/auth/session", response_model=SessionRead)
 def create_session(
     body: SessionCreate,
     response: Response,
+    session: Session = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> SessionRead:
     if not settings.session_auth_ready:
         raise api_error("AUTH_NOT_CONFIGURED", "登录尚未配置。", 503)
-    if not invite_code_matches(body.invite_code, settings.INVITE_CODE_HASH):
-        raise api_error("INVITE_CODE_INVALID", "邀请码无效。", 401)
+    try:
+        user = resolve_invite_user(
+            session,
+            invite_code=body.invite_code,
+            legacy_invite_hash=settings.INVITE_CODE_HASH,
+        )
+    except UserIdentityError as error:
+        raise api_error(error.code, error.user_message, 401) from error
+    session.commit()
     token, expires_at = issue_session_token(
-        user_id="local-admin",
+        user_id=user.id,
         secret=settings.resolve_session_secret(),
         ttl_seconds=settings.SESSION_TTL_SECONDS,
     )
@@ -407,16 +553,20 @@ def create_session(
     )
     return SessionRead(
         authenticated=True,
-        user_id="local-admin",
+        user_id=user.id,
+        display_name=user.display_name,
+        role=user.role,
         expires_at=expires_at,
         reason="active",
-        auth_enforced=False,
+        auth_enforced=settings.AUTH_ENFORCED,
     )
 
 
 @router.get("/api/v1/me", response_model=SessionRead)
 def get_me(
-    request: Request, settings: Settings = Depends(get_settings)
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> SessionRead:
     if not settings.session_auth_ready:
         return SessionRead(
@@ -424,7 +574,7 @@ def get_me(
             user_id=None,
             expires_at=None,
             reason="auth_not_configured",
-            auth_enforced=False,
+            auth_enforced=settings.AUTH_ENFORCED,
         )
     token = request.cookies.get(SESSION_COOKIE_NAME)
     if not token:
@@ -433,48 +583,128 @@ def get_me(
             user_id=None,
             expires_at=None,
             reason="missing",
-            auth_enforced=False,
+            auth_enforced=settings.AUTH_ENFORCED,
         )
     try:
-        user_id, expires_at = verify_session_token(
-            token, secret=settings.resolve_session_secret()
-        )
+        user_id, expires_at = verify_session_token(token, secret=settings.resolve_session_secret())
     except SessionTokenError as exc:
         return SessionRead(
             authenticated=False,
             user_id=None,
             expires_at=None,
             reason=exc.reason,
-            auth_enforced=False,
+            auth_enforced=settings.AUTH_ENFORCED,
+        )
+    try:
+        user = get_active_user(session, user_id)
+    except UserIdentityError:
+        return SessionRead(
+            authenticated=False,
+            user_id=None,
+            expires_at=None,
+            reason="user_inactive",
+            auth_enforced=settings.AUTH_ENFORCED,
         )
     return SessionRead(
         authenticated=True,
-        user_id=user_id,
+        user_id=user.id,
+        display_name=user.display_name,
+        role=user.role,
         expires_at=expires_at,
         reason="active",
-        auth_enforced=False,
+        auth_enforced=settings.AUTH_ENFORCED,
     )
 
 
 @router.delete("/api/v1/auth/session", response_model=SessionRead)
-def delete_session(response: Response) -> SessionRead:
+def delete_session(
+    response: Response, settings: Settings = Depends(get_settings)
+) -> SessionRead:
     response.delete_cookie(SESSION_COOKIE_NAME, path="/")
     return SessionRead(
         authenticated=False,
         user_id=None,
         expires_at=None,
         reason="logged_out",
-        auth_enforced=False,
+        auth_enforced=settings.AUTH_ENFORCED,
+    )
+
+
+@router.get(
+    "/api/v1/me/provider-credentials/model-api",
+    response_model=ProviderCredentialRead,
+)
+def get_model_api_credential(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ProviderCredentialRead:
+    user_id, role = request_identity(request)
+    return provider_credential_read(
+        session, settings=settings, user_id=user_id, role=role
+    )
+
+
+@router.put(
+    "/api/v1/me/provider-credentials/model-api",
+    response_model=ProviderCredentialRead,
+)
+def put_model_api_credential(
+    body: ProviderCredentialUpdate,
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ProviderCredentialRead:
+    user_id, role = request_identity(request)
+    try:
+        save_credential(
+            session,
+            settings=settings,
+            user_id=user_id,
+            provider_name=body.provider_name,
+            base_url=body.base_url,
+            model_name=body.model_name,
+            api_key=body.api_key.get_secret_value(),
+        )
+    except UserCredentialError as error:
+        raise api_error(error.code, error.user_message, 422) from error
+    session.commit()
+    return provider_credential_read(
+        session, settings=settings, user_id=user_id, role=role
+    )
+
+
+@router.delete(
+    "/api/v1/me/provider-credentials/model-api",
+    response_model=ProviderCredentialRead,
+)
+def remove_model_api_credential(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> ProviderCredentialRead:
+    user_id, role = request_identity(request)
+    delete_credential(session, settings=settings, user_id=user_id)
+    session.commit()
+    return provider_credential_read(
+        session, settings=settings, user_id=user_id, role=role
     )
 
 
 @router.post("/api/v1/projects", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
 def create_project(
     body: ProjectCreate,
+    request: Request,
     idempotency_key: str = Header(min_length=8, max_length=200, alias="Idempotency-Key"),
     session: Session = Depends(get_session),
 ) -> Project:
-    body_hash = input_hash(body)
+    owner_user_id = body.owner_user_id or "local-admin"
+    if getattr(request.state, "auth_enforced", False):
+        authenticated_user_id = getattr(request.state, "user_id", "")
+        if body.owner_user_id is not None and body.owner_user_id != authenticated_user_id:
+            raise api_error("PROJECT_OWNER_MISMATCH", "项目所有者必须是当前登录用户。", 403)
+        owner_user_id = authenticated_user_id
+    body_hash = input_hash({"name": body.name, "owner_user_id": owner_user_id})
     advisory_xact_lock(session, f"idempotency:project.create:{idempotency_key}")
     existing = session.scalar(
         select(IdempotencyRecord).where(
@@ -488,9 +718,11 @@ def create_project(
         project = session.get(Project, existing.resource_id)
         if project is None:
             raise api_error("IDEMPOTENCY_ORPHAN", "幂等记录指向的项目不存在。", 500)
+        if project.deleted_at is not None:
+            raise api_error("PROJECT_DELETED", "该请求对应的项目已删除，请重新创建。")
         return project
 
-    project = Project(name=body.name, owner_user_id=body.owner_user_id)
+    project = Project(name=body.name, owner_user_id=owner_user_id)
     session.add(project)
     session.flush()
     context = ContextVersion(
@@ -576,23 +808,115 @@ def create_project(
 
 @router.get("/api/v1/projects", response_model=list[ProjectRead])
 def list_projects(
+    request: Request,
     owner_user_id: str = Query(default="local-admin"),
     session: Session = Depends(get_session),
 ) -> list[Project]:
+    if getattr(request.state, "auth_enforced", False):
+        owner_user_id = request.state.user_id
     return list(
         session.scalars(
             select(Project)
-            .where(Project.owner_user_id == owner_user_id)
+            .where(Project.owner_user_id == owner_user_id, Project.deleted_at.is_(None))
             .order_by(Project.updated_at.desc())
         )
     )
 
 
+@router.get("/api/v1/projects/trash", response_model=list[ProjectTrashRead])
+def list_deleted_projects(
+    request: Request,
+    owner_user_id: str = Query(default="local-admin"),
+    session: Session = Depends(get_session),
+) -> list[Project]:
+    if getattr(request.state, "auth_enforced", False):
+        owner_user_id = request.state.user_id
+    return list(
+        session.scalars(
+            select(Project)
+            .where(Project.owner_user_id == owner_user_id, Project.deleted_at.is_not(None))
+            .order_by(Project.deleted_at.desc())
+        )
+    )
+
+
 @router.get("/api/v1/projects/{project_id}", response_model=ProjectRead)
-def get_project(project_id: str, session: Session = Depends(get_session)) -> Project:
+def get_project(
+    project_id: str, request: Request, session: Session = Depends(get_session)
+) -> Project:
     project = session.get(Project, project_id)
-    if project is None:
+    if project is None or project.deleted_at is not None or (
+        getattr(request.state, "auth_enforced", False)
+        and project.owner_user_id != request.state.user_id
+    ):
         raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
+    return project
+
+
+@router.delete("/api/v1/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(
+    project_id: str,
+    body: ProjectDelete,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> Response:
+    advisory_xact_lock(session, f"project:{project_id}")
+    project = session.get(Project, project_id)
+    if project is None or project.deleted_at is not None or (
+        getattr(request.state, "auth_enforced", False)
+        and project.owner_user_id != request.state.user_id
+    ):
+        raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
+    if body.confirm_name != project.name:
+        raise api_error("PROJECT_DELETE_CONFIRMATION_MISMATCH", "项目名称确认不匹配。")
+    active_run = session.scalar(
+        select(AgentRun.id)
+        .join(AgentTask, AgentRun.task_id == AgentTask.id)
+        .where(
+            AgentTask.project_id == project_id,
+            AgentRun.state.in_({"pending", "running"}),
+        )
+        .limit(1)
+    )
+    if active_run is not None:
+        raise api_error("PROJECT_RUN_ACTIVE", "项目仍有正在执行的 Agent Run，请等待结束后再删除。")
+    now = datetime.now(UTC)
+    append_event(
+        session,
+        project.id,
+        "project.deleted",
+        {"deleted_by": getattr(request.state, "user_id", "local-admin")},
+    )
+    project.deleted_at = now
+    project.updated_at = now
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/api/v1/projects/{project_id}/restore", response_model=ProjectRead)
+def restore_project(
+    project_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> Project:
+    advisory_xact_lock(session, f"project:{project_id}")
+    project = session.get(Project, project_id)
+    if project is None or (
+        getattr(request.state, "auth_enforced", False)
+        and project.owner_user_id != request.state.user_id
+    ):
+        raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
+    if project.deleted_at is None:
+        return project
+    append_event(
+        session,
+        project.id,
+        "project.restored",
+        {"restored_by": getattr(request.state, "user_id", "local-admin")},
+    )
+    project.deleted_at = None
+    project.updated_at = datetime.now(UTC)
+    session.commit()
     return project
 
 
@@ -602,7 +926,10 @@ def get_project(project_id: str, session: Session = Depends(get_session)) -> Pro
     status_code=status.HTTP_201_CREATED,
 )
 def create_message(
-    project_id: str, body: MessageCreate, session: Session = Depends(get_session)
+    project_id: str,
+    body: MessageCreate,
+    request: Request,
+    session: Session = Depends(get_session),
 ) -> Message:
     advisory_xact_lock(session, f"project:{project_id}")
     if session.get(Project, project_id) is None:
@@ -621,7 +948,11 @@ def create_message(
         project_id=project_id,
         client_message_id=body.client_message_id,
         actor_type="user",
-        actor_id=body.actor_id,
+        actor_id=(
+            request.state.user_id
+            if getattr(request.state, "auth_enforced", False)
+            else body.actor_id
+        ),
         content=body.content,
     )
     session.add(message)
@@ -1002,36 +1333,53 @@ def list_events(
 
 
 @router.get("/api/v1/projects/{project_id}/events/stream")
-def stream_events(
+async def stream_events(
     project_id: str,
+    request: Request,
     cursor: int = Query(default=0, ge=0),
     limit: int = Query(default=500, ge=1, le=2_000),
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> StreamingResponse:
-    if session.get(Project, project_id) is None:
+    project = session.get(Project, project_id)
+    if project is None or (
+        getattr(request.state, "auth_enforced", False)
+        and project.owner_user_id != request.state.user_id
+    ):
         raise api_error("PROJECT_NOT_FOUND", "项目不存在。", 404)
-    events = list(
-        session.scalars(
-            select(Event)
-            .where(Event.project_id == project_id, Event.sequence > cursor)
-            .order_by(Event.sequence)
-            .limit(limit)
-        )
-    )
+    recovered_cursor = cursor
+    if last_event_id:
+        try:
+            recovered_cursor = max(cursor, int(last_event_id))
+        except ValueError as error:
+            raise api_error(
+                "EVENT_CURSOR_INVALID", "Last-Event-ID 必须是事件序号。", 422
+            ) from error
 
-    def event_source():
-        for event in events:
-            payload = EventRead.model_validate(event).model_dump(mode="json")
-            yield (
-                f"id: {event.sequence}\n"
-                f"event: {event.event_type}\n"
-                f"data: {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}\n\n"
-            )
-        last_cursor = events[-1].sequence if events else cursor
-        yield (
-            "event: stream.cursor\n"
-            f"data: {json.dumps({'cursor': last_cursor, 'continuous': True})}\n\n"
-        )
+    async def event_source():
+        current_cursor = recovered_cursor
+        last_heartbeat = monotonic()
+        yield "retry: 1000\n\n"
+        while not await request.is_disconnected():
+            with SessionLocal() as stream_session:
+                events = list(
+                    stream_session.scalars(
+                        select(Event)
+                        .where(Event.project_id == project_id, Event.sequence > current_cursor)
+                        .order_by(Event.sequence)
+                        .limit(limit)
+                    )
+                )
+                for event in events:
+                    current_cursor = event.sequence
+                    yield encode_ag_ui_sse(event)
+            now = monotonic()
+            if now - last_heartbeat >= settings.EVENT_STREAM_HEARTBEAT_SECONDS:
+                yield f": heartbeat cursor={current_cursor}\n\n"
+                last_heartbeat = now
+            if not events:
+                await asyncio.sleep(settings.EVENT_STREAM_POLL_INTERVAL_SECONDS)
 
     return StreamingResponse(
         event_source(),
@@ -1039,8 +1387,8 @@ def stream_events(
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
-            "X-Event-Cursor": str(events[-1].sequence if events else cursor),
-            "X-Event-Stream-Mode": "snapshot-reconnect-foundation",
+            "X-Event-Cursor": str(recovered_cursor),
+            "X-Event-Stream-Mode": "ag-ui-live",
         },
     )
 
@@ -1222,9 +1570,7 @@ def get_run(run_id: str, session: Session = Depends(get_session)) -> RunRead:
 
 
 @router.post("/api/v1/runs/{run_id}/resume")
-def resume_run(
-    run_id: str, body: RunResumeCreate, session: Session = Depends(get_session)
-) -> dict:
+def resume_run(run_id: str, body: RunResumeCreate, session: Session = Depends(get_session)) -> dict:
     advisory_xact_lock(session, f"run:{run_id}")
     run = session.get(AgentRun, run_id)
     task = session.get(AgentTask, run.task_id) if run else None
@@ -1480,9 +1826,7 @@ def create_definition_submission(
     settings: Settings = Depends(get_settings),
 ) -> DefinitionSubmissionRead:
     advisory_xact_lock(session, f"project:{project_id}")
-    advisory_xact_lock(
-        session, f"idempotency:definition.submission:{project_id}:{idempotency_key}"
-    )
+    advisory_xact_lock(session, f"idempotency:definition.submission:{project_id}:{idempotency_key}")
     try:
         result = submit_definition(
             session,
@@ -1531,9 +1875,7 @@ def create_definition_review(
     settings: Settings = Depends(get_settings),
 ) -> DefinitionReviewRead:
     advisory_xact_lock(session, f"project:{project_id}")
-    advisory_xact_lock(
-        session, f"idempotency:definition.review:{submission_id}:{idempotency_key}"
-    )
+    advisory_xact_lock(session, f"idempotency:definition.review:{submission_id}:{idempotency_key}")
     try:
         result = submit_definition_review(
             session,
@@ -1736,7 +2078,10 @@ def list_permissions(
 
 @router.post("/api/v1/gates/{gate_id}/decisions")
 def decide_gate(
-    gate_id: str, body: GateDecisionCreate, session: Session = Depends(get_session)
+    gate_id: str,
+    body: GateDecisionCreate,
+    request: Request,
+    session: Session = Depends(get_session),
 ) -> dict:
     gate = session.get(Gate, gate_id)
     if gate is None:
@@ -1749,9 +2094,20 @@ def decide_gate(
             existing.decision != body.decision
             or existing.context_version_before != body.context_version
         ):
-            raise api_error(
-                "GATE_DECISION_CONFLICT", "该 Gate 已有不同的确定性决定，不能覆盖。"
-            )
+            raise api_error("GATE_DECISION_CONFLICT", "该 Gate 已有不同的确定性决定，不能覆盖。")
+        project = session.get(Project, gate.project_id)
+        if (
+            project is not None
+            and existing.decision == "approve"
+            and gate.gate_type in {"G2", "G3", "G4"}
+        ):
+            if gate.gate_type == "G2":
+                _ensure_g2_solution_pack(session, project=project, gate=gate)
+            elif gate.gate_type == "G3":
+                _ensure_g3_technical_pack(session, project=project, gate=gate)
+            else:
+                _ensure_g4_backend_pack(session, project=project, gate=gate)
+            session.commit()
         return {
             "gate_id": gate_id,
             "decision": existing.decision,
@@ -1790,7 +2146,11 @@ def decide_gate(
         gate_id=gate.id,
         decision=body.decision,
         comment=body.comment,
-        decided_by=body.decided_by,
+        decided_by=(
+            request.state.user_id
+            if getattr(request.state, "auth_enforced", False)
+            else body.decided_by
+        ),
         context_version_before=project.context_version,
         context_version_after=project.context_version + 1,
         target_state=next_state,
@@ -1828,9 +2188,7 @@ def decide_gate(
             )
             if brief is None or version is None or brief.project_id != project.id:
                 raise api_error("GATE_RESOURCE_MISSING", "G0 绑定的 Brief 版本不存在。", 500)
-            version.approval_status = (
-                "approved" if body.decision == "approve" else gate.status
-            )
+            version.approval_status = "approved" if body.decision == "approve" else gate.status
             brief_resource = ContextResourceRef(
                 resource_type="project_brief",
                 resource_id=brief.id,
@@ -1847,9 +2205,7 @@ def decide_gate(
             )
             if artifact is None or version is None or artifact.project_id != project.id:
                 raise api_error("GATE_RESOURCE_MISSING", "G1 绑定的产物版本不存在。", 500)
-            version.approval_status = (
-                "approved" if body.decision == "approve" else gate.status
-            )
+            version.approval_status = "approved" if body.decision == "approve" else gate.status
             artifact.status = version.approval_status
             if body.decision == "approve":
                 artifact_resources.append(
@@ -1970,6 +2326,12 @@ def decide_gate(
                 },
             ),
         )
+    elif body.decision == "approve" and gate.gate_type == "G2":
+        _ensure_g2_solution_pack(session, project=project, gate=gate)
+    elif body.decision == "approve" and gate.gate_type == "G3":
+        _ensure_g3_technical_pack(session, project=project, gate=gate)
+    elif body.decision == "approve" and gate.gate_type == "G4":
+        _ensure_g4_backend_pack(session, project=project, gate=gate)
     session.commit()
     return {
         "gate_id": gate_id,
@@ -1980,50 +2342,380 @@ def decide_gate(
     }
 
 
+def _ensure_g2_solution_pack(
+    session: Session,
+    *,
+    project: Project,
+    gate: Gate,
+) -> ContextPack:
+    existing = session.scalar(
+        select(ContextPack).where(
+            ContextPack.project_id == project.id,
+            ContextPack.context_version == project.context_version,
+            ContextPack.stage == "solution_confirmation",
+            ContextPack.agent_id == "builder",
+        )
+    )
+    if existing is not None:
+        return existing
+    if project.state != "solution_confirmation" or gate.status != "approved":
+        raise api_error("G2_NOT_APPROVED", "G2 批准后才能创建方案 Context。")
+    resources: list[ContextResourceRef] = []
+    for raw in gate.impacted_artifact_refs:
+        artifact_id = raw.get("artifact_id")
+        version_number = raw.get("version")
+        artifact = session.get(Artifact, artifact_id)
+        version = session.scalar(
+            select(ArtifactVersion).where(
+                ArtifactVersion.artifact_id == artifact_id,
+                ArtifactVersion.version == version_number,
+            )
+        )
+        if (
+            artifact is None
+            or version is None
+            or artifact.project_id != project.id
+            or artifact.kind not in {"prd", "prd_review"}
+            or version.approval_status != "approved"
+        ):
+            raise api_error("G2_RESOURCE_INVALID", "G2 绑定的 PRD 产物不可用于方案。", 500)
+        resources.append(
+            ContextResourceRef(
+                resource_type="artifact",
+                resource_id=artifact.id,
+                version=version.version,
+                approval_status="approved",
+            )
+        )
+    by_kind = {session.get(Artifact, resource.resource_id).kind: resource for resource in resources}
+    if set(by_kind) != {"prd", "prd_review"}:
+        raise api_error("G2_RESOURCE_INVALID", "方案必须精确继承 PRD 与 PRD Review。", 500)
+    pack = create_context_pack_record(
+        session,
+        project=project,
+        body=ContextPackCreate(
+            context_version=project.context_version,
+            stage="solution_confirmation",
+            recipient_agent_id="builder",
+            primary_resource=by_kind["prd"],
+            required_resources=[by_kind["prd_review"]],
+            task=(
+                "仅基于已批准 PRD 与 PRD Review 生成 User Flow 和方案说明；"
+                "前端确认稿固定，不改前端、不写代码、不选择技术栈，完成后交 Reviewer。"
+            ),
+            policy={
+                "allowed_capability_ids": ["CAP-07"],
+                "forbidden_actions": [
+                    "advance_project_state",
+                    "approve_gate",
+                    "codex_cli",
+                    "project_fs_write",
+                    "git_local",
+                    "test_runner",
+                    "deploy_adapter",
+                    "read_secret_values",
+                ],
+                "budget": {
+                    "max_turns": 3,
+                    "max_retries": 2,
+                    "timeout_seconds": 300,
+                    "max_tool_calls": 1,
+                },
+                "mode": "solution_document_only",
+            },
+        ),
+    )
+    membership = session.scalar(
+        select(AgentMembership).where(
+            AgentMembership.project_id == project.id,
+            AgentMembership.agent_id == "builder",
+        )
+    )
+    if membership is None:
+        session.add(
+            AgentMembership(
+                project_id=project.id,
+                agent_id="builder",
+                joined_context_version=project.context_version,
+            )
+        )
+        append_event(
+            session,
+            project.id,
+            "agent.joined",
+            {
+                "agent_id": "builder",
+                "context_pack_id": pack.id,
+                "context_version": project.context_version,
+                "responsibility": "solution documents only; no code before G4",
+            },
+        )
+    return pack
+
+
+def _ensure_g3_technical_pack(
+    session: Session,
+    *,
+    project: Project,
+    gate: Gate,
+) -> ContextPack:
+    existing = session.scalar(
+        select(ContextPack).where(
+            ContextPack.project_id == project.id,
+            ContextPack.context_version == project.context_version,
+            ContextPack.stage == "tech_stack_confirmation",
+            ContextPack.agent_id == "builder",
+        )
+    )
+    if existing is not None:
+        return existing
+    if project.state != "tech_stack_confirmation" or gate.status != "approved":
+        raise api_error("G3_NOT_APPROVED", "G3 批准后才能创建技术方案 Context。")
+    resources: list[ContextResourceRef] = []
+    for raw in gate.impacted_artifact_refs:
+        artifact_id = raw.get("artifact_id")
+        version_number = raw.get("version")
+        artifact = session.get(Artifact, artifact_id)
+        version = session.scalar(
+            select(ArtifactVersion).where(
+                ArtifactVersion.artifact_id == artifact_id,
+                ArtifactVersion.version == version_number,
+            )
+        )
+        if (
+            artifact is None
+            or version is None
+            or artifact.project_id != project.id
+            or artifact.kind not in {"user_flow", "solution_design", "solution_review"}
+            or version.approval_status != "approved"
+        ):
+            raise api_error("G3_RESOURCE_INVALID", "G3 绑定的方案产物不可用于技术定义。", 500)
+        resources.append(
+            ContextResourceRef(
+                resource_type="artifact",
+                resource_id=artifact.id,
+                version=version.version,
+                approval_status="approved",
+            )
+        )
+    by_kind = {session.get(Artifact, resource.resource_id).kind: resource for resource in resources}
+    if set(by_kind) != {"user_flow", "solution_design", "solution_review"}:
+        raise api_error("G3_RESOURCE_INVALID", "技术定义必须精确继承完整方案与审核。", 500)
+    pack = create_context_pack_record(
+        session,
+        project=project,
+        body=ContextPackCreate(
+            context_version=project.context_version,
+            stage="tech_stack_confirmation",
+            recipient_agent_id="builder",
+            primary_resource=by_kind["solution_design"],
+            required_resources=[by_kind["user_flow"], by_kind["solution_review"]],
+            task=(
+                "仅基于已批准方案与冻结项目技术路线生成 Technical Adaptation 和 API Contract；"
+                "覆盖版本、成本、安全、数据边界、迁移、可观测性与回退。"
+                "不改前端、不写代码、不调用 Codex/Git/测试/部署，完成后交 Reviewer。"
+            ),
+            policy={
+                "allowed_capability_ids": ["CAP-07"],
+                "forbidden_actions": [
+                    "advance_project_state",
+                    "approve_gate",
+                    "codex_cli",
+                    "project_fs_write",
+                    "git_local",
+                    "test_runner",
+                    "deploy_adapter",
+                    "read_secret_values",
+                ],
+                "budget": {
+                    "max_turns": 3,
+                    "max_retries": 2,
+                    "timeout_seconds": 300,
+                    "max_tool_calls": 1,
+                },
+                "mode": "technical_document_only",
+            },
+        ),
+    )
+    return pack
+
+
+def _ensure_g4_backend_pack(
+    session: Session,
+    *,
+    project: Project,
+    gate: Gate,
+) -> ContextPack:
+    existing = session.scalar(
+        select(ContextPack).where(
+            ContextPack.project_id == project.id,
+            ContextPack.context_version == project.context_version,
+            ContextPack.stage == "development_backend",
+            ContextPack.agent_id == "builder",
+        )
+    )
+    if existing is not None:
+        return existing
+    if project.state != "development_backend" or gate.status != "approved":
+        raise api_error("G4_NOT_APPROVED", "G4 批准后才能创建后端开发 Context。")
+    resources: list[ContextResourceRef] = []
+    for raw in gate.impacted_artifact_refs:
+        artifact_id = raw.get("artifact_id")
+        version_number = raw.get("version")
+        artifact = session.get(Artifact, artifact_id)
+        version = session.scalar(
+            select(ArtifactVersion).where(
+                ArtifactVersion.artifact_id == artifact_id,
+                ArtifactVersion.version == version_number,
+            )
+        )
+        if (
+            artifact is None
+            or version is None
+            or artifact.project_id != project.id
+            or artifact.kind
+            not in {"technical_adaptation", "api_contract", "technical_review"}
+            or version.approval_status != "approved"
+        ):
+            raise api_error("G4_RESOURCE_INVALID", "G4 绑定的技术产物不可用于后端开发。", 500)
+        resources.append(
+            ContextResourceRef(
+                resource_type="artifact",
+                resource_id=artifact.id,
+                version=version.version,
+                approval_status="approved",
+            )
+        )
+    by_kind = {
+        session.get(Artifact, resource.resource_id).kind: resource for resource in resources
+    }
+    if set(by_kind) != {"technical_adaptation", "api_contract", "technical_review"}:
+        raise api_error("G4_RESOURCE_INVALID", "后端开发必须精确继承完整技术定义与审核。", 500)
+    pack = create_context_pack_record(
+        session,
+        project=project,
+        body=ContextPackCreate(
+            context_version=project.context_version,
+            stage="development_backend",
+            recipient_agent_id="builder",
+            primary_resource=by_kind["api_contract"],
+            required_resources=[by_kind["technical_adaptation"], by_kind["technical_review"]],
+            task=(
+                "在项目专属受限工作区实现销售复盘 Agent 后端纵向切片。"
+                "必须实现真实 FastAPI/PostgreSQL/Alembic、材料/结论/行动项/导出 API、"
+                "确定性状态与错误、真实测试和运行文档。不得修改产品工厂前端，"
+                "不得自动 push/deploy/删除工作区，不得读取密钥原值。"
+            ),
+            policy={
+                "allowed_capability_ids": ["CAP-08"],
+                "forbidden_actions": [
+                    "advance_project_state",
+                    "approve_gate",
+                    "git_push",
+                    "deploy_adapter",
+                    "workspace_delete",
+                    "read_secret_values",
+                ],
+                "allowed_tools": [
+                    "codex_cli",
+                    "project_fs_read",
+                    "project_fs_write",
+                    "git_local",
+                    "test_runner",
+                ],
+                "workspace_scope": project.id,
+                "budget": {
+                    "max_turns": 6,
+                    "max_retries": 2,
+                    "timeout_seconds": 1800,
+                    "max_tool_calls": 8,
+                },
+                "mode": "backend_development",
+            },
+        ),
+    )
+    task = session.scalar(
+        select(AgentTask).where(
+            AgentTask.project_id == project.id,
+            AgentTask.assigned_agent == "builder",
+            AgentTask.context_version == project.context_version,
+            AgentTask.title == "实现销售复盘 Agent 后端纵向切片",
+        )
+    )
+    if task is None:
+        task = AgentTask(
+            project_id=project.id,
+            assigned_agent="builder",
+            title="实现销售复盘 Agent 后端纵向切片",
+            state="ready",
+            context_version=project.context_version,
+        )
+        session.add(task)
+        session.flush()
+        append_event(
+            session,
+            project.id,
+            "task.ready",
+            {
+                "task_id": task.id,
+                "assigned_agent": "builder",
+                "context_pack_id": pack.id,
+                "context_version": project.context_version,
+            },
+        )
+    return pack
+
+
 @router.post("/api/v1/permissions/{permission_id}/decisions")
 def decide_permission(
     permission_id: str,
     body: PermissionDecisionCreate,
+    http_request: Request,
     session: Session = Depends(get_session),
 ) -> dict:
-    request = session.get(PermissionRequest, permission_id)
-    if request is None:
+    permission_request = session.get(PermissionRequest, permission_id)
+    if permission_request is None:
         raise api_error("PERMISSION_NOT_FOUND", "权限请求不存在。", 404)
-    run = session.get(AgentRun, request.run_id)
+    run = session.get(AgentRun, permission_request.run_id)
     task = session.get(AgentTask, run.task_id) if run else None
     project = session.get(Project, task.project_id) if task else None
     if run is None or task is None or project is None:
         raise api_error("PERMISSION_SCOPE_MISSING", "权限请求关联的运行范围不存在。", 409)
     advisory_xact_lock(session, f"project:{project.id}")
-    session.refresh(request)
+    session.refresh(permission_request)
     existing = session.scalar(
-        select(PermissionDecision).where(
-            PermissionDecision.permission_request_id == permission_id
-        )
+        select(PermissionDecision).where(PermissionDecision.permission_request_id == permission_id)
     )
     if existing:
         return {"permission_id": permission_id, "decision": existing.decision, "idempotent": True}
-    if request.status != "open":
+    if permission_request.status != "open":
         raise api_error("PERMISSION_NOT_OPEN", "权限请求当前不可决定。")
-    if request.expires_at is not None and request.expires_at <= datetime.now(UTC):
-        request.status = "expired"
+    if (
+        permission_request.expires_at is not None
+        and permission_request.expires_at <= datetime.now(UTC)
+    ):
+        permission_request.status = "expired"
         session.commit()
         raise api_error("PERMISSION_EXPIRED", "权限请求已过期，请重新发起。")
     if task.context_version != project.context_version:
-        request.status = "stale"
+        permission_request.status = "stale"
         session.commit()
         raise api_error("STALE_CONTEXT", "权限请求基于旧 Context，请重新发起。")
-    if request.input_hash != body.input_hash:
+    if permission_request.input_hash != body.input_hash:
         raise api_error("PERMISSION_INPUT_CHANGED", "工具参数已变化，原权限请求失效。")
 
     decision = PermissionDecision(
         permission_request_id=permission_id,
         decision=body.decision,
         input_hash=body.input_hash,
-        decided_by=body.decided_by,
+        decided_by=(
+            http_request.state.user_id
+            if getattr(http_request.state, "auth_enforced", False)
+            else body.decided_by
+        ),
     )
     session.add(decision)
-    request.status = "decided"
+    permission_request.status = "decided"
     append_event(
         session,
         project.id,
