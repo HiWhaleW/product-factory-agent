@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogoutButton } from "@/app/logout-button";
 
 import type { GateRequest, PermissionRequest, Project, SessionStatus } from "@/lib/contracts";
-import { nextHeaderPopover, type HeaderPopoverId } from "@/lib/header";
+import { identityPresentation, nextHeaderPopover, type HeaderPopoverId } from "@/lib/header";
 import type { AttentionItem } from "@/lib/home";
 
 type GlobalAttentionItem = AttentionItem & { projectId: string; projectName: string };
@@ -119,8 +119,7 @@ export function GlobalHeader({ productName }: { productName: string }) {
     setActivePopover((current) => nextHeaderPopover(current, popover));
   }
 
-  const displayName = session?.authenticated ? session.display_name ?? "我" : "访客";
-  const roleLabel = session?.role === "admin" ? "管理员" : session?.role === "user" ? "用户" : "未登录";
+  const { accountLabel, displayName, loginLabel } = identityPresentation(session);
 
   return (
     <>
@@ -170,7 +169,7 @@ export function GlobalHeader({ productName }: { productName: string }) {
             </details>
             <details className="header-popover identity-popover" open={activePopover === "identity"}>
               <summary
-                aria-label={`${displayName}，${roleLabel}`}
+                aria-label={`${displayName}，${accountLabel}，${loginLabel}`}
                 onClick={(event) => {
                   event.preventDefault();
                   togglePopover("identity");
@@ -181,20 +180,11 @@ export function GlobalHeader({ productName }: { productName: string }) {
                 <span className="identity-avatar" aria-hidden="true">我</span>
                 <div>
                   <strong>{displayName}</strong>
-                  <small>{roleLabel}</small>
+                  <small>{accountLabel}</small>
                 </div>
                 <dl>
-                  <div><dt>用户</dt><dd>{displayName}</dd></div>
-                  <div><dt>角色</dt><dd>{roleLabel}</dd></div>
-                  <div><dt>用户 ID</dt><dd>{session?.user_id ?? "—"}</dd></div>
-                  <div><dt>运行模式</dt><dd>{session?.role === "admin" ? "内部验证环境" : "用户工作空间"}</dd></div>
-                  <div><dt>身份认证</dt><dd>{session?.authenticated ? "会话有效" : session?.auth_enforced ? "需要登录" : "未强制登录"}</dd></div>
-                  <div><dt>Session 原因</dt><dd>{session?.reason ?? "—"}</dd></div>
-                  <div><dt>请求强制认证</dt><dd>{session?.auth_enforced ? "已启用" : "尚未启用"}</dd></div>
+                  <div><dt>登录状态</dt><dd>{loginLabel}</dd></div>
                 </dl>
-                <p>{session?.authenticated
-                  ? "当前请求已由后端 HttpOnly Session 校验。"
-                  : session?.auth_enforced ? "请回到首页使用邀请码登录。" : "开发环境未强制认证。"}</p>
                 {session?.authenticated ? <LogoutButton /> : null}
               </div>
             </details>

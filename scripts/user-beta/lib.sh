@@ -29,6 +29,24 @@ user_beta_python() {
     "$USER_BETA_ROOT/.venv/bin/python" "$@"
 }
 
+user_beta_read_invite_code() {
+  local invite_file="$USER_BETA_RUNTIME/invite-code.txt"
+  local invite_code
+  [[ -f "$invite_file" ]] || {
+    echo "缺少用户测试环境邀请码文件。" >&2
+    return 1
+  }
+  invite_code="$(sed -n 's/^邀请码：//p' "$invite_file" | head -n 1)"
+  if [[ -z "$invite_code" ]]; then
+    invite_code="$(tr -d '[:space:]' < "$invite_file")"
+  fi
+  [[ -n "$invite_code" ]] || {
+    echo "用户测试环境邀请码为空。" >&2
+    return 1
+  }
+  printf '%s' "$invite_code"
+}
+
 user_beta_pid_running() {
   local pid_file="$1"
   local expected_marker="${2:-}"

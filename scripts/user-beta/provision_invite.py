@@ -12,8 +12,18 @@ ROOT = Path(__file__).resolve().parents[2]
 INVITE_FILE = ROOT / ".runtime" / "user-beta" / "invite-code.txt"
 
 
+def read_invite_code() -> str:
+    contents = INVITE_FILE.read_text().strip()
+    for line in contents.splitlines():
+        if line.startswith("邀请码："):
+            invite_code = line.removeprefix("邀请码：").strip()
+            if invite_code:
+                return invite_code
+    return contents
+
+
 def main() -> None:
-    invite_hash = hashlib.sha256(INVITE_FILE.read_text().strip().encode()).hexdigest()
+    invite_hash = hashlib.sha256(read_invite_code().encode()).hexdigest()
     engine = create_engine(get_settings().DATABASE_URL, pool_pre_ping=True)
     try:
         with engine.begin() as connection:

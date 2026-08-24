@@ -2,21 +2,23 @@
 
 ## 当前事实
 
-- 日期：2026-08-23。
+- 日期：2026-08-24。
 - 产品工厂 Agent 是 **AI Native 产品**：Agent 是主要执行者，不是普通后台上的聊天插件；自然语言、Context、Tool、Artifact、Gate、Reviewer 和反馈闭环共同构成产品核心。
 - D1-D2 规格冻结包、独立工程排期、竞品/GitHub/标准 Harness 参考评估、4 份核心 Prompt 和 HTML 已生成。
 - 四项 Spec Freeze 已于 2026-08-20 获用户明确批准；D1–D10 工程主线已推进到内部验收。
-- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、确定性控制面、真实用户/项目归属、用户模型凭据、Alembic `20260823_0010`、86 项 Python 测试、48 项在线 PostgreSQL 集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
-- 2026-08-23 最新核验：Web 26/26、Python 86/86、PostgreSQL 48/48、production build 通过，Alembic 为 `20260823_0010 (head)`。项目软删除、用户隔离回收箱、幂等恢复、删除/恢复审计和 API Key 表单校验已通过真实 PostgreSQL 与浏览器 QA；保留 1 条 Starlette/httpx 弃用警告。
+- Git/monorepo、FastAPI/Next.js、PostgreSQL 16.15、确定性控制面、真实用户/项目归属、用户模型凭据、Alembic `20260823_0010`、94 项通过且 48 项跳过的 Python 测试、48 项在线 PostgreSQL 集成/并发/恢复测试、Artifact 安全内容与单屏双栏 Web 已存在。
+- 2026-08-24 最新核验：Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48，production build、ESLint、TypeScript、Ruff 通过，Alembic 为 `20260823_0010 (head)`；内部 standalone 包 `20260824T074916Z` 的 SHA-256 manifest 在启动前后不变，4 份冻结 Prompt 哈希未变。项目软删除、用户隔离回收箱、幂等恢复、删除/恢复审计、API 空态、首次引导和精简个人信息已有真实 PostgreSQL 与历史两端浏览器 QA；新内部包尚未绑定或重新验收到用户环境，保留 1 条 Starlette/httpx 弃用警告。
 - DeepSeek、博查 Adapter、有界 LangGraph Runtime、Run/Step/checkpoint 和 Codex Builder 真实执行已存在。销售复盘 Agent 已依次完成 G0–G5、后端开发、前端开发、MVP 与内部验收，当前为 `seed_beta / Context v10 / iteration v1`。
-- 用户已于 2026-08-23 批准 G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a`，并于 2026-08-24 明确确认本次内部浏览器验收通过。内部验证环境 `127.0.0.1:3200/8200` 保留销售复盘 Agent；独立用户环境 `127.0.0.1:3300/8300` 使用独立数据库且首次登录为空项目。两套环境现均绑定已验收发布包 `20260823T155102Z`；用户数据库已迁移到 `20260823_0010`，Secret Store、备份恢复和 `095514Z ↔ 155102Z` 双向回滚演练通过，最终恢复到新包。G6 尚未打开，不得正式发布。
+- 必须区分三个对象：“销售复盘 Agent”是产品工厂内的内部示范项目，其项目生命周期停在种子内测、G6 未打开；“产品工厂 Agent”是平台产品本身，下一步是 GitHub 更新和火山引擎部署；火山引擎 `user-beta` 是给真实用户测试平台的环境，不等于销售复盘 Agent 正式发布，也不需要先批准该示范项目的 G6。
+- 用户已于 2026-08-23 批准销售复盘 Agent 的 G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a`；该示范项目的 G6 尚未打开。内部环境 `127.0.0.1:3200/8200` current / previous 为 `20260824T074916Z` / `20260824T042123Z`；独立用户环境 `127.0.0.1:3300/8300` current / previous 仍为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`。用户环境尚未绑定或重新验收 `074916Z`；其数据库为 `20260823_0010`，项目、Artifact、Run、Gate、消息、用户模型凭据和内部项目均为 0。
 - 可回收前端联合验收项目固定为 `c7f38c12-6c5a-4b2f-bd51-7d0d5f5e0001`；它是测试 fixture，不得冒充真实业务项目。
 - 后续不会再分别启动 Agent Runtime、后端、前端三条并行任务线，也不存在后续“并线”步骤。当前工作区是唯一实现真相源；由同一个 coding task 按 Gate 串行完成 Runtime → API/数据库 → Web 投影 → 测试/浏览器 QA → 文档闭环。
-- GitHub Connector 本地可核验的最后安全快照是 `db39b5dd…` / Draft PR #1。任务表中无证据的 `4cac2589…` 已删除；下一位在任何远端写入前必须用 GitHub Connector 重新核验真实 head。
+- 2026-08-24 通过 GitHub Connector 只读核验：私有仓库 `HiWhaleW/product-factory-agent`，`codex/initial-import`，Draft PR #1 仍 open/draft，PR head 为 `69eb31d22430522f32c8db6b1151336756f42d01`。任何远端写入前必须再次用 Connector 核验真实 head。
+- 用户已指定交接后的立即顺序：以已建立的内部可重现基线更新 GitHub Draft PR，再对火山引擎受控 `user-beta` 做账号、拓扑与费用预检。这是平台用户测试基础设施，可在销售复盘 Agent G6 之前建立；不得将其写成该示范项目的正式发布。本机独立用户环境仍保留历史组合包，未经新的绑定验收不得写成 `user_baseline_ready`，但它不阻塞 GitHub 后的云预检。
 - 唯一权威交互视觉基线是根目录 `产品工厂Agent_Harness表.html`。`产品工厂Agent/产品工厂Agent_Harness流程与能力注册表.html` 只是把 12 阶段生命周期投影到该交互范式的修订版，不得反向覆盖视觉基线。
-- 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects` 真实项目列表、`/projects/{projectId}` 双栏工作区和 `/settings` API 设置页；顶部为“首页 / 项目列表 / 设置 / 个人信息”，无效“帮助”和虚假快捷键说明已移除。个人信息承载用户与 Session 内容；设置页只承载 API Key 的添加、替换和删除。真实项目支持受控软删除、用户隔离回收箱和恢复，不提供永久删除。
+- 当前 Web 已移除 `demoProject`，在同一 Next.js 应用中统一 `/` 首页、`/projects` 真实项目列表、`/projects/{projectId}` 双栏工作区和 `/settings` API 设置页；顶部为“首页 / 项目列表 / 设置 / 个人信息”，无效“帮助”和虚假快捷键说明已移除。个人信息只显示名称、账号身份、登录状态和退出登录，不再默认展示用户 ID、运行模式、Session 原因或强制认证诊断。设置页只承载 API Key 的添加、替换和删除。真实项目支持受控软删除、用户隔离回收箱和恢复，不提供永久删除。
 - 当前桌面工作区按用户最新确认稿采用约 `30/70` 双栏（左侧群聊、右侧产物画布）；根目录 Harness 的 `38/62` 是交互视觉基线的历史比例，不能反向覆盖用户最新确认。12 阶段仍为 `6×2`，移动 `390×844` 仍使用“群聊 / 产物”同屏切换。
-- 用户已明确前端现有内容默认固定；本次首页、项目列表、设置页、个人信息、登录后返回首页及项目操作按钮修改已提前告知并获授权。设置页现可添加/替换/删除用户自己的 API Key，并配置 OpenAI-compatible HTTPS 接口和模型名；用户已确认本次内部浏览器验收通过，`design-qa.md` 状态为 `user_accepted / user_environment_ready`。
+- 用户已明确前端现有内容默认固定；本次首页、项目列表、设置页、个人信息、登录后返回首页及项目操作按钮修改已提前告知并获授权。设置页现可添加/替换/删除用户自己的 API Key，并配置 OpenAI-compatible HTTPS 接口和模型名；此前用户已确认历史组合包的内部浏览器验收通过，`design-qa.md` 最新状态记录内部可重现基线已就绪、本机用户旧包未绑定，不能把旧验收自动扩展到 `074916Z`。
 - AG-UI/SSE 已成为事件主通道：持久化事件使用 AG-UI CUSTOM envelope，SSE `id` 绑定数据库 sequence，支持 cursor/`Last-Event-ID`、心跳、断线降级和自动重连；`2500ms` cursor 轮询只在断线时启用，恢复后停止。
 - 认证强制执行已完成：生产环境必须开启认证并配置邀请哈希/Session Secret；受保护 API 使用 HttpOnly Session，缺失、无效或过期均 fail closed。真实 `.env` 未被本轮修改。
 - 用户 API Key 原文只保存在分环境、分用户、权限为 `0600` 的 Secret Store；PostgreSQL 保存 SecretRef、SHA-256 指纹、脱敏尾号及非敏感的接口名称/Base URL/模型名，API/校验错误不返回 Key 原文。Runtime 优先按项目 owner 使用用户配置的 OpenAI-compatible HTTPS 接口；普通用户未配置时 fail closed；`DEEPSEEK_API_KEY` 只允许内部管理员本地测试回退。
@@ -49,11 +51,14 @@
 完成上述阅读和真实状态核验后，下一位接手者必须按顺序执行：
 
 1. **把当前工作区作为唯一真相源。** 不再创建 Runtime、后端或前端并行任务，不等待后续并线；不覆盖现有实现，也不把某一层的局部通过当作端到端完成。
-2. **使用已验收的用户环境开展测试。** 内部和用户环境现均为 `20260823T155102Z`；用户环境迁移、Secret Store、恢复和跨版本回滚已验收。不得把用户环境反向作为内部开发数据源。
-3. **开展真实种子用户内测。** G5 已由用户批准；只收集真实任务、使用、失败和反馈数据，不得伪造内测证据。
-4. **继续按 Gate 串行推进。** 真实内测证据达标后再做 BRD 并打开 G6；G6 批准后才发布/交接。
-5. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。
-6. **GitHub 仍只用 Connector。** 现有安全快照和 Draft PR 已建立；后续推送前重新核对远端 head、扫描秘密与本机路径，并继续使用 `force:false`，不得使用 `gh`。
+2. **保持两套环境的受控版本边界。** 内部 current / previous 为 `20260824T074916Z` / `20260824T042123Z`，用户环境 current / previous 为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`；后续更新仍必须先内部验收，用户环境不得反向作为内部开发数据源。
+3. **使用已建立的内部可重现基线。** `20260824T074916Z` 已通过 standalone 打包、SHA-256 manifest 启动前后复核和冻结 Prompt 哈希复核；只上传可重现源码、构建配置、migration、测试与同步文档，不上传 `.runtime`、手工混合 `.next` 或不可重现发布产物。该结论不等于 `user_baseline_ready`。
+4. **GitHub 只用 Connector。** 远端写入前重新核对 Draft PR head、扫描秘密与本机路径，使用 `force:false`，保持 Draft 且不 merge；不得使用 `gh` 或本地 push。
+5. **预检并建立火山引擎 `user-beta`。** 先核验账号、地域、网络、资源、费用和拓扑；付费资源或目标不唯一时先请用户决定。云上新建独立 PostgreSQL、Artifact/Workspace、日志、Secret Store、Session Secret 和邀请哈希，完成 HTTPS、认证、SSE、隔离、恢复/回滚和浏览器验收。不得把带本地 Codex CLI/工作区能力的 Builder 直接暴露到公开 veFaaS 函数。
+6. **保持本机用户环境的独立放行边界。** 它仍是历史组合包；如后续要绑定 `074916Z`，必须单独做 preflight、迁移和完整重验，不能把内部验收自动扩展过去。该动作不阻塞火山引擎预检。
+7. **开展真实种子用户内测。** G5 已由用户批准；只收集真实任务、使用、失败和反馈数据，不得伪造内测证据。
+8. **继续按对象管理 Gate。** 火山引擎 `user-beta` 部署不需销售复盘 Agent G6；销售复盘 Agent 若继续向正式发布推进，必须先用其真实内测证据生成 BRD、打开并由用户批准该项目 G6。
+9. **跨层改动由同一任务负责闭环。** 修改 Runtime/API 时同步前端投影、测试、文档和浏览器 QA；不得留下“等待另一条线并入”的状态。
 
 ## 已批准的 V1 产品边界
 
@@ -95,13 +100,14 @@
 
 销售复盘 Agent 当前为 `seed_beta / Context v10 / iteration v1`。G0–G5、后端、前端、MVP、内部验收、Beta Candidate 和本机内测环境验收已完成；真实 429、博查费用/账单、来源质量人工评审和模型路由差异保持未验证。
 
-平台现有两套独立本机环境：内部验证环境 `3200/8200` 与用户环境 `3300/8300`。用户环境的数据库、Artifact、Workspace、日志、Session Secret 和邀请码均独立；用户环境已有 current `20260823T155102Z` 与 previous `20260823T095514Z`，双向回滚已真实演练并最终恢复到新包。公网域名、HTTPS 和真实种子用户数据尚未完成。
+平台现有两套独立本机环境：内部验证环境 `3200/8200` current / previous 为 `20260824T074916Z` / `20260824T042123Z`；用户环境 `3300/8300` current / previous 为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`。内部可重现 standalone 基线已经建立，manifest 启动前后不变，4 份冻结 Prompt 哈希未变；用户环境尚未绑定或重新验收该包。两端数据库、Artifact、Workspace、日志、Session Secret 和邀请码均独立；本机历史回滚边界已真实验收。下一步用 GitHub Connector 更新 Draft PR，再按 `docs/cloud-user-beta-handoff.md` 执行火山引擎账号、拓扑和费用预检。本机用户环境是否绑定新包是独立放行动作，不阻塞云预检。公网 HTTPS、云上验收和真实种子用户数据尚未完成。
 
-1. 使用真实种子用户和真实任务，按既定退出阈值收集成功、失败、使用和反馈数据。
-2. 保留 Reviewer 的已知问题，并在真实内测中验证。
-3. 内测证据达标后才生成商业 BRD 并打开 G6；G6 未批准前不得正式发布。
-4. 前端非必要不动；确需修改必须提前告知用户。
-5. AG-UI/SSE 和认证强制执行已完成；后续不得把 `2500ms` cursor 轮询重新降级为主通道。
+1. 以内部 `20260824T074916Z` 可重现基线用 GitHub Connector 安全更新 Draft PR；随后按 `docs/cloud-user-beta-handoff.md` 执行火山引擎账号、拓扑和费用预检，再在用户确认精确资源边界后部署并验收 `user-beta`。
+2. 使用真实种子用户和真实任务，按既定退出阈值收集成功、失败、使用和反馈数据。
+3. 保留 Reviewer 的已知问题，并在真实内测中验证。
+4. 销售复盘 Agent 若继续向其正式发布推进，内测证据达标后才生成商业 BRD 并打开该项目 G6；平台的火山引擎 `user-beta` 不以此为前置。
+5. 前端非必要不动；确需修改必须提前告知用户。
+6. AG-UI/SSE 和认证强制执行已完成；后续不得把 `2500ms` cursor 轮询重新降级为主通道。
 
 ## 交接提示词
 

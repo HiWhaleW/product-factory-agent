@@ -1,7 +1,7 @@
 # 产品工厂 Agent - 产品生命周期与 Gate 映射
 
 > 版本：v0.2  
-> 日期：2026-08-23  
+> 日期：2026-08-24  
 > 状态：用户已明确修订阶段顺序；本文件是阶段顺序的权威入口  
 > HTML 阅读版：[product-lifecycle.html](./product-lifecycle.html)
 
@@ -77,14 +77,15 @@ alignment → mrd → prd → solution_confirmation → tech_stack_confirmation
 
 不得把 D10 日期当成真实种子数据、商业模式或发布完成的证据。
 
-## 6. 当前实现边界（2026-08-23）
+## 6. 当前实现边界（2026-08-24）
 
-- “销售复盘 Agent”为 `seed_beta / Context v10 / iteration v1`，处于第 9/12 阶段。
+- “销售复盘 Agent”是内部示范项目，为 `seed_beta / Context v10 / iteration v1`，处于第 9/12 阶段。
+- “产品工厂 Agent”是平台产品；火山引擎 `user-beta` 是给真实用户测试平台的环境，部署不需销售复盘 Agent G6。
 - G0–G5、后端开发、前端开发、MVP 和内部验收已完成；Builder/Codex 已真实执行，Beta Candidate 已生成。
 - G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` 已由用户批准；G6 尚未打开。
-- 最新验证为 Web 22/22、Python 77/77、PostgreSQL 47/47、Alembic `20260823_0007 (head)`、production build 通过。
+- 最新验证为 Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48、Alembic `20260823_0010 (head)`，production build、ESLint、TypeScript、Ruff 通过。
 - 主/子 Agent 入群互动、自我介绍和消息间执行过程已接入真实群聊；技术事件已改为通俗中文。
 - AG-UI/SSE 已是事件主通道，`2500ms` cursor 轮询只在断线时降级；认证强制执行、真实用户和项目归属已完成。
-- 内部验证环境 `3200/8200` 保留销售复盘 Agent；独立用户环境 `3300/8300` 使用独立数据库且首次登录项目为空。
-- 当前可以开展真实种子用户内测，但真实任务/反馈数据、商业 BRD/G6、正式发布/交接和数据反馈尚未完成。
+- 内部验证环境 `3200/8200` current / previous 为 `20260824T074916Z` / `20260824T042123Z`，新 current 的 manifest 启动前后不变且 4 份冻结 Prompt 哈希未变；独立用户环境 `3300/8300` current / previous 仍为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`，尚未绑定或重验新包。
+- 平台当前状态为 `internal_reproducible_baseline_ready / cloud_preflight_pending`，本机用户环境另为 `local_user_binding_pending`。下一步是 GitHub Connector 更新、火山引擎账号/拓扑/费用预检，再由用户决定精确云资源边界；本机用户绑定/重验是独立放行线，未经完成不得标记本机 `user_baseline_ready`，但不阻塞云预检。销售复盘 Agent 若后续向正式发布推进，再单独完成其 BRD/G6；这不阻塞平台 `user-beta`。
 - 历史 mock/原型证据仍只证明对应历史页面，不得冒充当前真实验收。

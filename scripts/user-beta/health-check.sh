@@ -26,7 +26,7 @@ grep -qi '^x-content-type-options: nosniff' "$work_dir/web.headers"
 grep -qi '^x-frame-options: DENY' "$work_dir/web.headers"
 grep -qi '^referrer-policy: no-referrer' "$work_dir/web.headers"
 
-invite_code="$(tr -d '\n' < "$USER_BETA_RUNTIME/invite-code.txt")"
+invite_code="$(user_beta_read_invite_code)"
 login_status="$(
   curl -sS -c "$work_dir/cookies" -o "$work_dir/login.json" -w '%{http_code}' \
     -H 'Content-Type: application/json' --data "{\"invite_code\":\"$invite_code\"}" \

@@ -5,7 +5,8 @@ set -euo pipefail
 # shellcheck source=lib.sh
 source "$(cd "$(dirname "$0")" && pwd -P)/lib.sh"
 mkdir -p "$USER_BETA_RUNTIME/logs" "$USER_BETA_RUNTIME/backups" \
-  "$USER_BETA_RUNTIME/artifacts" "$USER_BETA_RUNTIME/workspaces"
+  "$USER_BETA_RUNTIME/artifacts" "$USER_BETA_RUNTIME/workspaces" \
+  "$USER_BETA_RUNTIME/releases"
 chmod 700 "$USER_BETA_RUNTIME"
 
 cd "$USER_BETA_ROOT"

@@ -1,7 +1,8 @@
 # 产品工厂 Agent - 开发与运维手册
 
-> 同步日期：2026-08-23  
-> 当前状态：`seed_beta / Context v10 / iteration v1`；G5 已批准；内部验证环境与独立用户环境均已建立；G6 尚未打开。  
+> 同步日期：2026-08-24  
+> 平台状态：产品工厂 Agent 本机双环境已建立；下一步是 GitHub 更新和火山引擎 `user-beta`。  
+> 示范项目状态：销售复盘 Agent 为 `seed_beta / Context v10 / iteration v1`；G5 已批准，G6 尚未打开。  
 > 环境拓扑：[双环境运行说明](./environments.html)
 
 ## 1. 当前运行基线
@@ -12,13 +13,15 @@
 | API | FastAPI 0.141.1 / Pydantic 2.13.4 |
 | Runtime | LangGraph 1.2.11 / DeepSeek / 博查 / Codex CLI Adapter |
 | 数据库 | PostgreSQL 16.15 / Alembic `20260823_0010 (head)` |
-| 测试 | Web 23/23、Python 86/86、PostgreSQL 48/48 |
-| 构建 | production build 通过 |
-| 当前 Gate | G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` approved；G6 未打开 |
+| 测试 | Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48 |
+| 构建 | production build、ESLint、TypeScript、Ruff 通过 |
+| 销售复盘 Agent Gate | G5 `3fb3ef9f-91c9-433f-a56b-10521ec13b4a` approved；G6 未打开；不阻塞平台 `user-beta` |
 
 保留 1 条 Starlette/httpx 弃用警告。AG-UI/SSE 已是主通道；`2500ms` cursor 轮询只在断线时降级，SSE 自动恢复后停止。认证强制执行已完成，生产环境缺少认证配置会拒绝启动。
 
-当前内部发布包为 `20260823T143242Z`；独立用户环境仍绑定旧包 `20260823T095514Z`、数据库仍为 `20260823_0008`。用户明确确认内部浏览器验收通过前，不得迁移或绑定用户环境。
+当前内部 current 为可重现 standalone 发布包 `20260824T074916Z`，previous 为 `20260824T042123Z`；独立用户环境 current 仍为 `20260824T042412Z-identity-only`，previous 为 `20260824T032335Z-settings-only`，数据库为 `20260823_0010`。`074916Z` 的 SHA-256 manifest 在启动核验前后保持一致；它尚未绑定或重新验收到用户环境。下一执行任务是先用 GitHub Connector 更新 Draft PR，再建立火山引擎 `user-beta` 环境。
+
+`user-beta` 是产品工厂平台的真实用户测试环境，不需销售复盘 Agent G6。该示范项目的 G6 只约束其自身从种子内测进入正式发布。
 
 ## 2. 启动前检查
 
@@ -27,6 +30,7 @@
 3. 检查 PostgreSQL 16.15、Alembic head、Artifact Root、Workspace Root 和 `CODEX_CLI_PATH`。
 4. 确认密钥只存在后端环境，不进入前端、仓库、日志、Context Pack 或 Artifact。
 5. 任何 GitHub 远端写入前，用 Connector 核验当前 head 和 Draft PR #1；不得使用 `gh`。
+6. 读取 [GitHub 与火山引擎用户测试环境交接](./cloud-user-beta-handoff.html)；不得从不可重现的手工混合发布包直接上云。
 
 ## 3. 标准命令
 
@@ -37,12 +41,17 @@ env CI=true pnpm check
 pnpm test:api:integration
 env CI=true NEXT_TELEMETRY_DISABLED=1 pnpm build
 env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini current
-pnpm dev
+
+# 仅开发模式，在两个终端分别运行；不代表双 production 环境
+pnpm dev:api
+pnpm dev:web
 ```
 
 普通 Python 单测不会隐式运行在线 PostgreSQL 集成测试；集成测试必须使用 `pnpm test:api:integration` 单独执行。
 
 不要在主库执行 downgrade。migration 往返测试必须使用临时空库。
+
+`pnpm db:status` 只检查仓库 `.runtime/postgresql-data` 中的 bundled PostgreSQL，不能代表 `.env` 实际指向的数据库。两套运行环境的真实状态应以 Alembic `current` 及各自 `preflight` 为准。
 
 ### 3.1 内部验证环境
 
@@ -58,6 +67,10 @@ scripts/seed-beta/stop.sh
 ```
 
 内部凭据、PID、日志、发布包和备份只保存在被 Git 忽略的 `.runtime/seed-beta/`。该环境保留销售复盘 Agent 与内部验收数据。`restore-check.sh` 只恢复到固定前缀临时数据库，核对后删除，不修改主库。`rollback.sh` 只切换受控 current/previous 发布包，不覆盖工作区源码。
+
+`release.sh` 从当前源码重建 Next.js standalone 产物，显式打包 API、Alembic 0001–0010、4 份冻结 Prompt 和依赖锁文件，并生成 SHA-256 完整性清单。包内不得出现绝对 `node_modules` 软链接、`.next/dev`、`.next/cache`、source map、`__pycache__` 或本机路径。新包启动前会重新校验完整性；旧包仅保留为本机受控回滚点，不能作为上云源码基线。
+
+当前 `20260824T074916Z` 已完成打包与启动后 manifest 复核，启动没有改写发布内容。该结论只覆盖内部可重现基线，不代表独立用户环境已绑定、已重新验收或云上 `user-beta` 已完成。
 
 ### 3.2 独立用户环境
 
@@ -75,7 +88,9 @@ scripts/user-beta/stop.sh
 
 用户环境固定使用独立数据库 `product_factory_user_beta` 和 `.runtime/user-beta/` 下的 Artifact、Workspace、日志、PID、备份与密钥。`release.sh` 只能绑定内部环境已经生成并验收通过的 `current` 发布包。`acceptance.sh` 必须验证真实用户已记录、项目列表为空、内部项目未泄露。
 
-用户环境当前只有首个版本，没有 `previous`。此时 `rollback.sh` 必须在停止服务前安全拒绝；下一版先通过内部环境并发布后，才能演练真实跨版本回滚。
+`rollback.sh` 只接受经 canonical path 校验后位于 `.runtime/seed-beta/releases/` 或 `.runtime/user-beta/releases/` 的受控发布包，以兼容新的内部同版本绑定与现有两个用户回滚点；其他目录、路径逃逸或无效链接一律 fail closed。
+
+用户环境 current 为 `20260824T042412Z-identity-only`，previous 为 `20260824T032335Z-settings-only`；本机回滚边界已存在。云上 `user-beta` 仍必须单独建立发布版本、备份与回滚点，不得依赖本机 `.runtime` 指针。
 
 ## 4. 本地配置
 
@@ -119,8 +134,8 @@ EVENT_STREAM_HEARTBEAT_SECONDS=15
 ## 5. 当前业务操作边界
 
 - G5 已由用户批准，当前允许使用真实用户、真实任务和明确退出阈值开展内测，不能用 mock 数据。
-- 内测证据达标后才能生成商业 BRD 并打开 G6。
-- G6 未批准前不得正式部署、发布或交接。
+- 销售复盘 Agent 的内测证据达标后才能生成该项目商业 BRD 并打开该项目 G6。
+- 销售复盘 Agent G6 未批准前不得宣布该示范项目正式发布或商业交接。火山引擎 `user-beta` 是产品工厂平台的测试环境，不需该 G6。
 - 前端现有内容默认固定；确需修改必须提前告诉用户。
 - 冻结的 4 份 Agent Prompt 不得修改。
 - 新版本必须先在内部环境完成迁移、测试、build、健康和浏览器验收，再发布到独立用户环境。
@@ -157,10 +172,13 @@ EVENT_STREAM_HEARTBEAT_SECONDS=15
 
 ## 8. 发布边界
 
-- V1 运行于本机/内网。
+- 当前 V1 已在本机/内网跑通；下一步是火山引擎受控用户测试环境。
 - Builder 禁止自动 push、deploy 或删除工作区。
-- 正式发布必须等待真实种子内测、商业 BRD 和 G6。
+- GitHub 只用 Connector；写入前重新核验 Draft PR head，使用 `force:false`，保持 Draft 且不 merge。
+- 云上必须使用独立 PostgreSQL、Artifact/Workspace、日志、Secret Store、Session Secret 和邀请哈希；不复制本地或内部秘密。
+- 不得把带本地 Codex CLI 和本地工作区能力的 Builder 直接暴露到公开 veFaaS 函数。
+- 销售复盘 Agent 正式发布必须等待该项目真实种子内测、商业 BRD 和 G6；平台 `user-beta` 不在此阻断条件内。
 - 发布后必须保存 Deployment Record、真实 URL、健康检查、回滚方案和反馈分支。
 - `http://127.0.0.1:3200` / `8200` 是内部验证环境；`http://127.0.0.1:3300` / `8300` 是独立用户环境。
 - 两套地址目前都是本机回环 URL；跨设备或公网访问前必须配置受信任 HTTPS、production Cookie 策略和独立部署边界。
-- 用户环境首版没有可回滚的 previous；只有下一版完成内部验收并发布后，才具备真实跨版本回滚条件。
+- 云上环境必须在邀请真实用户前完成 HTTPS、健康、强制认证、SSE、空项目隔离、Secret Store、备份/恢复、回滚和真实浏览器 QA。

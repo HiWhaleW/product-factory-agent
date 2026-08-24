@@ -30,6 +30,24 @@ seed_beta_python() {
     "$SEED_BETA_ROOT/.venv/bin/python" "$SEED_BETA_ROOT/scripts/seed-beta/ops.py" "$@"
 }
 
+seed_beta_read_invite_code() {
+  local invite_file="$SEED_BETA_RUNTIME/invite-code.txt"
+  local invite_code
+  [[ -f "$invite_file" ]] || {
+    echo "缺少内部验证环境邀请码文件。" >&2
+    return 1
+  }
+  invite_code="$(sed -n 's/^邀请码：//p' "$invite_file" | head -n 1)"
+  if [[ -z "$invite_code" ]]; then
+    invite_code="$(tr -d '[:space:]' < "$invite_file")"
+  fi
+  [[ -n "$invite_code" ]] || {
+    echo "内部验证环境邀请码为空。" >&2
+    return 1
+  }
+  printf '%s' "$invite_code"
+}
+
 seed_beta_pid_running() {
   local pid_file="$1"
   local expected_marker="${2:-}"

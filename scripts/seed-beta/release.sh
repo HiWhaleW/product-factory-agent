@@ -19,14 +19,21 @@ if [[ -e "$release_dir" ]]; then
   release_dir="$SEED_BETA_RUNTIME/releases/$release_id"
 fi
 
-mkdir -p "$release_dir/apps/api" "$release_dir/apps/web"
-cp -R "$SEED_BETA_ROOT/apps/api/app" "$release_dir/apps/api/app"
-cp -R "$SEED_BETA_ROOT/apps/web/.next" "$release_dir/apps/web/.next"
-cp -R "$SEED_BETA_ROOT/apps/web/public" "$release_dir/apps/web/public"
-cp "$SEED_BETA_ROOT/apps/web/package.json" "$release_dir/apps/web/package.json"
-ln -s "$SEED_BETA_ROOT/apps/web/node_modules" "$release_dir/apps/web/node_modules"
-printf '%s\n' "$release_id" > "$release_dir/RELEASE_ID"
-chmod -R u=rwX,go=rX "$release_dir"
+staging_dir="${release_dir}.staging.$$"
+cleanup_staging() {
+  if [[ -d "$staging_dir" ]]; then
+    rm -rf -- "$staging_dir"
+  fi
+}
+trap cleanup_staging EXIT
+"$SEED_BETA_ROOT/.venv/bin/python" \
+  "$SEED_BETA_ROOT/scripts/release/build_release.py" package \
+  --source-root "$SEED_BETA_ROOT" \
+  --release-dir "$staging_dir" \
+  --release-id "$release_id"
+chmod -R u=rwX,go=rX "$staging_dir"
+mv "$staging_dir" "$release_dir"
+trap - EXIT
 
 current_link="$SEED_BETA_RUNTIME/current"
 previous_link="$SEED_BETA_RUNTIME/previous"

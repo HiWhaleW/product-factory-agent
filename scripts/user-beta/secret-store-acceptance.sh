@@ -17,7 +17,7 @@ cleanup() {
 }
 trap cleanup EXIT
 web_url="http://$USER_BETA_WEB_HOST:$USER_BETA_WEB_PORT"
-invite_code="$(tr -d '\n' < "$USER_BETA_RUNTIME/invite-code.txt")"
+invite_code="$(user_beta_read_invite_code)"
 test_key="test-only-user-beta-key-20260824"
 
 curl -fsS -c "$work_dir/cookies" -o "$work_dir/login.json" \

@@ -20,6 +20,7 @@ from app.agents.outputs import (
 )
 from app.agents.policy import ToolRequest, evaluate_tool_policy
 from app.agents.registry import (
+    FROZEN_PROMPT_SHA256,
     AgentRegistryError,
     load_frozen_prompt,
     require_d5_agent,
@@ -474,14 +475,32 @@ def test_reviewer_prd_uses_bound_candidate_ref() -> None:
 
 
 def test_registry_loads_frozen_prompts_and_builder_is_inactive() -> None:
-    prompt, prompt_hash = load_frozen_prompt("factory-lead")
-    assert "Factory Lead System Prompt v0.2" in prompt
-    assert len(prompt_hash) == 64
+    for agent_id, expected_hash in FROZEN_PROMPT_SHA256.items():
+        prompt, prompt_hash = load_frozen_prompt(agent_id)
+        assert prompt.strip()
+        assert prompt_hash == expected_hash
     with pytest.raises(AgentRegistryError, match="cannot execute"):
         require_d5_agent("builder", "development_backend")
     assert require_runtime_agent("builder", "solution_confirmation").id == "builder"
     with pytest.raises(AgentRegistryError, match="cannot develop before G4"):
         require_runtime_agent("builder", "development_backend")
+
+
+def test_registry_rejects_a_modified_frozen_prompt(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from app.agents import registry
+
+    original_directory = registry.prompt_directory()
+    modified_directory = tmp_path / "prompts"
+    modified_directory.mkdir()
+    filename = registry.AGENT_REGISTRY["factory-lead"].prompt_filename
+    original = (original_directory / filename).read_text(encoding="utf-8")
+    (modified_directory / filename).write_text(original + "tampered\n", encoding="utf-8")
+    monkeypatch.setattr(registry, "prompt_directory", lambda: modified_directory)
+
+    with pytest.raises(AgentRegistryError, match="hash mismatch"):
+        registry.load_frozen_prompt("factory-lead")
 
 
 def test_solution_output_contracts_require_documents_and_forbid_tools() -> None:

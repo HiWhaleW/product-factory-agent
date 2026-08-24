@@ -1,7 +1,7 @@
 # 产品工厂前端 Design QA
 
-> 日期：2026-08-23  
-> 当前结果：本次内部自动化与浏览器 QA `passed`；用户验收 `accepted`；用户环境 `ready_for_seed_beta`  
+> 日期：2026-08-24  
+> 当前结果：内部可重现基线 `20260824T074916Z` 的自动化、build、启动与 manifest 稳定性核验 `passed`；独立用户环境仍保留上一已验收组合包，尚未绑定或重新验收新基线  
 > 种子内测入口：`http://127.0.0.1:3200/`  
 > 业务验收项目：`销售复盘 Agent`（`seed_beta / Context v10 / iteration v1`）
 
@@ -269,3 +269,43 @@ Web ESLint、TypeScript、Vitest `23/23` 和 Next.js 16.3.1 production build 通
 | 真实浏览器 | 部分通过 | 未登录首页在桌面和 `390×844` 下渲染正常，无错误覆盖和 console error；登录后的体验留给用户本人最终确认，自动化登录/隔离已通过 |
 
 当前结果：`user_accepted / user_environment_ready / seed_beta`。G6 尚未打开，公网域名、HTTPS、真实种子用户数据和完整第三方模型效果仍未完成。
+
+## 20. 2026-08-24 设置空态与首次引导修正
+
+| 验收项 | 状态 | 真实证据/边界 |
+|---|---|---|
+| 未配置 API 空态 | 内部通过 | `configured=false` 时接口名称、服务地址、模型名和 API Key 四项均为空，不再预填 DeepSeek，也不再显示圆点占位符 |
+| 删除后空态 | 自动化通过 | 删除用户凭据后四项表单状态全部重置为空；不会保留刚删除的非敏感元数据 |
+| 内部测试回退 | 通过 | 内部管理员仍可使用本地调试 API，但表单保持空白，且继续明确提示普通用户没有回退能力 |
+| 首次引导归属 | 内部通过 | 完成状态改为按真实 `user_id` 隔离，不再由同一浏览器 Origin 上的其他账号共用 |
+| 首次引导完成条件 | 内部通过 | 登录后自动显示；未点击“跳过/开始使用”时刷新仍显示；只有用户明确结束后才标记已看 |
+| 内部发布包 | 已部署 | `20260823T172749Z` 已绑定内部 `3200/8200`，健康、认证、HttpOnly Session、SSE、数据库和 Alembic head 通过 |
+| 用户环境 | 未同步本修正 | `3300/8300` 仍为 `20260823T155102Z`；等待用户确认内部修正版后再绑定同一包 |
+
+最新自动化基线：Web `29/29`、Python `86/86`、PostgreSQL `48/48`、ESLint/TypeScript/Ruff/production build 通过，保留 1 条 Starlette/httpx 弃用警告。当前结果为 `internal_qa_passed / pending_user_acceptance`。
+
+## 21. 2026-08-24 删除按钮与内部提示确认稿
+
+| 验收项 | 状态 | 真实证据/边界 |
+|---|---|---|
+| 删除按钮 | 自动化通过 | 始终显示“删除 API Key”；`configured=false` 或请求处理中为原生禁用态，只有保存了用户 Key 且空闲时可点击 |
+| 内部状态文案 | 构建扫描通过 | “当前仅使用内部测试 API”与“内部验证账号当前可使用本地测试 API；普通用户不会获得这项回退能力。”已从源码和 production 构建产物移除 |
+| 后端边界 | 保持 | 仅隐藏内部实现文案，不改变普通用户未配置时 fail closed，也不改变内部管理员受控测试回退 |
+| 内部发布包 | 已部署 | `20260824T021644Z` 已绑定内部 `3200/8200`；健康、认证、Session、SSE、数据库与 Alembic head 通过 |
+| 用户环境 | 未同步 | 仍为 `20260823T155102Z`；本轮用户浏览器确认前不得同步 |
+
+最新自动化基线：Web `31/31`、Python `86/86`、PostgreSQL `48/48`、ESLint/TypeScript/Ruff/production build 通过，保留 1 条 Starlette/httpx 弃用警告。当前结果为 `internal_qa_passed / pending_user_acceptance`。
+
+## 22. 2026-08-24 可重现源码与构建基线
+
+| 验收项 | 状态 | 真实证据/边界 |
+|---|---|---|
+| 内部发布指针 | 通过 | current 为 `20260824T074916Z`，previous 为 `20260824T042123Z` |
+| 可重现发布包 | 通过 | Next.js standalone、API、Alembic `20260823_0010`、4 份冻结 Prompt 与依赖锁文件进入受控发布包 |
+| 发布完整性 | 通过 | SHA-256 manifest 在启动核验前后保持一致，启动没有改写发布内容 |
+| 自动化 | 通过 | Web `34/34`、Python `94/94`（48 skipped）、PostgreSQL `48/48`；保留 1 条 Starlette/httpx 弃用警告 |
+| 构建与静态检查 | 通过 | production build、ESLint、TypeScript、Ruff 通过 |
+| 用户环境边界 | 待绑定与重新验收 | current 仍为 `20260824T042412Z-identity-only`，previous 为 `20260824T032335Z-settings-only`；没有绑定 `074916Z`，既有用户验收不得自动扩展到新包 |
+| 云上边界 | 未完成 | GitHub 更新和火山引擎 `user-beta` 部署/验收尚未完成 |
+
+当前结果：`internal_reproducible_baseline_ready / cloud_preflight_pending / seed_beta`；本机用户环境另为 `local_user_binding_pending`。未经本机绑定重验不得标记本机 `user_baseline_ready`，但该独立放行线不阻塞云预检；当前也不等于销售复盘 Agent G6 已打开或平台已正式发布。

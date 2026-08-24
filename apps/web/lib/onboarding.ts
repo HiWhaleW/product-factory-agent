@@ -14,6 +14,10 @@ export function onboardingAllowed(
   return !session.auth_enforced || session.authenticated;
 }
 
+export function onboardingStorageKey(userId: string | null) {
+  return `product-factory:onboarding:v2:${userId ?? "local"}`;
+}
+
 export function shouldAutoOpenOnboarding(
   session: Pick<SessionStatus, "auth_enforced" | "authenticated">,
   pathname: string,

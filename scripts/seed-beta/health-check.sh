@@ -30,7 +30,7 @@ grep -qi '^x-frame-options: DENY' "$work_dir/web.headers"
 grep -qi '^referrer-policy: no-referrer' "$work_dir/web.headers"
 grep -q '造物工场' "$work_dir/web.html"
 
-invite_code="$(tr -d '\n' < "$SEED_BETA_RUNTIME/invite-code.txt")"
+invite_code="$(seed_beta_read_invite_code)"
 login_status="$(
   curl -sS -c "$work_dir/cookies" -o "$work_dir/login.json" -w '%{http_code}' \
     -H 'Content-Type: application/json' \

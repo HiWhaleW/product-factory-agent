@@ -9,7 +9,7 @@ user_beta_load_env
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/product-factory-user-acceptance.XXXXXX")"
 trap 'rm -rf "$work_dir"' EXIT
 web_url="http://$USER_BETA_WEB_HOST:$USER_BETA_WEB_PORT"
-invite_code="$(tr -d '\n' < "$USER_BETA_RUNTIME/invite-code.txt")"
+invite_code="$(user_beta_read_invite_code)"
 curl -fsS -c "$work_dir/cookies" -o "$work_dir/login.json" \
   -H 'Content-Type: application/json' --data "{\"invite_code\":\"$invite_code\"}" \
   "$web_url/api/control/api/v1/auth/session"

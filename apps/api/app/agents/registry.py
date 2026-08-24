@@ -7,6 +7,13 @@ from typing import Literal
 
 CoreAgentId = Literal["factory-lead", "ai-pm", "builder", "reviewer"]
 
+FROZEN_PROMPT_SHA256: dict[CoreAgentId, str] = {
+    "factory-lead": "5ca89c671e8fc479e3dd926e194735ec02aa6cf082f72e9d1d0a2cfa26d8dee4",
+    "ai-pm": "8386405a7f02361ae679f3eb3bab610f9b38f2d1151f9f4fe96e7088138b211f",
+    "builder": "ddba17ecf8f2ae91d9bcb11a6f230b458d489ece1f1e623c29da2d8e3d3b05e9",
+    "reviewer": "fe0d315a93a74a23807e80be64691cc52abf9cefb2c16ffe3abd457b3c2a16be",
+}
+
 
 @dataclass(frozen=True)
 class AgentDefinition:
@@ -97,7 +104,10 @@ def load_frozen_prompt(agent_id: CoreAgentId) -> tuple[str, str]:
     if path.parent != prompt_directory().resolve() or not path.is_file():
         raise AgentRegistryError(f"Frozen prompt is unavailable for {agent_id}.")
     content = path.read_text(encoding="utf-8")
-    return content, hashlib.sha256(content.encode()).hexdigest()
+    prompt_hash = hashlib.sha256(content.encode()).hexdigest()
+    if prompt_hash != FROZEN_PROMPT_SHA256[agent_id]:
+        raise AgentRegistryError(f"Frozen prompt hash mismatch for {agent_id}.")
+    return content, prompt_hash
 
 
 def require_d5_agent(agent_id: str, stage: str) -> AgentDefinition:

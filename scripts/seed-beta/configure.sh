@@ -41,7 +41,10 @@ invite_tmp="$SEED_BETA_RUNTIME/invite-code.txt.tmp"
   printf 'PRODUCT_FACTORY_API_URL=http://127.0.0.1:8200\n'
   printf 'USER_SECRET_ROOT=%s/secrets\n' "$SEED_BETA_RUNTIME"
 } > "$env_tmp"
-printf '%s\n' "$invite_code" > "$invite_tmp"
+{
+  printf '内部验证环境：http://127.0.0.1:3200/\n'
+  printf '邀请码：%s\n' "$invite_code"
+} > "$invite_tmp"
 chmod 600 "$env_tmp" "$invite_tmp"
 mv -f "$env_tmp" "$SEED_BETA_ENV_FILE"
 mv -f "$invite_tmp" "$SEED_BETA_RUNTIME/invite-code.txt"

@@ -1,6 +1,6 @@
 # 产品工厂 Agent - 素材全量索引
 
-> 盘点日期：2026-08-23  
+> 盘点日期：2026-08-24  
 > 状态含义：`权威` = 后续开发的契约；`参考` = 提供默认和方法；`原型` = 用于交互理解，不是代码基础；`交接` = 当前阶段事实。
 > HTML 阅读版：[materials-inventory.html](./materials-inventory.html)
 
@@ -16,9 +16,10 @@
 | [`docs/HANDOFF_PROMPT.md`](./HANDOFF_PROMPT.md) | 下一位 Agent | 交接 | 可直接粘贴的交接提示词 |
 | [`docs/HANDOFF_PROMPT.html`](./HANDOFF_PROMPT.html) | 人类评审 | 交接 | 当前种子内测、双环境、G6 边界与后续流程 |
 | [`docs/environments.md`](./environments.md) / [HTML](./environments.html) | 开发/运维/接手者 | 权威交接 | 内部验证与独立用户环境的入口、数据边界、发布顺序和运维命令 |
+| [`docs/cloud-user-beta-handoff.md`](./cloud-user-beta-handoff.md) / [HTML](./cloud-user-beta-handoff.html) | 开发/运维/接手者 | 交接 | 内部可重现基线、GitHub Connector 安全更新、火山引擎 `user-beta` 拓扑预检与云上验收；本机用户绑定为独立放行线 |
 | [`docs/evidence/user-environment-acceptance-2026-08-23.md`](./evidence/user-environment-acceptance-2026-08-23.md) / [HTML](./evidence/user-environment-acceptance-2026-08-23.html) | 开发/评审 | 真实证据 | 用户与项目归属、独立数据库、空项目、安全、恢复和首版回滚保护 |
 | [`docs/evidence/d3-d4-closure-2026-08-21.md`](./evidence/d3-d4-closure-2026-08-21.md) / [HTML](./evidence/d3-d4-closure-2026-08-21.html) | 开发/评审 | 工程证据 | D3–D4 退出命令、测试、ego-lite 交互和未完成边界 |
-| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 历史浏览器基线通过；本次首页、项目列表、个人信息和通用 API 设置为 `pending_user_acceptance` |
+| [`design-qa.md`](../design-qa.md) / [HTML](../design-qa.html) | 设计/开发 | QA 证据 | 历史组合包的桌面/移动浏览器 QA 与最新内部可重现基线证据；当前状态为 `internal_reproducible_baseline_ready / cloud_preflight_pending / seed_beta`，本机用户绑定独立待执行 |
 | [`docs/architecture.md`](./architecture.md) | 开发/架构 | 权威摘要 | 当前决策、系统边界、数据流和技术栈 |
 | [`docs/operator-runbook.md`](./operator-runbook.md) | 开发/运维 | 交接 | 环境、开工前置、未来运行和故障边界 |
 | [`docs/product-lifecycle.md`](./product-lifecycle.md) / [HTML](./product-lifecycle.html) | 全员 | 权威 | 12 阶段、后端→前端、G0-G6、D1-D10 与 B1-Bn 的唯一生命周期口径 |
@@ -84,17 +85,19 @@
 
 ## 7. 当前实现与仍未完成
 
-当前真实项目为 `seed_beta / Context v10 / iteration v1`。G0–G5、Builder 后端/前端开发、MVP、内部验收和 Beta Candidate 已完成。最新验证：Web 23/23、Python 86/86、PostgreSQL 48/48、production build 通过、Alembic `20260823_0010 (head)`。
+销售复盘 Agent 是内部示范项目，为 `seed_beta / Context v10 / iteration v1`；产品工厂 Agent 是平台产品；火山引擎 `user-beta` 是供真实用户测试平台的独立环境，不需销售复盘 Agent G6。最新验证：Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48，production build、ESLint、TypeScript、Ruff 通过，Alembic `20260823_0010 (head)`；保留 1 条 Starlette/httpx 弃用警告。
 
 真实群聊已包含 4 个 Agent 的入群记录和自我介绍；143 条执行记录已拆成 38 个消息间处理组。前端现有内容默认固定，后续如确需修改必须先告知用户。
 
-当前有两套独立本机环境：内部验证 `3200/8200` 使用发布包 `20260823T143242Z` 并保留销售复盘 Agent；用户环境 `3300/8300` 仍使用旧包 `20260823T095514Z`，采用独立数据库、文件与密钥，首次登录项目为空。AG-UI/SSE、认证强制执行、真实用户和项目归属已完成；登录成功统一打开首页；项目删除进入按用户隔离的回收箱，可幂等恢复到原阶段，V1 不提供永久删除。
+当前有两套独立本机环境：内部验证 `3200/8200` current / previous 为 `20260824T074916Z` / `20260824T042123Z` 并保留销售复盘 Agent；用户环境 `3300/8300` current / previous 仍为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`，采用独立数据库、文件与密钥，项目、Artifact、Run、Gate、消息和用户模型凭据均为 0。内部新包的 SHA-256 manifest 启动前后不变，4 份冻结 Prompt 哈希未变；用户环境尚未绑定或重验新包。AG-UI/SSE、认证强制执行、真实用户和项目归属已完成；登录成功统一打开首页；项目删除进入按用户隔离的回收箱，可幂等恢复到原阶段，V1 不提供永久删除。
 
 仍未完成：
 
-- 真实种子用户任务、使用和反馈数据。
-- 本次项目删除、回收箱恢复、顶栏精简、首页、真实项目页、个人信息和通用 API 设置的用户浏览器验收，以及通过后的用户环境迁移与同步。
-- 商业 BRD/G6、正式发布/交接和反馈迭代。
-- 公网域名、HTTPS、外部可访问部署和真实跨版本回滚。
+- 用已建立的内部 `20260824T074916Z` 可重现源码/构建基线，通过 GitHub Connector 更新 Draft PR；随后执行火山引擎账号、拓扑和费用预检。当前平台状态保持 `internal_reproducible_baseline_ready / cloud_preflight_pending`。
+- 本机独立用户环境仍保留旧包；如需绑定同一基线，须单独重验且完成前不得标记本机 `user_baseline_ready`，但不阻塞云预检或用户确认后的云部署。
+- 火山引擎 `user-beta` 的资源预检、部署、migration、健康、安全、隔离、备份/恢复、回滚和真实浏览器验收。
+- 产品工厂平台的真实用户任务、使用和反馈数据。
+- 销售复盘 Agent 若继续正式发布，其商业 BRD/G6、发布/交接和反馈迭代尚未完成；这不阻塞平台 `user-beta`。
+- 公网域名/HTTPS 与云上真实跨版本回滚。
 - DeepSeek 真实 429、博查费用/账单、来源质量人工评审和模型路由差异确认。
 - GitHub 远端写入前仍须使用 Connector 重新核验 head；不得使用 `gh`、force push 或上传秘密/本机文件。

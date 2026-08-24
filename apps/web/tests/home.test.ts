@@ -8,7 +8,12 @@ import {
   projectFilter,
   projectNextAction,
 } from "../lib/home";
-import { onboardingAllowed, onboardingSteps, shouldAutoOpenOnboarding } from "../lib/onboarding";
+import {
+  onboardingAllowed,
+  onboardingSteps,
+  onboardingStorageKey,
+  shouldAutoOpenOnboarding,
+} from "../lib/onboarding";
 
 const project: Project = {
   id: "project-1",
@@ -84,6 +89,12 @@ describe("home project projections", () => {
     expect(shouldAutoOpenOnboarding(loggedOut, "/", false)).toBe(false);
     expect(shouldAutoOpenOnboarding(loggedIn, "/", false)).toBe(true);
     expect(shouldAutoOpenOnboarding(loggedIn, "/", true)).toBe(false);
+  });
+
+  it("tracks onboarding completion independently for each real user", () => {
+    expect(onboardingStorageKey("user-a")).toBe("product-factory:onboarding:v2:user-a");
+    expect(onboardingStorageKey("user-b")).toBe("product-factory:onboarding:v2:user-b");
+    expect(onboardingStorageKey("user-a")).not.toBe(onboardingStorageKey("user-b"));
   });
 
   it("guides first-time users to configure their own API key", () => {

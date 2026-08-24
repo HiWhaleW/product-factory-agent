@@ -64,7 +64,10 @@ def configure() -> None:
         ]
     )
     ENV_FILE.write_text(env_text)
-    INVITE_FILE.write_text(invite_code + "\n")
+    INVITE_FILE.write_text(
+        "用户测试环境：http://127.0.0.1:3300/\n"
+        f"邀请码：{invite_code}\n"
+    )
     ENV_FILE.chmod(0o600)
     INVITE_FILE.chmod(0o600)
     print(

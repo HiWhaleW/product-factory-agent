@@ -4,15 +4,20 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import type { SessionStatus } from "@/lib/contracts";
-import { onboardingAllowed, onboardingSteps, shouldAutoOpenOnboarding } from "@/lib/onboarding";
+import {
+  onboardingAllowed,
+  onboardingSteps,
+  onboardingStorageKey,
+  shouldAutoOpenOnboarding,
+} from "@/lib/onboarding";
 
-const storageKey = "product-factory:onboarding:v1";
 export function OnboardingGuide() {
   const pathname = usePathname();
   const panel = useRef<HTMLElement>(null);
   const [allowed, setAllowed] = useState(false);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+  const [seenStorageKey, setSeenStorageKey] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -25,15 +30,17 @@ export function OnboardingGuide() {
         const canShow = onboardingAllowed(session);
         setAllowed(canShow);
         if (!canShow) {
+          setSeenStorageKey(null);
           setOpen(false);
           return;
         }
+        const userStorageKey = onboardingStorageKey(session.user_id);
+        setSeenStorageKey(userStorageKey);
         if (shouldAutoOpenOnboarding(
           session,
           pathname,
-          window.localStorage.getItem(storageKey) === "seen",
+          window.localStorage.getItem(userStorageKey) === "seen",
         )) {
-          window.localStorage.setItem(storageKey, "seen");
           setStep(0);
           setOpen(true);
         }
@@ -64,7 +71,7 @@ export function OnboardingGuide() {
   }, [allowed, pathname]);
 
   function finish() {
-    window.localStorage.setItem(storageKey, "seen");
+    if (seenStorageKey) window.localStorage.setItem(seenStorageKey, "seen");
     setOpen(false);
   }
 

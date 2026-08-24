@@ -35,6 +35,7 @@ docs/evidence/*.jpeg
 产品工厂Agent/spec/Technical-Adaptation.md
 产品工厂Agent/spec/Tool-and-Permission-Policy.md
 apps/api/alembic.ini
+!apps/api/alembic.ini
 
 # Reference handbooks are local source material, not application source.
 AI Agent 产品上线部署手册.md

@@ -11,8 +11,9 @@
 | L2 集成 | Builder | API、DB、LangGraph、事件、产物、Codex Adapter mock | 集成测试报告 |
 | L3 真模型 | Reviewer | 真实认证、网络、输出质量、结构、延迟、成本 | Model Smoke Samples |
 | L4 真浏览器 | Reviewer | 双栏布局、群聊、@Agent、HITL、DAG、预览、恢复 | Playwright/截图/无 Console 错误 |
-| L5 内部验收 | 用户 | MVP 是否可进入种子用户内测 | G5 GateDecision |
-| L6 商业发布 | Reviewer + 用户 | 内测证据、商业 BRD、数据、监控、回滚、真实 URL | G6 + Deployment Record |
+| L5 单个产品项目内部验收 | 用户 | MVP 是否可进入种子用户内测 | 该项目 G5 GateDecision |
+| 平台云上用户测试环境 | Reviewer + 用户 | GitHub 可重现基线、HTTPS、认证、SSE、隔离、恢复、回滚和真实浏览器 | User Beta Deployment Record；不需销售复盘 Agent G6 |
+| L6 单个产品项目商业发布 | Reviewer + 用户 | 该项目内测证据、商业 BRD、数据、监控、回滚、真实 URL | 该项目 G6 + Deployment Record |
 
 ## 2. D1-D2 规格验收
 
@@ -77,6 +78,7 @@
 ### E2E-06 种子内测、商业 BRD、发布与反馈分支
 
 - G5 后只允许进入已定义范围的种子用户内测；内测使用/反馈证据关联产品与部署版本。
+- 产品工厂平台可建立标识为 `user-beta` 的云上用户测试环境，不需先批准内部示范“销售复盘 Agent”的 G6；但 `user-beta` 不得冒充 production/general availability，也不等于销售复盘 Agent 正式发布。
 - 商业 BRD 必须引用真实内测证据；G6 前 deploy adapter 不产生正式发布副作用。
 - 发布后 URL 节点展示版本、环境和健康状态。
 - 用户在原群聊提交问题，从线上版本长出 Feedback 节点。
@@ -147,6 +149,29 @@
 
 ## 9. D10 Beta Candidate 判定与发布判定
 
+### 2026-08-24 当前执行证据
+
+- Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48；production build、ESLint、TypeScript、Ruff 通过，Alembic 为 `20260823_0010 (head)`。
+- 内部 current / previous 为 `20260824T074916Z` / `20260824T042123Z`；新 current 的 SHA-256 manifest 在启动前后不变，4 份冻结 Prompt 哈希未变。
+- 独立用户环境 current / previous 仍为 `20260824T042412Z-identity-only` / `20260824T032335Z-settings-only`；尚未绑定或重新验收 `074916Z`。
+- 当前平台状态为 `internal_reproducible_baseline_ready / cloud_preflight_pending`；本机用户环境另为 `local_user_binding_pending`，未经重验不得标记本机 `user_baseline_ready`，但不阻塞云预检。GitHub Draft PR 更新和火山引擎 `user-beta` 部署/验收仍未完成。
+
+### 云上 `user-beta` 额外验收
+
+邀请真实用户前必须通过：
+
+- GitHub 中的源码/构建配置可重现已建立的内部 `074916Z` 可重现基线；远端写入只使用 Connector，并已反向核验 commit/ref/PR。
+- 云上 PostgreSQL 迁移到 `20260823_0010`，初始 Project、Artifact、Run、Gate、Message、用户模型凭据和内部项目均为 0。
+- 云上 Artifact、Workspace、日志、Secret Store、Session Secret 和邀请哈希独立；不复制本地或内部秘密。
+- HTTPS、`AUTH_ENFORCED=true`、Secure/HttpOnly Session、未登录 401 和用户/项目归属隔离通过。
+- AG-UI/SSE 主通道、cursor/`Last-Event-ID`、心跳、断线轮询降级和恢复后停止轮询通过。
+- 用户 API 空态、真实添加/删除、脱敏、Secret Store 无残留；普通用户未配置时 fail closed。
+- 真实 Agent 任务、Artifact、Reviewer、Gate、回收箱和恢复跑通；不使用 mock 冒充。
+- 数据库、Artifact 和秘密存储备份/恢复，以及部署版本回滚通过。
+- `1440x900`、`390x844` 真实浏览器 QA 通过，Console/Network 无未解释错误。
+
+完成后只能记录产品工厂平台 `user_beta_ready`，不得冒充 production/general availability；该记录不需销售复盘 Agent G6。
+
 任一项存在不得宣布完成：
 
 - 想法 → G0 → MRD/G1 → PRD/G2 → 方案/G3 → 技术栈/G4 → 后端 → 前端 → MVP → 内部验收/G5 无法跑通。
@@ -158,7 +183,7 @@
 - 种子内测计划、数据 Schema 和用户范围未定义。
 - 仍有未解释的 lint/type/test/build/console 错误。
 
-D10 只能宣布“Beta Candidate 可进入种子内测”。正式发布还必须补齐：真实种子用户数据、商业 BRD、G6、Deployment Record、真实 URL/健康检查/回滚，以及数据与反馈到下一轮迭代分支。缺任一项不得宣布产品已发布。
+D10 只能宣布“单个产品项目的 Beta Candidate 可进入种子内测”。云上 `user-beta` 就绪表示产品工厂平台可开展受控真实用户测试，不需销售复盘 Agent G6。若要宣布销售复盘 Agent 正式发布，仍必须补齐该项目的真实种子数据、商业 BRD、G6、正式 Deployment Record、真实 URL/健康检查/回滚与反馈迭代。
 
 ## 10. Harness 对抗性用例
 
