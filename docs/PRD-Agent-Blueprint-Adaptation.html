@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="产品工厂 Agent 分层架构适配 PRD 的 Web 可视化阅读版。">
+  <title>产品工厂 Agent · 7 层架构适配 PRD</title>
+  <style>
+    :root{
+      --bg:#f4f6f4;--surface:#fff;--surface-2:#eef2ef;--text:#17201d;--muted:#5c6963;
+      --line:#cbd5d0;--line-strong:#8d9b95;--blue:#1768a6;--blue-soft:#e4f1fb;
+      --green:#13705a;--green-soft:#e1f3ed;--amber:#946000;--amber-soft:#fff1d4;
+      --red:#a33d3d;--red-soft:#fae7e7;--violet:#6753a0;--violet-soft:#eeeaf9;
+      --cyan:#087c83;--cyan-soft:#e1f3f4;--shadow:0 1px 2px rgb(0 0 0 / 8%),0 9px 30px rgb(32 55 45 / 5%);
+      font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:16px;line-height:1.58
+    }
+    @media(prefers-color-scheme:dark){:root{
+      --bg:#141a17;--surface:#1c2420;--surface-2:#252e29;--text:#edf3ef;--muted:#a9b8b0;
+      --line:#394740;--line-strong:#6a7971;--blue:#7bb9ec;--blue-soft:#19364c;
+      --green:#75cdb5;--green-soft:#1c4135;--amber:#efb65f;--amber-soft:#49361b;
+      --red:#ed9292;--red-soft:#4b2929;--violet:#bba8ec;--violet-soft:#362e4c;
+      --cyan:#72cbd0;--cyan-soft:#183d40;--shadow:none
+    }}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text)}
+    a{color:var(--blue)}button,a{font:inherit}button:focus-visible,a:focus-visible{outline:3px solid color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:3px}
+    .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:22px;padding:11px max(20px,calc((100% - 1220px)/2));background:color-mix(in srgb,var(--surface) 94%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
+    .brand{display:flex;align-items:center;gap:9px;white-space:nowrap;font-weight:800}.brand-mark{display:grid;place-items:center;width:28px;height:28px;border-radius:7px;background:var(--text);color:var(--bg);font-size:12px}
+    .nav{display:flex;gap:3px;overflow-x:auto}.nav a{padding:6px 9px;border-radius:5px;color:var(--muted);text-decoration:none;white-space:nowrap}.nav a:hover,.nav a.active{background:var(--surface-2);color:var(--text)}
+    .section{padding:58px 0;border-bottom:1px solid var(--line);scroll-margin-top:58px}.section.alt{background:color-mix(in srgb,var(--surface) 45%,transparent)}.inner{width:min(1220px,calc(100% - 40px));margin:auto}
+    h1,h2,h3,p{margin-top:0}h1{max-width:960px;margin-bottom:16px;font-size:clamp(36px,5vw,62px);line-height:1.08;letter-spacing:-.035em}h2{margin-bottom:8px;font-size:clamp(25px,3vw,34px);line-height:1.2;letter-spacing:-.02em}h3{margin-bottom:6px;font-size:17px;line-height:1.35}.eyebrow{display:inline-flex;margin-bottom:13px;color:var(--blue);font-size:12px;font-weight:850;letter-spacing:.08em}.lead{max-width:880px;color:var(--muted);font-size:18px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:25px}.section-copy{max-width:800px;margin:0;color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:7px;margin:22px 0}.chip{padding:5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font-size:12px}.chip.hold{border-color:color-mix(in srgb,var(--amber) 35%,var(--line));background:var(--amber-soft);color:var(--amber)}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.7fr);gap:17px;margin-top:28px}.verdict{padding:23px 25px;border:1px solid var(--line);border-left:6px solid var(--green);border-radius:9px;background:var(--surface);box-shadow:var(--shadow)}.verdict strong{display:block;margin-bottom:7px;font-size:22px}.verdict p{margin:0;color:var(--muted)}
+    .metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{display:grid;align-content:center;min-height:94px;padding:13px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-align:center}.metric strong{font-size:28px;line-height:1.1}.metric span{margin-top:4px;color:var(--muted);font-size:11px}
+    .method{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));align-items:center;gap:7px}.method-card{grid-column:span 2;min-height:114px;padding:15px;border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:8px;background:var(--surface)}.method-card:nth-of-type(3){border-top-color:var(--violet)}.method-card:nth-of-type(5){border-top-color:var(--green)}.method-card:nth-of-type(7){border-top-color:var(--amber)}.method-card:nth-of-type(9){border-top-color:var(--red)}.method-card b,.method-card span{display:block}.method-card span{margin-top:5px;color:var(--muted);font-size:12px}.method-arrow{display:grid;place-items:center;color:var(--line-strong);font-size:21px}
+    .architecture-shell{display:grid;grid-template-columns:185px minmax(0,1fr) 185px;gap:14px;align-items:stretch}.rail{position:sticky;top:82px;align-self:start;padding:17px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}.rail.security{border-top:5px solid var(--red)}.rail.observe{border-top:5px solid var(--cyan)}.rail strong{display:block;margin-bottom:9px}.rail ul{margin:0;padding-left:18px}.rail li{margin:6px 0;color:var(--muted);font-size:12px}
+    .layer-stack{display:grid;gap:9px}.layer{position:relative;display:grid;grid-template-columns:50px minmax(160px,.58fr) minmax(0,1.35fr);gap:14px;align-items:center;width:100%;padding:15px 17px;border:1px solid var(--line);border-left:5px solid var(--layer);border-radius:9px;background:var(--surface);color:var(--text);text-align:left;cursor:pointer;box-shadow:var(--shadow)}.layer:hover,.layer[aria-expanded=true]{transform:translateY(-1px);border-color:var(--layer)}.layer:not(:last-child)::after{content:"↓";position:absolute;left:22px;bottom:-18px;z-index:2;color:var(--line-strong);font-weight:900}.layer-num{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--layer) 14%,var(--surface));color:var(--layer);font-weight:900}.layer-title strong,.layer-title span{display:block}.layer-title span{margin-top:2px;color:var(--muted);font-size:11px}.layer-copy{color:var(--muted);font-size:13px}.layer-copy b{color:var(--text)}.layer-detail{display:none;grid-column:2/-1;margin-top:-3px;padding-top:12px;border-top:1px dashed var(--line);color:var(--muted);font-size:12px}.layer[aria-expanded=true] .layer-detail{display:block}
+    .architecture-note{margin-top:15px;padding:14px 17px;border-left:4px solid var(--amber);background:var(--amber-soft);color:var(--muted)}.architecture-note strong{color:var(--amber)}
+    .flow{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));align-items:center;gap:7px}.flow-step{grid-column:span 2;min-height:132px;padding:15px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}.flow-step b,.flow-step span{display:block}.flow-step b{margin-bottom:7px}.flow-step span{color:var(--muted);font-size:12px}.flow-step em{display:inline-grid;place-items:center;width:25px;height:25px;margin-bottom:9px;border-radius:50%;background:var(--text);color:var(--bg);font-size:11px;font-style:normal;font-weight:850}.flow-arrow{display:grid;place-items:center;color:var(--line-strong);font-size:20px}
+    .truth-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.truth{padding:15px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}.truth .truth-top{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:8px}.truth code{padding:2px 5px;border-radius:4px;background:var(--surface-2);color:var(--blue);font-size:11px}.truth p{margin:0;color:var(--muted);font-size:12px}.truth small{display:block;margin-top:9px;padding-top:8px;border-top:1px solid var(--line);color:var(--red)}
+    .segment{display:inline-flex;flex-wrap:wrap;padding:3px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2)}.segment button{min-height:35px;padding:5px 10px;border:0;border-radius:5px;background:transparent;color:var(--muted);cursor:pointer}.segment button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+    .component-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.component{display:grid;grid-template-columns:44px minmax(0,1fr);gap:11px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}.component[hidden]{display:none}.component-id{display:grid;place-items:center;width:44px;height:44px;border-radius:6px;background:var(--surface-2);font-size:12px;font-weight:900}.component p{margin:3px 0 9px;color:var(--muted);font-size:12px}.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:850}.badge.must{background:var(--green-soft);color:var(--green)}.badge.adapt{background:var(--blue-soft);color:var(--blue)}.badge.later{background:var(--amber-soft);color:var(--amber)}.badge.reject{background:var(--red-soft);color:var(--red)}
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}.compare-card{padding:18px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}.compare-card.good{border-top:5px solid var(--green)}.compare-card.bad{border-top:5px solid var(--red)}.compare-card ul{margin:12px 0 0;padding-left:20px}.compare-card li{margin:8px 0;color:var(--muted);font-size:13px}
+    .timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.time{padding:17px;border:1px solid var(--line);border-top:5px solid var(--blue);border-radius:8px;background:var(--surface)}.time:nth-child(2){border-top-color:var(--violet)}.time:nth-child(3){border-top-color:var(--green)}.time strong,.time span{display:block}.time span{margin-top:6px;color:var(--muted);font-size:12px}.checklist{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}.check{padding:12px 14px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:13px}.check::before{content:"□";margin-right:8px;color:var(--blue);font-weight:900}
+    .sources{display:grid;grid-template-columns:1fr 1fr;gap:12px}.source{padding:17px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}.source ul{margin:10px 0 0;padding-left:20px}.source li{margin:6px 0;color:var(--muted);font-size:12px}.warning{padding:17px;border-left:5px solid var(--amber);background:var(--amber-soft)}.warning strong{color:var(--amber)}.warning p{margin:5px 0 0;color:var(--muted)}
+    .doc-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:18px}.doc-link{display:block;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);text-decoration:none}.doc-link:hover{border-color:var(--blue)}.doc-link strong,.doc-link span{display:block}.doc-link span{margin-top:3px;color:var(--muted);font-size:11px}.footer{padding:31px 0 48px;color:var(--muted);font-size:12px}
+    @media(max-width:980px){.architecture-shell{grid-template-columns:1fr}.rail{position:static}.layer{grid-template-columns:44px minmax(150px,.65fr) minmax(0,1fr)}.truth-grid{grid-template-columns:1fr 1fr}.component-grid{grid-template-columns:1fr 1fr}.method{grid-template-columns:1fr 34px 1fr}.method-card{grid-column:auto}.method-card:last-child{grid-column:1/-1}.flow{grid-template-columns:1fr}.flow-step{grid-column:auto;min-height:0}.flow-arrow{height:25px;transform:rotate(90deg)}}
+    @media(max-width:680px){html,body{overflow-x:hidden}.inner{width:min(100% - 24px,1220px)}.section{padding:42px 0;scroll-margin-top:170px}.topbar{align-items:flex-start;flex-direction:column;gap:7px;padding:9px 12px;overflow:hidden}.nav{display:flex;width:100%;max-width:100%;min-width:0;flex-wrap:wrap;overflow:visible;white-space:normal}.nav a{display:inline-block;min-height:40px;padding:8px 7px}.hero-grid,.compare,.sources,.timeline,.checklist{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.method{grid-template-columns:1fr}.method-arrow{height:23px;transform:rotate(90deg)}.layer{grid-template-columns:40px minmax(0,1fr);padding:13px}.layer-copy{grid-column:2}.layer-detail{grid-column:1/-1}.truth-grid,.component-grid,.doc-links{grid-template-columns:1fr}.section-head{align-items:flex-start;flex-direction:column}.segment{width:100%}.segment button{min-height:44px;flex:1 1 auto}.rail ul{columns:2}.architecture-note{font-size:13px}}
+    @media print{.topbar,.segment{display:none}.section{break-inside:avoid;padding:28px 0}.rail{position:static}.layer-detail{display:block!important}body{background:#fff;color:#111}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">PF</span>产品工厂 Agent · 架构 PRD</div>
+    <nav class="nav" aria-label="页面导航">
+      <a href="#summary">结论</a><a href="#method">方法</a><a href="#architecture">7 层架构</a><a href="#flow">数据流</a><a href="#truth">真相源</a><a href="#components">组件裁决</a><a href="#acceptance">验收</a><a href="#evidence">证据</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section" id="summary">
+      <div class="inner">
+        <span class="eyebrow">ARCHITECTURE PRD · V0.2 · 2026-08-20</span>
+        <h1>把 Agent 的“智能”与产品的“控制权”分层</h1>
+        <p class="lead">Agent Blueprint 最值得吸收的是 7 层落地框架，而不是教学代码。产品工厂由确定性控制面掌握状态、Gate、权限和幂等；LangGraph 只管理单次 Agent Run。</p>
+        <div class="chips"><span class="chip">Spec Freeze 已批准</span><span class="chip">D3 进行中</span><span class="chip">不替代现有 PRD</span><span class="chip">V1 无向量 RAG</span></div>
+        <div class="hero-grid">
+          <div class="verdict"><strong>裁决：采用分层方法，改造运行时语义，拒绝复制单机 Harness</strong><p>保留 4 Agent、12 阶段与反馈回环、双 DAG、Context Pack、DeepSeek 单供应商和本地 Codex CLI Adapter。所有外部动作继续经过确定性 Capability/Tool Policy。</p></div>
+          <div class="metrics"><div class="metric"><strong>7</strong><span>逻辑架构层</span></div><div class="metric"><strong>17</strong><span>Blueprint 组件已裁决</span></div><div class="metric"><strong>2</strong><span>横切关注点</span></div><div class="metric"><strong>0</strong><span>新增运行时依赖</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="method">
+      <div class="inner">
+        <div class="section-head"><div><h2>从 PRD 到架构的五步推导</h2><p class="section-copy">每一步的输出都是下一步输入。方案未确认前不生成应用代码。</p></div></div>
+        <div class="method">
+          <div class="method-card"><b>① 需求事实</b><span>目标、用户、闭环、交付物、边界、约束；缺失即待确认。</span></div><div class="method-arrow">→</div>
+          <div class="method-card"><b>② Harness 五要素</b><span>工具、知识、观察、行动、权限分别落位。</span></div><div class="method-arrow">→</div>
+          <div class="method-card"><b>③ 组件选型</b><span>只选“没有它就无法交付”的机制。</span></div><div class="method-arrow">→</div>
+          <div class="method-card"><b>④ 分层架构</b><span>7 层落地锚点、贯穿数据流、安全与观测。</span></div><div class="method-arrow">→</div>
+          <div class="method-card"><b>⑤ 证据放行</b><span>架构确认后才进入骨架、硬化和产品化。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="architecture">
+      <div class="inner">
+        <div class="section-head"><div><h2>产品工厂 Agent 七层架构</h2><p class="section-copy">点击任一层查看其边界。这里的“层”是逻辑职责，不等于必须拆成 7 个服务。</p></div></div>
+        <div class="architecture-shell">
+          <aside class="rail security" aria-label="安全边界"><strong>安全边界 · 横切</strong><ul><li>会话与输入脱敏</li><li>Gate / owner / 三态权限</li><li>Context 最小化与预算</li><li>SecretRef 与 Schema</li><li>路径 / 网络 / 副作用</li><li>访问控制与哈希</li><li>内网、备份与回滚</li></ul></aside>
+          <div class="layer-stack">
+            <button class="layer" style="--layer:var(--blue)" aria-expanded="true"><span class="layer-num">1</span><span class="layer-title"><strong>交互层</strong><span>Interaction</span></span><span class="layer-copy"><b>谁在用、怎么用？</b> Next.js 双栏工作区、群聊、Artifact DAG、Gate/Permission 卡片。</span><span class="layer-detail">禁止：前端直连模型、数据库、文件系统或 Codex CLI。所有 UI 状态都由后端实体与 Event 投影。</span></button>
+            <button class="layer" style="--layer:var(--green)" aria-expanded="false"><span class="layer-num">2</span><span class="layer-title"><strong>产品与确定性控制面</strong><span>Product & Control Plane</span></span><span class="layer-copy"><b>业务能否继续？</b> Project 状态机、G0-G6、Task DAG、Tool Policy、Context Pack、Artifact Service。</span><span class="layer-detail">唯一拥有项目阶段、Gate、权限、预算和幂等真相。模型与 LangGraph 只能提交建议或请求。</span></button>
+            <button class="layer" style="--layer:var(--violet)" aria-expanded="false"><span class="layer-num">3</span><span class="layer-title"><strong>Agent Run 编排层</strong><span>Agent Runtime</span></span><span class="layer-copy"><b>这次 Run 如何运转？</b> Factory Lead 路由、LangGraph、有界 Loop、Run/Step、压缩与 Reviewer。</span><span class="layer-detail">LangGraph 只负责 model → tool → result、interrupt、checkpoint 和 resume，不是“项目图”或第二套状态机。</span></button>
+            <button class="layer" style="--layer:var(--amber)" aria-expanded="false"><span class="layer-num">4</span><span class="layer-title"><strong>模型层</strong><span>Model</span></span><span class="layer-copy"><b>智能从哪里来？</b> DeepSeek Adapter、真实 MODEL_NAME、结构化输出与 Tool Calling 校验。</span><span class="layer-detail">具体渠道、模型名和 Base URL 待真实冒烟；不因接口兼容而假设工具或 Schema 行为一致。</span></button>
+            <button class="layer" style="--layer:var(--cyan)" aria-expanded="false"><span class="layer-num">5</span><span class="layer-title"><strong>能力集成层</strong><span>Capability Integration</span></span><span class="layer-copy"><b>如何触达外部世界？</b> Capability/Skill/Tool Registry、搜索、Codex、测试、浏览器、部署 Adapter。</span><span class="layer-detail">V1 使用固定白名单，不启用动态 MCP；每次 Tool 调用经过 Schema、阶段、路径、网络、成本与副作用策略。</span></button>
+            <button class="layer" style="--layer:var(--red)" aria-expanded="false"><span class="layer-num">6</span><span class="layer-title"><strong>数据层</strong><span>Data</span></span><span class="layer-copy"><b>什么必须持久化？</b> PostgreSQL 的 Project/Context/Task/Run/Gate/Permission/Event 与本地产物内容。</span><span class="layer-detail">聊天、内存队列或 JSON/JSONL 文件都不能成为业务状态唯一来源；Transcript 摘要不能自动升级为事实。</span></button>
+            <button class="layer" style="--layer:var(--line-strong)" aria-expanded="false"><span class="layer-num">7</span><span class="layer-title"><strong>基础设施层</strong><span>Infrastructure</span></span><span class="layer-copy"><b>在哪里运行？</b> 本机/内网、Next.js、FastAPI、PostgreSQL、V1 单 Worker、HTTPS 与备份恢复。</span><span class="layer-detail">Builder 不部署到公开云函数；7 层逻辑可以由少量进程承载，避免为分层而微服务化。</span></button>
+          </div>
+          <aside class="rail observe" aria-label="可观测性"><strong>可观测性 · 横切</strong><ul><li>request_id / cursor</li><li>state / gate / permission Event</li><li>task / run / step / token</li><li>model / prompt / schema</li><li>input hash / exit code</li><li>artifact refs / version</li><li>health / logs / recovery</li></ul></aside>
+        </div>
+        <div class="architecture-note"><strong>关键修正：</strong>原技术图中的“LangGraph 项目图”应统一改为“LangGraph Agent Run 编排”。项目状态仍由第 2 层确定性应用服务掌握。</div>
+      </div>
+    </section>
+
+    <section class="section alt" id="flow">
+      <div class="inner">
+        <div class="section-head"><div><h2>一条请求如何贯穿 7 层</h2><p class="section-copy">关键顺序是“先校验与持久化，再执行与通知”；任何模型候选动作都不能跳过控制面。</p></div></div>
+        <div class="flow">
+          <div class="flow-step"><em>1</em><b>用户输入</b><span>群聊消息、Gate 决策或权限决定，携带客户端幂等标识。</span></div><div class="flow-arrow">→</div>
+          <div class="flow-step"><em>2</em><b>控制面校验</b><span>检查阶段、Gate、Task、Context、权限和预算；先写实体与 Event。</span></div><div class="flow-arrow">→</div>
+          <div class="flow-step"><em>3</em><b>Agent Run</b><span>创建 Task/Run，发送版本化最小 Context Pack，启动有界循环。</span></div><div class="flow-arrow">→</div>
+          <div class="flow-step"><em>4</em><b>模型与工具</b><span>DeepSeek 返回结构化候选；Tool Policy 输出 allow / ask / deny。</span></div><div class="flow-arrow">→</div>
+          <div class="flow-step"><em>5</em><b>证据与回显</b><span>RunStep、ToolRun、Artifact、Reviewer、Gate 落库后，通过 Event 更新 UI。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="truth">
+      <div class="inner">
+        <div class="section-head"><div><h2>每类事实只有一个真相源</h2><p class="section-copy">同一概念可以有多个视图，但只能有一个能做最终裁决的来源。</p></div></div>
+        <div class="truth-grid">
+          <div class="truth"><div class="truth-top"><strong>项目阶段</strong><code>Product State</code></div><p>确定性状态机 + PostgreSQL；UI 阶段栏只是投影。</p><small>不能由 LangGraph node 或 Agent 自述替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>业务 Gate</strong><code>GateDecision</code></div><p>G0-G6 决定阶段推进，持久化审批人与 ContextVersion。</p><small>不能由 PermissionRequest 或普通聊天替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>执行依赖</strong><code>Task DAG</code></div><p>决定内部任务能否 ready、认领与恢复。</p><small>不能由 Artifact DAG 或 Todo 替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>产物历史</strong><code>Artifact DAG</code></div><p>Artifact/Version/Edge 解释产物如何演化。</p><small>不能由聊天附件列表替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>Agent 输入</strong><code>Context Pack</code></div><p>指定 Task 的版本化最小上下文。</p><small>不能用全量群聊或隐藏思维链替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>执行证据</strong><code>Run / Step</code></div><p>ToolRun、Event、退出码和 Artifact 引用形成证据链。</p><small>不能用模型“已完成”文本替代</small></div>
+          <div class="truth"><div class="truth-top"><strong>工具权限</strong><code>ToolPolicy</code></div><p>Agent、阶段、参数、路径、网络、预算与副作用共同裁决。</p><small>不能相信 Prompt 或 MCP description</small></div>
+          <div class="truth"><div class="truth-top"><strong>密钥</strong><code>Secret Store</code></div><p>后端运行时注入，项目数据只保存 SecretRef。</p><small>不能进入前端、Context、Prompt、DAG 或日志</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="components">
+      <div class="inner">
+        <div class="section-head"><div><h2>Agent Blueprint 的 17 个组件如何处理</h2><p class="section-copy">筛选查看必须采纳、改造采纳、延后和拒绝项。选择机制，不复制宿主。</p></div><div class="segment" role="group" aria-label="组件裁决筛选"><button data-filter="all" aria-pressed="true">全部</button><button data-filter="must" aria-pressed="false">V1 采纳</button><button data-filter="adapt" aria-pressed="false">改造采纳</button><button data-filter="later" aria-pressed="false">V2 / 有限</button><button data-filter="reject" aria-pressed="false">V1 拒绝</button></div></div>
+        <div class="component-grid" id="component-grid"></div>
+        <div class="compare" style="margin-top:17px">
+          <div class="compare-card good"><h3>可以迁移的设计</h3><ul><li>7 层架构与 Harness 五要素</li><li>Tool Registry 与固定生命周期 Hook</li><li>Skill 描述先行、正文按需加载</li><li>Task DAG、Run Journal、后台回注</li><li>确定性证据 + Reviewer + 有界续跑</li></ul></div>
+          <div class="compare-card bad"><h3>不能直接复制的实现</h3><ul><li><code>shell=True</code> 执行模型字符串</li><li>子字符串 deny list 与终端 <code>input()</code> 审批</li><li>内存 Thread/Queue 作为唯一运行状态</li><li>文件 JSON/JSONL 作为业务数据库</li><li>动态 MCP、Cron、常驻线程团队直接进入 V1</li></ul></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="acceptance">
+      <div class="inner">
+        <div class="section-head"><div><h2>按阶段验证，不把架构图当完成证据</h2><p class="section-copy">本 PRD 只调整逻辑架构表达，不增加用户阶段；Spec Freeze 已批准，当前实现已进入真实种子用户内测阶段。</p></div></div>
+        <div class="timeline"><div class="time"><strong>Spec Freeze · 已通过</strong><span>7 层边界、LangGraph 命名和 DeepSeek/宿主机时间线已冻结。</span></div><div class="time"><strong>D1–D10 · 工程主线已完成</strong><span>真实控制面、DeepSeek、Codex CLI、测试、浏览器和 Beta Candidate 已有证据。</span></div><div class="time"><strong>当前 · G5 approved</strong><span>seed_beta / Context v10；AG-UI/SSE、认证、真实归属和双环境已完成，正在收集真实内测数据。</span></div></div>
+        <div class="checklist"><div class="check">四项 Spec Freeze 获得明确批准</div><div class="check">状态/Gate/权限不存在第二真相源</div><div class="check">Context Pack 与 Run 压缩严格分离</div><div class="check">恢复不会重复外部副作用</div><div class="check">mock、真模型和真实浏览器证据分开</div><div class="check">所有未验证项在 UI 与文档中可见</div></div>
+      </div>
+    </section>
+
+    <section class="section alt" id="evidence">
+      <div class="inner">
+        <div class="section-head"><div><h2>参考证据与阅读入口</h2><p class="section-copy">HTML 是 Web 阅读版；Markdown 保留完整需求、契约、兜底和验收明细。</p></div></div>
+        <div class="sources">
+          <div class="source"><h3>本次实际审阅</h3><ul><li><code>agent-blueprint/README.md</code> 与独有 <code>BLUEPRINT.md</code></li><li>s01-s17 章节结构，重点 s15 / s16 / s17</li><li>scaffold 与关键 Shell、审批、线程、journal 源码</li><li>现有 Context、State/Gate、Capability、Tool Policy 与 Harness 评估</li><li>参考代码许可证为 MIT；本地副本不是 Git 仓库</li></ul></div>
+          <div class="warning"><strong>验证边界</strong><p>本次没有安装或运行参考工程依赖，也没有把其代码复制到产品工厂。该 HTML 为自包含静态页面；只有完成真实桌面与移动浏览器 QA 后，才可把可视化状态标记为已验收。</p></div>
+        </div>
+        <div class="doc-links"><a class="doc-link" href="./PRD-Agent-Blueprint-Adaptation.md"><strong>完整 PRD Markdown</strong><span>功能、数据、兜底、风险和验收明细</span></a><a class="doc-link" href="../产品工厂Agent/spec/Technical-Adaptation.md"><strong>技术适配</strong><span>技术栈、API、数据和部署目标契约</span></a><a class="doc-link" href="../产品工厂Agent/spec/Frontend-Implementation-Spec.html"><strong>前端实施规格</strong><span>线框、组件、事件、全状态与排期</span></a><a class="doc-link" href="../产品工厂Agent/spec/Harness-Reference-Assessment.html"><strong>Harness 参考评估</strong><span>17 章机制裁决与反方测试</span></a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="inner">产品工厂 Agent · 分层架构适配 PRD · v0.2 · Spec Freeze 已批准，D3 进行中。</div></footer>
+  <script>
+    (() => {
+      document.querySelectorAll('.layer').forEach(layer => layer.addEventListener('click', () => {
+        const open = layer.getAttribute('aria-expanded') === 'true';
+        document.querySelectorAll('.layer').forEach(item => item.setAttribute('aria-expanded','false'));
+        layer.setAttribute('aria-expanded', String(!open));
+      }));
+
+      const components = [
+        ['s01','Agent Loop','adapt','改造采纳','LangGraph Agent Run 的有界 model → tool → result 循环。'],
+        ['s02','Tool Dispatch','must','V1 采纳','新增工具走 Registry，不修改核心循环。'],
+        ['s03','Permission','adapt','改造采纳','保留 allow / ask / deny，拒绝终端审批。'],
+        ['s04','Hooks','must','V1 采纳','权限、脱敏、审计进入固定生命周期。'],
+        ['s05','Todo','later','有限使用','只作 Run 私有计划，不是项目事实。'],
+        ['s06','Subagent','adapt','改造采纳','Context Pack → 独立 Run → Handoff。'],
+        ['s07','Skill Loading','must','V1 采纳','目录先行，任务命中后加载正文和版本。'],
+        ['s08','Context Compact','must','V1 采纳','大结果持久化，工具对成对保留。'],
+        ['s09','Memory','later','V2 延后','避免草稿自动升级为跨项目事实。'],
+        ['s10','Task System','must','V1 必须','PostgreSQL Task DAG 与原子认领。'],
+        ['s11','Background','adapt','有限采纳','状态先持久化，结果按原 Context 回注。'],
+        ['s12','Cron','reject','V1 拒绝','当前闭环无需无人值守定时任务。'],
+        ['s13','Agent Teams','adapt','只采纳协议','固定 4 Agent，不复制常驻线程与多 worktree。'],
+        ['s14','MCP Plugin','later','V2 延后','V1 固定 Adapter 白名单。'],
+        ['s15','Integrated Harness','later','参考清单','检查机制组合，不复制单文件宿主。'],
+        ['s16','Workflow Runtime','must','V1 必须','Run/Step Journal、租约、恢复与稳定复用键。'],
+        ['s17','Goal Loop','adapt','改造采纳','确定性证据 + Reviewer + Gate + 有界续跑。']
+      ];
+      const grid = document.getElementById('component-grid');
+      grid.innerHTML = components.map(([id,name,type,label,copy]) => `<article class="component" data-type="${type}"><div class="component-id">${id}</div><div><strong>${name}</strong><p>${copy}</p><span class="badge ${type}">${label}</span></div></article>`).join('');
+      document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => {
+        const filter = button.dataset.filter;
+        document.querySelectorAll('[data-filter]').forEach(item => item.setAttribute('aria-pressed',String(item === button)));
+        document.querySelectorAll('.component').forEach(item => { item.hidden = filter !== 'all' && item.dataset.type !== filter; });
+      }));
+
+      const links = [...document.querySelectorAll('.nav a')];
+      const sections = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`));
+        }), {rootMargin:'-25% 0px -65% 0px'});
+        sections.forEach(section => observer.observe(section));
+      }
+    })();
+  </script>
+</body>
+</html>

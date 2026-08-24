@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>独立用户环境验收记录</title>
+  <style>
+    :root{color-scheme:light;--bg:#f6f3ed;--card:#fffdf8;--ink:#1f2420;--muted:#656b65;--line:#c9c7bd;--ok:#146c43;--warn:#8a5a00;--accent:#f4d84c}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}main{width:min(1080px,calc(100% - 32px));margin:28px auto 64px}header,.card{background:var(--card);border:1px solid var(--line);padding:24px;margin-bottom:16px}h1,h2{line-height:1.2}h1{margin:0 0 8px;font-size:clamp(28px,5vw,48px)}h2{margin-top:0;font-size:22px}.status{display:inline-block;background:#dff3e8;color:var(--ok);padding:4px 10px;font-weight:700}.meta{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.metric{border-left:6px solid var(--accent);padding:10px 14px;background:#fff}.metric strong{display:block;font-size:22px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px}code{overflow-wrap:anywhere}.warn{border-left:6px solid #e4a72f}a{color:#175b87}a:focus-visible{outline:3px solid #111;outline-offset:3px}@media(max-width:720px){main{width:min(100% - 20px,1080px);margin-top:10px}.grid{grid-template-columns:1fr}header,.card{padding:18px}table{display:block;overflow-x:auto}}
+  </style>
+</head>
+<body><main>
+  <header><span class="status">通过 · 独立本机用户环境</span><h1>独立用户环境验收记录</h1><p class="meta">2026-08-24 · 发布版本 20260823T155102Z · previous 20260823T095514Z · G5 已批准 / G6 未打开</p><p>内部验证环境与用户环境已经分开；本记录证明本机用户环境可用，不代表公网发布或真实内测数据已经达标。</p></header>
+  <section class="grid">
+    <article class="card"><h2>内部验证环境</h2><div class="metric"><strong>Web · 3200</strong><code>http://127.0.0.1:3200</code></div><div class="metric"><strong>API · 8200</strong><code>http://127.0.0.1:8200</code></div><p>保留销售复盘 Agent 和内部验收数据。</p></article>
+    <article class="card"><h2>独立用户环境</h2><div class="metric"><strong>Web · 3300</strong><code>http://127.0.0.1:3300</code></div><div class="metric"><strong>API · 8300</strong><code>http://127.0.0.1:8300</code></div><p>独立数据库、运行目录、Artifact、Workspace、日志和密钥。</p></article>
+    <article class="card"><h2>真实身份与归属</h2><ul><li>HttpOnly Session 绑定数据库用户</li><li>新用户首次项目列表为空</li><li>A、B 双用户项目与下游资源隔离</li><li>跨用户读取返回 404，伪造 owner 无效</li></ul></article>
+    <article class="card"><h2>真实验证</h2><ul><li>Web 26/26</li><li>Python 86/86</li><li>PostgreSQL 48/48</li><li>Alembic 20260823_0010 (head)</li><li>production build、Ruff、恢复和回滚演练通过</li><li>未登录首页桌面与 390×844 正常，无 error</li></ul></article>
+  </section>
+  <section class="card"><h2>恢复、Secret Store 与回滚</h2><table><tr><th>迁移后备份</th><td>68874 bytes；SHA-256 <code>cf104181728f025d1902d11955772414876f389f13dff5434fe67eaf5e938281</code></td></tr><tr><th>独立恢复</th><td>项目 0、用户 1、内部项目 0、Alembic 0010，临时数据库已清理</td></tr><tr><th>Secret Store</th><td>临时 Key 添加、响应脱敏、0600 权限、删除无残留通过</td></tr><tr><th>应用回滚</th><td>155102Z → 095514Z → 155102Z 双向切换和健康检查通过，最终为新包</td></tr></table></section>
+  <section class="card warn"><h2>边界与下一步</h2><p>当前入口仍是本机回环地址。公网域名、HTTPS 和外部可访问部署尚未完成。</p><p>下一步邀请真实种子用户并收集任务成功、失败、使用和反馈数据；达到退出阈值后才生成 BRD 并打开 G6。</p><p><a href="./user-environment-acceptance-2026-08-23.md">查看完整 Markdown 记录</a></p></section>
+</main></body></html>

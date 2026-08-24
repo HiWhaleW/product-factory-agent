@@ -1,0 +1,138 @@
+{
+  "date": "2026-08-22",
+  "environment": {
+    "browser": "ego-browser / ego-lite",
+    "task_space": 116,
+    "mode": "Next.js production",
+    "web_url": "http://127.0.0.1:3100/",
+    "api_projection": "real FastAPI/PostgreSQL through same-origin control proxy"
+  },
+  "truth_boundary": {
+    "display_identity": "我 / 本机管理员",
+    "actor_id": "local-admin",
+    "runtime_mode": "单用户内网模式",
+    "authentication": "未启用登录",
+    "session_or_me_endpoint_claimed": false,
+    "open_gate_count": 1,
+    "open_permission_count": 0,
+    "waiting_project": "D3 双栏交互验收"
+  },
+  "desktop_1440x900": {
+    "viewport": { "width": 1440, "height": 900 },
+    "body_scroll_width": 1440,
+    "header": { "width": 1440, "height": 62 },
+    "header_navigation": { "right": 1412, "height": 44 },
+    "attention_title": "等待我处理 1",
+    "project_rows": 4,
+    "filter_target_height": 44,
+    "project_primary_action_height": 44,
+    "onboarding": {
+      "step_1": "从真实想法开始",
+      "step_2": "沿 12 阶段推进",
+      "rect": { "x": 976, "y": 580, "width": 440, "height": 296, "right": 1416, "bottom": 876 },
+      "dismiss_persistence": "product-factory:onboarding:v1=seen",
+      "help_reopen": true
+    },
+    "notification_panel": {
+      "rect": { "x": 993.234375, "y": 62, "width": 330, "height": 139.3046875, "right": 1323.234375 },
+      "text": "等待我处理 / GATE / G0 产品决策 / D3 双栏交互验收"
+    },
+    "identity_panel": {
+      "rect": { "x": 1082, "y": 62, "width": 330, "height": 196, "right": 1412 },
+      "text": "本机管理员 / local-admin / 单用户内网模式 / 未启用登录"
+    },
+    "filters": {
+      "waiting_result_count": 1,
+      "waiting_result": "D3 双栏交互验收",
+      "search_query": "简历",
+      "search_result_count": 1,
+      "search_result": "简历助手"
+    },
+    "keyboard": {
+      "slash_focuses_project_search": true,
+      "tab_order_prefix": ["跳到主要内容", "造物工场", "项目", "设置", "通知", "帮助", "我", "新建项目输入", "创建项目"]
+    }
+  },
+  "mobile_390x844": {
+    "viewport": { "width": 390, "height": 844 },
+    "home_scroll_width": 390,
+    "home_scroll_height": 1655,
+    "header": { "width": 390, "height": 58 },
+    "header_navigation_right": 380,
+    "header_summary_heights": [44, 44, 44],
+    "notification_panel": { "x": 10, "y": 64, "width": 370, "height": 139.3046875, "right": 380, "bottom": 203.3046875 },
+    "onboarding_panel": { "x": 10, "y": 560, "width": 370, "height": 274, "right": 380, "bottom": 834 },
+    "settings_identity_visible": true,
+    "workspace": {
+      "body_scroll_width": 390,
+      "body_scroll_height": 844,
+      "body_overflow": "hidden",
+      "workspace_height": 786,
+      "stage_count": 12,
+      "stage_rows": 2,
+      "participants": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+      "chat_artifact_switch": true,
+      "title": "项目对齐 V1.0",
+      "node_badges": ["V1.0", "V1.0", "V1.0"],
+      "artifact_preview": { "width": 374, "height": 552, "real_content_loaded": true },
+      "minimap_hidden": true
+    },
+    "not_found": {
+      "heading": "项目不存在",
+      "scroll_width": 390,
+      "header_navigation_right": 380
+    }
+  },
+  "workspace_regression": {
+    "desktop_split": { "chat": 0.2991233648, "artifact": 0.6979696584 },
+    "grid": { "width": 1376, "height": 659 },
+    "gate_card_hover": "static; no shadow or transform",
+    "minimap_hover": "transparent border; no shadow or transform",
+    "artifact_drag": {
+      "before": { "x": 554.59375, "y": 537, "transform_x": 90, "transform_y": 276 },
+      "during": { "x": 606.59375, "y": 564, "transform_x": 142, "transform_y": 303, "dragging": true },
+      "after": { "x": 606.59375, "y": 564, "transform_x": 142, "transform_y": 303, "dragging": false },
+      "business_graph_write": false
+    },
+    "desktop_preview": { "width": 420, "height": 610, "real_content_loaded": true }
+  },
+  "accessibility": {
+    "skip_link": true,
+    "aria_current": true,
+    "closed_popovers_excluded_from_tab_order": true,
+    "new_core_targets_minimum_css_px": 44,
+    "prefers_reduced_motion": {
+      "matched": true,
+      "transition_duration_seconds": 0.00001,
+      "animation_duration_seconds": 0.00001
+    },
+    "page_scale_factor_tested": 2,
+    "horizontal_overflow_at_tested_viewports": false
+  },
+  "console_and_network": {
+    "application_exceptions": 0,
+    "network_failures": 0,
+    "ego_extension_info_messages": 3,
+    "ego_extension_info_source": "chrome-extension://bpoadfkcbjbfhfodiogcnhhhpibjhbnh/content_main.js"
+  },
+  "quality_commands": {
+    "pnpm_lint_web": "passed",
+    "pnpm_typecheck": "passed",
+    "pnpm_test_web": "3 files / 10 tests passed",
+    "pnpm_build": "passed / Next.js 16.3.1 production webpack build"
+  },
+  "capture_status": {
+    "native_page_capture_screenshot": "blocked by repeated CDP Page.captureScreenshot timeout",
+    "print_to_pdf_fallback": "discarded because it did not preserve text reliably",
+    "old_screenshot_reused_as_new_evidence": false,
+    "live_dom_interaction_and_dimensions_recorded": true,
+    "pixel_visual_review": "pending user review in retained live task space"
+  },
+  "untested_or_blocked": [
+    "real login/session/logout because backend contract is not implemented",
+    "real Permission allow/deny success state because there is no open PermissionRequest",
+    "irreversible Gate success decision because no dedicated disposable acceptance project was used",
+    "native screenshot evidence for this homepage increment because ego-lite capture timed out"
+  ],
+  "result": "passed_with_visual_capture_gap"
+}

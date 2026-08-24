@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>D5 正式项目 G0 批准阻塞记录</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#5f687b;--line:#dce3ee;--amber:#a45f00;--green:#087a55;font:16px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}header,main,footer{width:min(920px,calc(100% - 28px));margin:auto}header{padding:48px 0 24px}h1{font-size:clamp(30px,6vw,50px);line-height:1.12}.pill{display:inline-block;padding:7px 12px;border-radius:999px;background:#fff2da;color:var(--amber);font-weight:800}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}.ok{border-left:5px solid var(--green)}.warn{border-left:5px solid var(--amber)}code{overflow-wrap:anywhere}a{color:#245bd7}:focus-visible{outline:3px solid #90b4ff;outline-offset:3px}footer{padding:12px 0 40px;color:var(--muted)}@media(max-width:520px){header{padding-top:30px}.card{padding:16px}}
+  </style>
+</head>
+<body>
+<header><span class="pill">用户已批准 · 暂未写入</span><h1>正式项目 G0 不在当前数据库</h1><p>为防止误批测试项目，系统保持 fail closed。</p></header>
+<main>
+  <section class="card warn"><h2>发现的问题</h2><ul><li>唯一 open G0 属于 D3 双栏交互验收。</li><li>该项目没有 Project Brief，是前端验收数据。</li><li>Factory Lead 冒烟证据中的项目 ID 已不在当前项目列表。</li></ul></section>
+  <section class="card ok"><h2>已保护</h2><ul><li>没有调用 Gate decision API。</li><li>没有修改项目状态。</li><li>没有把测试 G0 当成正式 G0。</li></ul></section>
+  <section class="card"><h2>下一步</h2><p>用户确认正式项目名称和一句话目标后，先创建或补齐 Project Brief/G0，再绑定本次人工批准并进入 MRD。</p></section>
+</main>
+<footer><a href="./d5-product-g0-approval-blocker-2026-08-22.md">Markdown 完整记录</a> · 2026-08-22 · 浏览器尺寸 QA 待执行</footer>
+</body>
+</html>

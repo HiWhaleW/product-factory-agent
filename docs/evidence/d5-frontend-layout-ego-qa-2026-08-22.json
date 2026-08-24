@@ -1,0 +1,86 @@
+{
+  "date": "2026-08-22",
+  "browser": "ego-browser / ego-lite",
+  "task_space": 106,
+  "environment": {
+    "mode": "Next.js production",
+    "url": "http://127.0.0.1:3100",
+    "api": "real FastAPI/PostgreSQL projection",
+    "serviceRecovery": "Final refresh first returned control-plane request error 3227098399 because 127.0.0.1:8000 was stopped. Existing FastAPI service was restarted without code/data changes; the same production URL then reloaded with the expected title, three V1.0 badges, five participants, and no alerts."
+  },
+  "projectVersionProjection": {
+    "source": "project.context_version",
+    "formatted": "V1.0",
+    "canvasTitle": "项目对齐 V1.0",
+    "nodeBadges": ["V1.0", "V1.0", "V1.0"],
+    "allNodeBadgesMatchProject": true,
+    "artifactRevisionStillIndependent": {
+      "artifact": "市场需求文档",
+      "previewVersion": "v2"
+    }
+  },
+  "desktop": {
+    "viewport": { "width": 1440, "height": 900, "deviceScaleFactor": 1 },
+    "ratioPercent": { "chat": 29.9, "canvas": 69.8 },
+    "participants": {
+      "overflow": false,
+      "visible": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+      "reviewerHover": {
+        "borderColor": "rgb(36, 35, 33)",
+        "boxShadow": "rgb(36, 35, 33) -4px 4px 0px 0px",
+        "translate": [4, -4]
+      }
+    },
+    "minimapHover": {
+      "borderColor": "rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "transform": "none"
+    },
+    "gateCardHover": { "boxShadow": "none", "transform": "none" },
+    "gateButtonHover": { "translate": [4, -4], "boxShadow": "rgb(36, 35, 33) -4px 4px 0px 0px" },
+    "artifactDrag": {
+      "screenDelta": [43, 19],
+      "businessGraphSubmitted": false
+    },
+    "applicationConsoleErrors": 0
+  },
+  "mobile": {
+    "viewport": { "width": 390, "height": 844, "deviceScaleFactor": 1 },
+    "pageLevelScroll": false,
+    "participantsVisible": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+    "initialView": "chat",
+    "chatArtifactsSwitch": "passed",
+    "canvasTitle": "项目对齐 V1.0",
+    "nodeBadges": ["V1.0", "V1.0", "V1.0"],
+    "artifactPreview": { "artifact": "市场需求文档", "revisionVersion": "v2" },
+    "draftInputAndClear": "passed without submit",
+    "applicationConsoleErrors": 0
+  },
+  "navigation": {
+    "home": "passed",
+    "settings": "passed",
+    "real404State": "passed",
+    "remainingTabsAfterQa": 1,
+    "finalReviewReloadAfterApiRecovery": "passed"
+  },
+  "visualEvidence": {
+    "latestUserAnnotation": "docs/evidence/d5-project-version-badge-annotation-2026-08-22.png",
+    "liveProductionPage": "http://127.0.0.1:3100/projects/0d9fd8e0-dfc1-48ee-a560-178799164dc4",
+    "newScreenshotCapture": "blocked: ego-lite Page.captureScreenshot timed out twice; no stale screenshot was presented as new evidence"
+  },
+  "safety": {
+    "gateDecisionSubmitted": false,
+    "permissionDecisionSubmitted": false,
+    "messageSubmitted": false,
+    "openPermissionRequests": 0,
+    "backendChanged": false
+  },
+  "contractGap": "Project API does not expose a separate iteration_version. The frontend currently uses the existing project-level context_version that already drives the workspace title; artifact.latest_version remains the Artifact revision source for preview/reference workflows.",
+  "qualityGates": {
+    "pnpm lint:web": "passed",
+    "pnpm typecheck": "passed",
+    "pnpm test:web": "7/7 passed",
+    "pnpm build": "passed"
+  },
+  "final result": "passed"
+}

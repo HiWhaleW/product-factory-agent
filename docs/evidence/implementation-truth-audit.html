@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>产品工厂 Agent · 当前事实审计</title>
+  <style>
+    :root{--bg:#f4f6f5;--surface:#fff;--text:#17201d;--muted:#596661;--line:#cbd4d0;--ok:#13705b;--warn:#9a5b00;--bad:#a63838;--blue:#1f65a6;font:16px/1.58 Inter,"PingFang SC","Microsoft YaHei",system-ui,sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}a{color:var(--blue)}.wrap{width:min(1180px,calc(100% - 40px));margin:auto}.band{padding:42px 0;border-bottom:1px solid var(--line)}h1{font-size:clamp(34px,5vw,56px);line-height:1.08;margin:8px 0 16px}h2{margin-top:0}.lead,.muted{color:var(--muted)}.flag{padding:16px;border:1px solid var(--line);border-left:5px solid var(--warn);background:#fff8e9}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{padding:17px;border:1px solid var(--line);background:var(--surface)}.card strong,.card span{display:block}.card span{margin-top:6px;color:var(--muted);font-size:13px}.card.ok{border-top:4px solid var(--ok)}.card.wait{border-top:4px solid var(--warn)}.card.bad{border-top:4px solid var(--bad)}.table{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}table{width:100%;border-collapse:collapse;min-width:780px}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{background:#eef2f0;font-size:12px}.source{font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.rules{margin:0;padding-left:22px}.rules li+li{margin-top:8px}.stamp{display:inline-block;padding:4px 8px;border:1px solid var(--line);background:var(--surface);font-size:12px}.focus:focus-visible,a:focus-visible{outline:3px solid #79aef0;outline-offset:3px}footer{padding:24px 0;color:var(--muted);font-size:12px}@media(max-width:760px){.wrap{width:calc(100% - 24px)}.grid{grid-template-columns:1fr}.band{padding:30px 0}}
+  </style>
+</head>
+<body>
+<main>
+  <section class="band"><div class="wrap"><span class="stamp">TRUTH AUDIT · 2026-08-20</span><h1>只保留可证明的项目事实</h1><p class="lead">D1–D2 规格已冻结；D3 已开始但尚未退出。文件存在、构建通过、mock 可见、真实集成和产品验收必须分层记录。</p><div class="flag"><strong>权威交互基线：</strong>根目录 <code>产品工厂Agent_Harness表.html</code>。当前 D3 Web 是静态事件列表与线性节点，不符合“团队群聊 + 产物画布”，未通过交互验收。</div></div></section>
+  <section class="band"><div class="wrap"><h2>阶段与证据强度</h2><div class="grid"><div class="card ok"><strong>D1–D2 · 规格通过</strong><span>用户批准 + 冻结文档 + 规格语义一致性。</span></div><div class="card wait"><strong>D3 · 进行中</strong><span>骨架、模型/API 定义、migration、静态 mock 壳存在。</span></div><div class="card bad"><strong>真实验收 · 未通过</strong><span>PostgreSQL、API 集成、交互、DeepSeek、Codex、发布均缺证据。</span></div></div></div></section>
+  <section class="band"><div class="wrap"><h2>实现真相矩阵</h2><div class="table"><table><thead><tr><th>对象</th><th>真实存在</th><th>尚未证明/不存在</th></tr></thead><tbody>
+    <tr><td>Git</td><td>已初始化 main</td><td>无 commit；当前文件尚无基线提交</td></tr>
+    <tr><td>Web</td><td>3 页面、12 阶段、静态事件/Gate/线性节点</td><td>无真实群聊输入、React Flow、预览、API/SSE</td></tr>
+    <tr><td>API / 数据</td><td>FastAPI 路由、SQLAlchemy 模型、初始 migration</td><td>无 PostgreSQL 在线 migration/API/并发集成</td></tr>
+    <tr><td>控制逻辑</td><td>状态/Gate/权限/依赖环纯函数</td><td>无原子认领、Run 恢复、副作用对账执行链</td></tr>
+    <tr><td>模型 / Builder</td><td>依赖与配置字段</td><td>无 DeepSeek 冒烟、LangGraph 图、Codex Adapter</td></tr>
+    <tr><td>发布</td><td>无</td><td>无部署、URL、种子内测、商业 BRD/G6</td></tr>
+  </tbody></table></div></div></section>
+  <section class="band"><div class="wrap"><h2>本次可重复命令</h2><div class="grid"><div class="card ok"><strong>pnpm check</strong><span>ESLint、TypeScript、Vitest 2/2、Ruff、pytest 12/12。只覆盖静态检查、demo 数据与纯逻辑。</span></div><div class="card ok"><strong>pnpm build</strong><span>Next.js production build 通过；不证明 API 或交互。</span></div><div class="card ok"><strong>Alembic 离线 SQL</strong><span>SQL 生成成功；不证明 PostgreSQL 实际执行。</span></div></div></div></section>
+  <section class="band"><div class="wrap"><h2>浏览器证据状态</h2><p>现有应用、生命周期与 Harness 图片均保留为各自页面的历史快照，不能拼接成交互一致性证据。本次没有形成可复现的桌面/移动完整交互记录，因此浏览器符合性记为<strong>未验收</strong>。</p><h2>交接硬规则</h2><ol class="rules"><li>“已完成”必须写证据对象、命令/页面、覆盖和未覆盖范围。</li><li>mock、截图和构建成功不得升级为真实数据库、API、模型或交互验收。</li><li>根目录交互基线不能被简化壳反向修改。</li><li>用户阅读 Markdown 必须同步同名 HTML；未实际预览时明确标注未验证。</li></ol><p><a href="./implementation-truth-audit.md">查看完整 Markdown</a> · <a href="../handoff.html">返回交接首页</a></p></div></section>
+</main>
+<footer><div class="wrap">产品工厂 Agent · 当前事实审计 · HTML 本轮尚未完成真实浏览器 QA</div></footer>
+</body>
+</html>

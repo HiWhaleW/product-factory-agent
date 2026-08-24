@@ -1,0 +1,117 @@
+{
+  "recorded_at": "2026-08-22T21:40:00+08:00",
+  "scope": "frontend degraded event sync label and backend handoff boundary",
+  "environment": {
+    "browser": "ego-browser / ego-lite",
+    "task_space_id": 116,
+    "mode": "Next.js production",
+    "url": "http://127.0.0.1:3100"
+  },
+  "live_data_boundary": {
+    "sales_retrospective_agent_project_present": false,
+    "current_project_names": [
+      "D3 双栏交互验收",
+      "简历助手",
+      "生成一个建立修改助手",
+      "D3 PostgreSQL 安装冒烟"
+    ],
+    "open_gate": "D3 双栏交互验收 / G0",
+    "evidence_index_v2_present": false,
+    "mrd_v2_business_artifact_present": false,
+    "red_team_review_v2_present": false,
+    "g1_present": false,
+    "gate_decision_submitted": false,
+    "d3_used_as_d5_business_acceptance": false
+  },
+  "desktop_1440x900": {
+    "page_level_scroll": false,
+    "body_scroll_size": "1440x900",
+    "sync_label": "事件同步：cursor 短轮询 · 降级方案",
+    "sync_label_rect": {
+      "x": 1217.2578125,
+      "y": 75.5,
+      "width": 190.7421875,
+      "height": 29,
+      "right": 1408
+    },
+    "sync_label_visual": {
+      "background": "rgb(255, 243, 184)",
+      "border": "none",
+      "box_shadow": "none"
+    },
+    "stage_count": 12,
+    "stage_rows": "44px 44px",
+    "workspace_ratio": {
+      "chat_width": 411.59375,
+      "dag_width": 960.40625,
+      "result": "approximately 30/70"
+    },
+    "participants": ["我", "主 Agent", "AI PM", "Builder", "Reviewer"],
+    "gate_count": 1,
+    "gate_reason_present": false,
+    "gate_basis_rendered": false,
+    "gate_card_hover_moved": false,
+    "gate_decision_buttons": ["批准并推进", "退回修改", "暂停"],
+    "artifact_drag": {
+      "before_transform": "matrix(1, 0, 0, 1, 90, 276)",
+      "after_transform": "matrix(1, 0, 0, 1, 138, 300)",
+      "screen_delta": "48x24px",
+      "business_graph_unchanged": true
+    }
+  },
+  "mobile_390x844": {
+    "page_level_scroll": false,
+    "body_scroll_size": "390x844",
+    "horizontal_overflow": false,
+    "sync_label": "事件同步：cursor 短轮询 · 降级方案",
+    "sync_label_rect": {
+      "x": 235.40625,
+      "y": 66,
+      "width": 148.59375,
+      "height": 25,
+      "right": 384
+    },
+    "participants_scroll_width_equals_client_width": true,
+    "mobile_switch": {
+      "initial": "群聊",
+      "selected": "产物",
+      "chat_display": "none",
+      "dag_display": "flex"
+    },
+    "dag_title": "项目对齐 V1.0",
+    "artifact_badges": ["V1.0", "V1.0", "V1.0"],
+    "artifact_preview": {
+      "title": "项目对齐简报",
+      "rect": "374x552px",
+      "content_loaded": true
+    },
+    "navigation": ["工作区", "设置", "首页"],
+    "real_404": {
+      "text": "项目不存在",
+      "horizontal_overflow": false
+    }
+  },
+  "backend_runtime_requirements": {
+    "required_real_artifacts": ["Evidence Index v2", "MRD v2", "Red Team Review v2"],
+    "required_gate": "G1",
+    "required_known_issues": [
+      "引用粒度待用户访谈验证",
+      "Gong 定价和客户规模缺少直接证据"
+    ],
+    "current_gate_fields": ["reason", "impacted_artifact_refs"],
+    "missing_authoritative_projection": "independent known_issues or a reason payload that includes both issues with source links",
+    "frontend_fallback": "do not infer from project name or artifact prose"
+  },
+  "quality_gates": {
+    "pnpm_lint_web": "passed",
+    "pnpm_typecheck": "passed",
+    "pnpm_test_web": "3 files / 11 tests passed",
+    "pnpm_build": "passed"
+  },
+  "visual_capture": {
+    "status": "existing ego-lite Page.captureScreenshot gap persists",
+    "substitute": "live production DOM, interaction measurements, and retained review page",
+    "old_screenshot_reused_as_current": false
+  },
+  "result": "frontend_increment_passed_with_backend_data_block_and_visual_capture_gap"
+}

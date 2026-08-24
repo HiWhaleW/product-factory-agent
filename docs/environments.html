@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>产品工厂 Agent · 双环境运行说明</title>
+  <style>
+    :root{color-scheme:light;--bg:#f5f3ed;--card:#fffdf8;--ink:#20231f;--muted:#626860;--line:#c9c7bd;--yellow:#f4d84c;--green:#dff3e8;--green-ink:#146c43;--warn:#fff0cf}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"PingFang SC",sans-serif}main{width:min(1120px,calc(100% - 32px));margin:28px auto 64px}header,.card{background:var(--card);border:1px solid var(--line);padding:24px;margin-bottom:16px}h1,h2,h3{line-height:1.2}h1{margin:8px 0;font-size:clamp(30px,5vw,52px)}h2{margin-top:0}.status{display:inline-block;background:var(--green);color:var(--green-ink);padding:5px 10px;font-weight:750}.meta{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.env{border-top:8px solid var(--yellow)}.metric{padding:10px 12px;border-left:5px solid var(--yellow);background:#fff;margin:8px 0}.metric strong{display:block;font-size:20px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px}pre{white-space:pre-wrap;background:#20231f;color:#fff;padding:16px;overflow:auto}.flow{font-weight:700;background:var(--warn)}code{overflow-wrap:anywhere}a{color:#175b87}a:focus-visible{outline:3px solid #111;outline-offset:3px}@media(max-width:720px){main{width:min(100% - 20px,1120px);margin-top:10px}.grid{grid-template-columns:1fr}header,.card{padding:18px}table{display:block;overflow-x:auto}}
+  </style>
+</head>
+<body><main>
+  <header><span class="status">内部可重现基线已建立</span><h1>双环境运行说明</h1><p class="meta">2026-08-24 · 内部 current 20260824T074916Z / previous 20260824T042123Z · 用户 current 20260824T042412Z-identity-only / previous 20260824T032335Z-settings-only</p><p><strong>口径：</strong>销售复盘 Agent 是内部示范项目，G6 未打开；产品工厂 Agent 是平台；火山引擎 user-beta 是平台用户测试环境，不需销售复盘 Agent G6。</p><p>用户环境仍保留上一受控组合包，尚未绑定或重新验收新的内部基线；数据库、文件和密钥始终完全隔离。</p></header>
+  <section class="grid">
+    <article class="card env"><h2>内部验证环境</h2><div class="metric"><strong>Web · 3200</strong><code>http://127.0.0.1:3200</code></div><div class="metric"><strong>API · 8200</strong><code>http://127.0.0.1:8200</code></div><p>保留销售复盘 Agent、内部验收项目和证据。运行目录：<code>.runtime/seed-beta/</code>。</p></article>
+    <article class="card env"><h2>独立用户环境</h2><div class="metric"><strong>Web · 3300</strong><code>http://127.0.0.1:3300</code></div><div class="metric"><strong>API · 8300</strong><code>http://127.0.0.1:8300</code></div><p>独立数据库 <code>product_factory_user_beta</code>；首次登录项目为空。运行目录：<code>.runtime/user-beta/</code>。</p></article>
+  </section>
+  <section class="card"><h2>“项目为空”不是“产品为空”</h2><p>用户环境只是不预置业务项目、产物和运行记录；首页、导航、首次引导、设置、项目创建、双栏 Agent 工作区和完整控制面都必须存在。</p><table><thead><tr><th>用户版本包含</th><th>初始明确不包含</th></tr></thead><tbody><tr><td>首页、项目创建/列表、回收箱、设置、个人信息、登录</td><td>销售复盘 Agent、内部验收项目、fixture</td></tr><tr><td>Factory Lead、AI PM、Builder、Reviewer，12 阶段、G0–G6、Context、Tool、Permission、Artifact、Reviewer、Run 恢复与 SSE</td><td>内部项目消息、Artifact、Run、Gate、Permission 和审计数据</td></tr><tr><td>用户自有 OpenAI-compatible API 配置能力</td><td>内部 DeepSeek Key、预填接口/模型/Key</td></tr></tbody></table><p>当前只读核验：项目 0、Artifact 0、Agent Run 0、用户模型凭据 0、内部项目 0；用户 1、有效邀请码 1、Alembic 0010。</p></section>
+  <section class="card flow"><h2>固定云发布顺序</h2><p>工作区实现 → 内部迁移/测试/build/浏览器验收 → 生成并校验可重现内部基线 → GitHub Connector 更新 → 火山引擎账号/地域/资源/费用/拓扑预检 → 用户确认精确边界 → 云上独立 user-beta 数据/存储/秘密边界 → 部署和验收 → 邀请真实用户。</p><p>本机用户环境换包另行执行 preflight、同包绑定与完整重验；未经重验不得标记本机 <code>user_baseline_ready</code>，但它不是云预检或用户确认后云部署的前置 Gate。</p></section>
+  <section class="card"><h2>目标：火山引擎 user-beta</h2><p>这是产品工厂平台的真实用户测试环境，可在销售复盘 Agent G6 之前建立，不等于该示范项目正式发布。它必须使用新的 PostgreSQL、Artifact/Workspace 持久化存储、日志、用户 Secret Store、Session Secret 和邀请哈希，不复制本地秘密或内部项目。</p><p><a href="./cloud-user-beta-handoff.html">查看 GitHub 与火山引擎专项交接</a></p></section>
+  <section class="card"><h2>隔离规则</h2><table><thead><tr><th>对象</th><th>规则</th></tr></thead><tbody><tr><td>用户和项目</td><td>HttpOnly Session 绑定数据库用户；项目和全部下游资源由后端校验归属</td></tr><tr><td>数据库</td><td>用户环境使用独立数据库；不能复制销售复盘 Agent 或 fixture</td></tr><tr><td>文件</td><td>Artifact、Workspace、日志和备份分环境保存</td></tr><tr><td>用户 API Key</td><td>原文只进权限 0600 的用户 Secret Store；数据库和响应只含脱敏元数据；普通用户没有内部 Key 回退</td></tr><tr><td>环境密钥</td><td>Session Secret 与邀请码分环境保存；邀请码入库只留哈希</td></tr><tr><td>回滚</td><td>current 042412Z-identity-only / previous 032335Z-settings-only；可回退到已验收的用户设置包</td></tr></tbody></table></section>
+  <section class="grid"><article class="card"><h2>内部环境命令</h2><pre>scripts/seed-beta/release.sh
+scripts/seed-beta/start.sh
+scripts/seed-beta/health-check.sh
+scripts/seed-beta/backup.sh
+scripts/seed-beta/restore-check.sh
+scripts/seed-beta/rollback.sh</pre></article><article class="card"><h2>用户环境命令</h2><pre>scripts/user-beta/release.sh
+scripts/user-beta/start.sh
+scripts/user-beta/health-check.sh
+scripts/user-beta/acceptance.sh
+scripts/user-beta/backup.sh
+scripts/user-beta/restore-check.sh
+scripts/user-beta/rollback.sh</pre></article></section>
+  <section class="card"><h2>当前验证与边界</h2><ul><li>Web 34/34、Python 94/94（48 skipped）、PostgreSQL 48/48、Alembic 0010、production build、lint 与 typecheck 通过。</li><li>内部 <code>074916Z</code> 的 SHA-256 manifest 在启动核验前后不变；启动没有改写发布内容。</li><li>用户设置页与个人信息的既有验收继续作为历史证据；用户环境尚未绑定或重新验收 <code>074916Z</code>。</li><li>最新即时核验时四个本机端口均在监听，两端健康、未登录 401、Session 与安全响应头通过；进程状态仍须按需实时复核。</li><li>GitHub 本轮更新和火山引擎 user-beta 部署/验收尚未完成。</li><li>本机用户换包不阻塞云预检；平台 user-beta 不需销售复盘 Agent G6，云上就绪也不等于该示范项目正式发布。</li></ul><p><a href="./environments.md">完整 Markdown</a> · <a href="./cloud-user-beta-handoff.html">上云交接</a> · <a href="./evidence/user-environment-acceptance-2026-08-23.html">历史用户环境验收证据</a></p></section>
+</main></body></html>

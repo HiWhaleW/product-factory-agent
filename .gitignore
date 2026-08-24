@@ -1,0 +1,43 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+.runtime/
+.uv-cache/
+.pnpm-store/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+node_modules/
+.next/
+coverage/
+playwright-report/
+test-results/
+artifacts/
+workspaces/
+*.log
+*.tsbuildinfo
+
+# High-resolution local QA captures stay out of source control; the Markdown,
+# HTML and JSON evidence summaries remain publishable.
+docs/evidence/*.png
+docs/evidence/*.pdf
+docs/evidence/*.jpg
+docs/evidence/*.jpeg
+
+# Local-only provenance notes contain machine-specific source paths.
+产品工厂Agent/spec/Harness-Reference-Assessment.md
+产品工厂Agent/spec/Agent-Prompt-Gap-Report.md
+产品工厂Agent/spec/Technical-Adaptation.md
+产品工厂Agent/spec/Tool-and-Permission-Policy.md
+apps/api/alembic.ini
+!apps/api/alembic.ini
+
+# Reference handbooks are local source material, not application source.
+AI Agent 产品上线部署手册.md
+AI产品Vibe Coding通用前端技术栈手册.md
+AI产品Vibe Coding通用技术栈手册-技术选型spec.md
