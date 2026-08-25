@@ -33,21 +33,6 @@
 > [!IMPORTANT]
 > Only the user can approve a product gate. The model cannot advance a business stage, expand tool permissions, publish code, or delete a project workspace on its own.
 
-## Release status
-
-The following state was verified when the complete source baseline was published on August 25, 2026:
-
-| Area | Current state |
-| --- | --- |
-| Local source preview | Web `127.0.0.1:3400` and API `127.0.0.1:8400` are healthy; Alembic is at `20260824_0011 (head)`; no user model API is configured. |
-| Local Git | `main` contains the cleaned source baseline. Runtime data, external archives, and internal agent instructions are excluded. |
-| GitHub repository | `HiWhaleW/product-factory-agent` `main` contains the complete source, installation scripts, tests, documentation, and `LICENSE`. The repository is currently private and can only be cloned by authorized accounts. |
-| Publication | The complete source was merged through [PR #2](https://github.com/HiWhaleW/product-factory-agent/pull/2) without including local runtime data or historical archives. |
-| Historical baseline | The older user-beta PR from August 24, 2026 is not the current source baseline and must not overwrite `main`. |
-| Compose installation | The installation contract and scripts are implemented, but real image builds and clean-machine installation have not yet been validated because the maintainer's computer has no compatible container runtime. |
-
-In short: the complete source is on GitHub `main`, the source-based local application and automated checks pass, and real Docker Compose installation remains unverified. While the repository is private, external users cannot download it. Once public, users can install it on their own computers and access it through a browser.
-
 ## Overview
 
 Product Factory Agent is not a fixed workflow with a chat box attached. It is designed around agents that carry out product work while deterministic controls preserve ownership, permissions, evidence, and user authority.
@@ -64,22 +49,6 @@ After a user describes a product goal in natural language, the system can:
 8. Preserve records and recover after edits, failures, or interruptions.
 
 A chat message is not an artifact, and a model saying “done” is not completion. Delivery requires real artifacts, tool results, test evidence, reviewer conclusions, and user-approved gates.
-
-## Current capabilities
-
-- Local account registration, password login, and HttpOnly sessions
-- Per-user isolation for projects, messages, tasks, runs, gates, artifacts, and provider settings
-- Natural-language project entry, project list, project chat, and artifact workspace
-- Factory Lead, AI PM, Builder, and Reviewer agents
-- Twelve product stages and G0–G6 human-controlled gates
-- Context Version, Context Pack, Agent Task, RunStep, and recovery records
-- Separate user-visible Artifact DAG and internal Execution Task DAG
-- OpenAI-compatible model configuration
-- Runtime integration for the official Bocha web-search API
-- Per-user local Secret Store with `0600` permissions
-- Docker Compose v2 installation, backup, restore, upgrade, rollback, and uninstall scripts
-
-The current release does not provide a public SaaS service, bundled model credits, bundled search credits, payments, automatic Git pushes, automatic cloud deployment, or unrestricted host access for Builder.
 
 ## AI-native execution loop
 
