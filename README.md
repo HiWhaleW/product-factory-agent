@@ -35,18 +35,18 @@
 
 ## 当前发布状态
 
-以下事实于 2026-08-25 通过本机检查与 GitHub Connector 只读核验：
+以下事实于 2026-08-25 完成源码发布时核验：
 
 | 对象 | 当前事实 |
 | --- | --- |
 | 本机源码预览 | Web `127.0.0.1:3400` 与 API `127.0.0.1:8400` 在线，健康检查通过；Alembic 为 `20260824_0011 (head)`；用户模型 API 尚未配置。 |
-| 本地 Git | `main` 尚无本地提交；当前公开源码候选仍是未跟踪文件，不能把本地分支当作可恢复的 tracked 基线。 |
-| GitHub 仓库 | `HiWhaleW/product-factory-agent` 当前为私有仓库；默认分支 `main` 停留在 `3a0927b`，只包含占位 `README.md`，尚未包含本地完整源码、安装脚本或许可证文件。 |
-| 最新 README | Draft PR [#2](https://github.com/HiWhaleW/product-factory-agent/pull/2) 只包含 `README.md` 与 `README.html`；两份最新版已同步到该 PR 分支，但尚未合并。 |
-| 旧源码 PR | Draft PR #1 是 2026-08-24 的旧 user-beta 基线，不等于 2026-08-25 清理后的当前本地源码，不得反向覆盖或直接作为首次公开版本合并。 |
+| 本地 Git | `main` 已建立清理后的正式源码基线；运行数据、外部归档和内部 Agent 指令不在版本基线中。 |
+| GitHub 仓库 | `HiWhaleW/product-factory-agent` 的 `main` 收录完整源码、安装脚本、测试、文档和 `LICENSE`；仓库当前仍为私有，仅获授权的账号可以克隆。 |
+| 发布方式 | 本次完整源码通过 [PR #2](https://github.com/HiWhaleW/product-factory-agent/pull/2) 合并进入 `main`，不依赖维护者本机的运行数据或历史归档。 |
+| 历史基线 | 2026-08-24 的旧 user-beta PR 不是当前开源源码基线，不得反向覆盖当前 `main`。 |
 | Compose 安装 | 安装契约和脚本已实现，但当前维护者电脑没有兼容容器运行时，真实镜像构建与干净环境安装验收尚未完成。 |
 
-因此，当前状态是“本地源码可用、最新 README 已进入 Draft PR、完整源码尚未发布到 GitHub `main`”，不是已经开放下载或完成首次公开发布。
+因此，当前状态是“完整源码已进入 GitHub `main`，本机源码运行与自动化检查通过，Compose 实机安装尚未验收”。仓库仍为私有时，外部使用者无法下载；改为公开仓库后，使用者可按下方说明在自己的电脑安装并通过浏览器使用。
 
 ## 产品概览
 
@@ -126,7 +126,7 @@ AI 的价值在于理解模糊目标、规划工作、生成候选方案、比�
 ## 本地运行
 
 > [!CAUTION]
-> 下列命令是首次公开发布后的目标安装入口。当前仓库仍为私有，且 `main` 尚未同步完整源码；在完成源码清理复核、用户批准与 `main` 更新前，外部使用者无法通过该命令完成安装。
+> 下列命令是仓库公开后的安装入口。仓库保持私有时，只有获授权的 GitHub 账号可以克隆；是否公开仓库由维护者另行决定。
 
 ### 前置条件
 
@@ -210,7 +210,7 @@ pnpm test:api:integration
 
 ## 反馈与贡献
 
-当前 GitHub 仓库仍为私有，Issue、Fork 和外部 Pull Request 尚未作为公开贡献入口开放。首次公开发布完成后，欢迎报告问题、补充文档和提交改进。
+欢迎报告问题、补充文档和提交改进。仓库保持私有时，Issue、Fork 和 Pull Request 仅对获授权的 GitHub 账号开放；仓库公开后，任何遵守许可证与贡献要求的人都可以参与。
 
 - 使用问题、Bug 或功能建议：提交 [Issue](https://github.com/HiWhaleW/product-factory-agent/issues)
 - 已有修复或改进：提交 [Pull Request](https://github.com/HiWhaleW/product-factory-agent/pulls)
