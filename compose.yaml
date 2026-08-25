@@ -1,0 +1,153 @@
+name: ${COMPOSE_PROJECT_NAME:-product-factory-local}
+
+services:
+  db:
+    image: postgres:16.10-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  init-storage:
+    image: product-factory-api:${PRODUCT_FACTORY_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: "no"
+    user: "0:0"
+    volumes: &api-volumes
+      - artifacts:/data/artifacts
+      - workspaces:/data/workspaces
+      - user-secrets:/data/user-secrets
+      - application-logs:/data/logs
+    command:
+      - sh
+      - -ec
+      - >-
+        mkdir -p /data/artifacts /data/workspaces /data/user-secrets /data/logs
+        && chown -R 10001:10001 /data/artifacts /data/workspaces /data/user-secrets /data/logs
+        && chmod 700 /data/artifacts /data/workspaces /data/user-secrets
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    image: product-factory-api:${PRODUCT_FACTORY_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      init-storage:
+        condition: service_completed_successfully
+    environment: &api-environment
+      APP_ENV: ${APP_ENV:-local}
+      AUTH_ENFORCED: "true"
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ARTIFACT_ROOT: /data/artifacts
+      WORKSPACE_ROOT: /data/workspaces
+      USER_SECRET_ROOT: /data/user-secrets
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      SESSION_TTL_SECONDS: "28800"
+      MODEL_PROVIDER: deepseek
+      MODEL_NAME: ""
+      MODEL_BASE_URL: ""
+      MODEL_API_KEY_REF: DEEPSEEK_API_KEY
+      DEEPSEEK_API_KEY: ""
+      WEB_RESEARCH_PROVIDER: ""
+      WEB_RESEARCH_BASE_URL: ""
+      WEB_RESEARCH_API_KEY_REF: BOCHA_API_KEY
+      BOCHA_API_KEY: ""
+      BUILDER_ENABLED: "false"
+      CODEX_CLI_PATH: /usr/local/bin/codex-disabled
+      CODEX_MAX_CONCURRENT_RUNS: "1"
+      CODEX_TASK_TIMEOUT_SECONDS: "1800"
+      AGENT_MAX_TURNS_PER_RUN: "12"
+      AGENT_MAX_RETRIES_PER_RUN: "2"
+      RUN_HEARTBEAT_TIMEOUT_SECONDS: "90"
+      EVENT_STREAM_POLL_INTERVAL_SECONDS: "0.5"
+      EVENT_STREAM_HEARTBEAT_SECONDS: "15"
+    volumes: *api-volumes
+    command: ["alembic", "-c", "apps/api/alembic.ini", "upgrade", "head"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  api:
+    image: product-factory-api:${PRODUCT_FACTORY_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment: *api-environment
+    volumes: *api-volumes
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  web:
+    image: product-factory-web:${PRODUCT_FACTORY_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PRODUCT_FACTORY_API_URL: http://api:8000
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3400}:3000"
+    volumes:
+      - application-logs:/data/logs
+    command: ["sh", "-c", "exec node server.js >>/data/logs/web.log 2>&1"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/apps/web/.next/cache:rw,noexec,nosuid,size=128m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok&&!r.redirected)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  postgres-data:
+  artifacts:
+  workspaces:
+  user-secrets:
+  application-logs:

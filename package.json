@@ -1,0 +1,22 @@
+{
+  "name": "product-factory",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev:api": "env UV_CACHE_DIR=.uv-cache uv run uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000",
+    "dev:web": "pnpm --filter @product-factory/web dev",
+    "db:start": ".runtime/user-preview/postgresql-16.15/bin/pg_ctl -D .runtime/user-preview/postgresql-data -l .runtime/user-preview/postgresql.log -o '-h 127.0.0.1 -p 5432' start",
+    "db:stop": ".runtime/user-preview/postgresql-16.15/bin/pg_ctl -D .runtime/user-preview/postgresql-data stop -m fast",
+    "db:status": ".runtime/user-preview/postgresql-16.15/bin/pg_ctl -D .runtime/user-preview/postgresql-data status",
+    "db:migrate": "env UV_CACHE_DIR=.uv-cache uv run alembic -c apps/api/alembic.ini upgrade head",
+    "build": "pnpm --filter @product-factory/web build",
+    "lint:web": "pnpm --filter @product-factory/web lint",
+    "typecheck": "pnpm --filter @product-factory/web typecheck",
+    "test:web": "pnpm --filter @product-factory/web test",
+    "lint:api": "env UV_CACHE_DIR=.uv-cache uv run ruff check apps/api tests",
+    "test:api": "env UV_CACHE_DIR=.uv-cache uv run pytest",
+    "test:api:integration": "env RUN_POSTGRES_INTEGRATION=1 UV_CACHE_DIR=.uv-cache uv run pytest -m integration tests/integration",
+    "check": "pnpm lint:web && pnpm typecheck && pnpm test:web && pnpm lint:api && pnpm test:api"
+  }
+}
