@@ -24,6 +24,10 @@
   <a href="#license"><strong>License</strong></a>
 </p>
 
+<p align="center">
+  <img src="docs/images/product-projects-page.png" alt="Product Factory Agent project list and creation workflow">
+</p>
+
 > [!NOTE]
 > Product Factory Agent is a local web application. The Web app, API, PostgreSQL database, project files, and user credentials run on the user's own computer. After startup, open `http://127.0.0.1:3400`. This project is not a hosted public SaaS service.
 
