@@ -17,11 +17,11 @@
 <p align="center">
   <a href="#产品概览"><strong>产品概览</strong></a>
   ·
+  <a href="#当前发布状态"><strong>当前发布状态</strong></a>
+  ·
   <a href="#本地运行"><strong>本地运行</strong></a>
   ·
-  <a href="https://github.com/HiWhaleW/product-factory-agent/issues"><strong>提交问题</strong></a>
-  ·
-  <a href="https://github.com/HiWhaleW/product-factory-agent/pulls"><strong>提交 PR</strong></a>
+  <a href="#许可证"><strong>许可证</strong></a>
 </p>
 
 > [!NOTE]
@@ -32,6 +32,21 @@
 
 > [!IMPORTANT]
 > Gate 只能由用户批准。模型不能自行推进业务阶段、扩大工具权限、发布代码或删除项目工作区。
+
+## 当前发布状态
+
+以下事实于 2026-08-25 通过本机检查与 GitHub Connector 只读核验：
+
+| 对象 | 当前事实 |
+| --- | --- |
+| 本机源码预览 | Web `127.0.0.1:3400` 与 API `127.0.0.1:8400` 在线，健康检查通过；Alembic 为 `20260824_0011 (head)`；用户模型 API 尚未配置。 |
+| 本地 Git | `main` 尚无本地提交；当前公开源码候选仍是未跟踪文件，不能把本地分支当作可恢复的 tracked 基线。 |
+| GitHub 仓库 | `HiWhaleW/product-factory-agent` 当前为私有仓库；默认分支 `main` 停留在 `3a0927b`，只包含占位 `README.md`，尚未包含本地完整源码、安装脚本或许可证文件。 |
+| 最新 README | Draft PR [#2](https://github.com/HiWhaleW/product-factory-agent/pull/2) 只包含 `README.md` 与 `README.html`；两份最新版已同步到该 PR 分支，但尚未合并。 |
+| 旧源码 PR | Draft PR #1 是 2026-08-24 的旧 user-beta 基线，不等于 2026-08-25 清理后的当前本地源码，不得反向覆盖或直接作为首次公开版本合并。 |
+| Compose 安装 | 安装契约和脚本已实现，但当前维护者电脑没有兼容容器运行时，真实镜像构建与干净环境安装验收尚未完成。 |
+
+因此，当前状态是“本地源码可用、最新 README 已进入 Draft PR、完整源码尚未发布到 GitHub `main`”，不是已经开放下载或完成首次公开发布。
 
 ## 产品概览
 
@@ -110,6 +125,9 @@ AI 的价值在于理解模糊目标、规划工作、生成候选方案、比�
 
 ## 本地运行
 
+> [!CAUTION]
+> 下列命令是首次公开发布后的目标安装入口。当前仓库仍为私有，且 `main` 尚未同步完整源码；在完成源码清理复核、用户批准与 `main` 更新前，外部使用者无法通过该命令完成安装。
+
 ### 前置条件
 
 - Git
@@ -167,6 +185,15 @@ http://127.0.0.1:3400
 
 ## 验证
 
+2026-08-25 本机重新核验结果：
+
+- Web：39/39。
+- Python：104 passed / 48 skipped；保留 1 条 Starlette/httpx 弃用警告。
+- ESLint、TypeScript、Ruff 与 Next.js production build：通过。
+- Web/API 健康检查：通过；Alembic：`20260824_0011 (head)`。
+- PostgreSQL 集成测试需要独立临时数据库；默认测试中的 48 项集成测试本次保持 skipped。
+- Docker Compose 实机安装、真实模型效果与首次公开 GitHub 安装：尚未验收。
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm check
@@ -183,7 +210,7 @@ pnpm test:api:integration
 
 ## 反馈与贡献
 
-欢迎报告问题、补充文档和提交改进。
+当前 GitHub 仓库仍为私有，Issue、Fork 和外部 Pull Request 尚未作为公开贡献入口开放。首次公开发布完成后，欢迎报告问题、补充文档和提交改进。
 
 - 使用问题、Bug 或功能建议：提交 [Issue](https://github.com/HiWhaleW/product-factory-agent/issues)
 - 已有修复或改进：提交 [Pull Request](https://github.com/HiWhaleW/product-factory-agent/pulls)
