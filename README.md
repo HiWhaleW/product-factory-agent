@@ -152,31 +152,6 @@ See [Local installation](docs/installation.md) for backup, restore, upgrade, rol
 
 See [Architecture](docs/architecture.md) for the complete design.
 
-## Verification
-
-Locally re-verified on August 25, 2026:
-
-- Web tests: 39/39 passed.
-- Python tests: 104 passed / 48 skipped, with one retained Starlette/httpx deprecation warning.
-- ESLint, TypeScript, Ruff, and the Next.js production build passed.
-- Web and API health checks passed; Alembic is at `20260824_0011 (head)`.
-- PostgreSQL integration tests require an isolated temporary database; 48 integration tests remained skipped in the default run.
-- Docker Compose installation, real-model behavior, and clean-machine installation have not yet been validated.
-
-```bash
-pnpm install --frozen-lockfile
-pnpm check
-pnpm build
-```
-
-PostgreSQL integration tests require a separate temporary test database:
-
-```bash
-pnpm test:api:integration
-```
-
-Real-model validation requires each user's own API configuration and must be recorded separately from deterministic regression tests.
-
 ## Feedback and contributions
 
 Issues, documentation improvements, and pull requests are welcome. While the repository remains private, contribution features are available only to authorized GitHub accounts. Once public, anyone who follows the license and contribution requirements may participate.
