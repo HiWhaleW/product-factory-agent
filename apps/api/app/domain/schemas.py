@@ -616,6 +616,28 @@ class ProviderCredentialRead(ApiModel):
     internal_test_fallback: bool = False
 
 
+class CodexCapabilityChecksRead(ApiModel):
+    app_server: bool
+    responses_api: bool
+    streaming: bool
+    structured_output: bool
+    tool_calling: bool
+    secret_isolation: bool
+
+
+class CodexRuntimeCapabilityRead(ApiModel):
+    runtime: Literal["codex_app_server"] = "codex_app_server"
+    configured: bool
+    compatibility: Literal[
+        "not_configured", "untested", "compatible", "partial", "incompatible"
+    ]
+    config_version: str | None = None
+    checked_at: datetime | None = None
+    checks: CodexCapabilityChecksRead
+    error_code: str | None = None
+    user_message: str | None = None
+
+
 class ResearchCredentialUpdate(ApiModel):
     provider_name: str = Field(min_length=1, max_length=80)
     base_url: str = Field(min_length=8, max_length=500)

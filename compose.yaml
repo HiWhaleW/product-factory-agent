@@ -28,14 +28,15 @@ services:
       - artifacts:/data/artifacts
       - workspaces:/data/workspaces
       - user-secrets:/data/user-secrets
+      - codex-user-state:/data/codex-users
       - application-logs:/data/logs
     command:
       - sh
       - -ec
       - >-
-        mkdir -p /data/artifacts /data/workspaces /data/user-secrets /data/logs
-        && chown -R 10001:10001 /data/artifacts /data/workspaces /data/user-secrets /data/logs
-        && chmod 700 /data/artifacts /data/workspaces /data/user-secrets
+        mkdir -p /data/artifacts /data/workspaces /data/user-secrets /data/codex-users /data/logs
+        && chown -R 10001:10001 /data/artifacts /data/workspaces /data/user-secrets /data/codex-users /data/logs
+        && chmod 700 /data/artifacts /data/workspaces /data/user-secrets /data/codex-users
     security_opt:
       - no-new-privileges:true
 
@@ -57,6 +58,7 @@ services:
       ARTIFACT_ROOT: /data/artifacts
       WORKSPACE_ROOT: /data/workspaces
       USER_SECRET_ROOT: /data/user-secrets
+      CODEX_USER_HOME_ROOT: /data/codex-users
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       SESSION_TTL_SECONDS: "28800"
       MODEL_PROVIDER: deepseek
@@ -72,6 +74,7 @@ services:
       CODEX_CLI_PATH: /usr/local/bin/codex-disabled
       CODEX_MAX_CONCURRENT_RUNS: "1"
       CODEX_TASK_TIMEOUT_SECONDS: "1800"
+      CODEX_COMPATIBILITY_TIMEOUT_SECONDS: "180"
       AGENT_MAX_TURNS_PER_RUN: "12"
       AGENT_MAX_RETRIES_PER_RUN: "2"
       RUN_HEARTBEAT_TIMEOUT_SECONDS: "90"
@@ -150,4 +153,5 @@ volumes:
   artifacts:
   workspaces:
   user-secrets:
+  codex-user-state:
   application-logs:

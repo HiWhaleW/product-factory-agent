@@ -53,6 +53,7 @@ from app.domain.schemas import (
     BuilderRunRead,
     ClarificationCreate,
     ClarificationRead,
+    CodexRuntimeCapabilityRead,
     ContextPackCreate,
     ContextPackRead,
     ContextResourceRef,
@@ -106,6 +107,12 @@ from app.services.ag_ui_events import encode_ag_ui_sse
 from app.services.artifact_store import ArtifactStoreError, read_verified_artifact
 from app.services.backend_delivery import BackendDeliveryError, BackendDeliveryService
 from app.services.builder_runtime import BuilderRuntimeError, BuilderRuntimeService
+from app.services.codex_user_runtime import (
+    CodexRuntimeCapability,
+    CodexUserRuntimeError,
+    codex_runtime_capability_status,
+    run_codex_compatibility_check,
+)
 from app.services.control_plane import (
     ControlPlaneError,
     validate_context_binding,
@@ -220,6 +227,20 @@ def provider_credential_read(
             value.provider_name, value.base_url
         ),
         internal_test_fallback=value.internal_test_fallback,
+    )
+
+
+def codex_runtime_capability_read(
+    value: CodexRuntimeCapability,
+) -> CodexRuntimeCapabilityRead:
+    return CodexRuntimeCapabilityRead(
+        configured=value.configured,
+        compatibility=value.compatibility,
+        config_version=value.config_version,
+        checked_at=value.checked_at,
+        checks=value.checks,
+        error_code=value.error_code,
+        user_message=value.user_message,
     )
 
 
@@ -763,6 +784,44 @@ def remove_model_api_credential(
     return provider_credential_read(
         session, settings=settings, user_id=user_id, role=role
     )
+
+
+@router.get(
+    "/api/v1/me/codex-runtime",
+    response_model=CodexRuntimeCapabilityRead,
+)
+def get_codex_runtime_capability(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> CodexRuntimeCapabilityRead:
+    user_id, role = request_identity(request)
+    try:
+        value = codex_runtime_capability_status(
+            session, settings=settings, user_id=user_id, role=role
+        )
+    except (UserCredentialError, CodexUserRuntimeError) as error:
+        raise api_error(error.code, error.user_message, 409) from error
+    return codex_runtime_capability_read(value)
+
+
+@router.post(
+    "/api/v1/me/codex-runtime/compatibility",
+    response_model=CodexRuntimeCapabilityRead,
+)
+def check_codex_runtime_compatibility(
+    request: Request,
+    session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> CodexRuntimeCapabilityRead:
+    user_id, role = request_identity(request)
+    try:
+        value = run_codex_compatibility_check(
+            session, settings=settings, user_id=user_id, role=role
+        )
+    except (UserCredentialError, CodexUserRuntimeError) as error:
+        raise api_error(error.code, error.user_message, 409) from error
+    return codex_runtime_capability_read(value)
 
 
 @router.get(

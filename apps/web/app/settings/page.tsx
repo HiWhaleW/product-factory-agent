@@ -1,7 +1,13 @@
 import { LoginForm } from "@/app/login-form";
 import { ApiKeySettings } from "@/app/settings/api-key-settings";
+import { CodexRuntimeSettings } from "@/app/settings/codex-runtime-settings";
 import { ResearchApiSettings } from "@/app/settings/research-api-settings";
-import { getMe, getProviderCredential, getResearchCredential } from "@/lib/api";
+import {
+  getCodexRuntimeCapability,
+  getMe,
+  getProviderCredential,
+  getResearchCredential,
+} from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +21,9 @@ export default async function SettingsPage() {
       </main>
     );
   }
-  const [credential, researchCredential] = await Promise.all([
+  const [credential, codexCapability, researchCredential] = await Promise.all([
     getProviderCredential(),
+    getCodexRuntimeCapability(),
     getResearchCredential(),
   ]);
   return (
@@ -25,6 +32,7 @@ export default async function SettingsPage() {
         <div><p className="eyebrow">API SETTINGS / API 设置</p><h1>让 Agent 使用你的 API</h1><p className="lead">产品不提供任何 API，请分别添加你的大模型 API 和网络搜索 API。</p></div>
       </section>
       <ApiKeySettings initialStatus={credential} />
+      <CodexRuntimeSettings initialStatus={codexCapability} />
       <ResearchApiSettings initialStatus={researchCredential} />
     </main>
   );

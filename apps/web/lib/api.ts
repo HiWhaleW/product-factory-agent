@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import type {
   ArtifactContent,
   ArtifactGraph,
+  CodexRuntimeCapabilityStatus,
   GateRequest,
   Message,
   PermissionRequest,
@@ -83,6 +84,8 @@ export const getRuntimeStatus = () => apiFetch<RuntimeStatus>("/api/v1/runtime/s
 export const getMe = () => apiFetch<SessionStatus>("/api/v1/me");
 export const getProviderCredential = () =>
   apiFetch<ProviderCredentialStatus>("/api/v1/me/provider-credentials/model-api");
+export const getCodexRuntimeCapability = () =>
+  apiFetch<CodexRuntimeCapabilityStatus>("/api/v1/me/codex-runtime");
 export const getResearchCredential = () =>
   apiFetch<ResearchCredentialStatus>("/api/v1/me/provider-credentials/web-search");
 export const getArtifactContent = (artifactId: string, version?: number) =>

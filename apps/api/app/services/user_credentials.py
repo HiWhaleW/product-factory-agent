@@ -42,6 +42,8 @@ class ModelCredential:
     base_url: str
     model_name: str
     api_key: str
+    secret_ref: str
+    fingerprint: str
 
 
 @dataclass(frozen=True)
@@ -286,6 +288,8 @@ def resolve_model_credential(
             base_url=record.base_url,
             model_name=record.model_name,
             api_key=api_key,
+            secret_ref=record.secret_ref,
+            fingerprint=record.fingerprint,
         )
     raise UserCredentialError(
         "USER_API_KEY_REQUIRED",

@@ -63,7 +63,16 @@ def test_valid_d3_runtime_configuration_loads(tmp_path: Path) -> None:
     assert settings.MODEL_PROVIDER == "deepseek"
     assert settings.ARTIFACT_ROOT.is_absolute()
     assert settings.WORKSPACE_ROOT.is_absolute()
+    assert tmp_path / "codex-users" == settings.CODEX_USER_HOME_ROOT
     assert settings.BUILDER_ENABLED is True
+
+
+def test_codex_user_home_must_not_overlap_other_runtime_roots(tmp_path: Path) -> None:
+    values = settings_values(tmp_path)
+    values["CODEX_USER_HOME_ROOT"] = values["WORKSPACE_ROOT"]
+
+    with pytest.raises(ValidationError, match="storage roots must be different"):
+        Settings(_env_file=None, **values)
 
 
 def test_builder_can_be_explicitly_disabled(tmp_path: Path) -> None:

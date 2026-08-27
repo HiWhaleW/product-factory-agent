@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     ARTIFACT_ROOT: Path
     WORKSPACE_ROOT: Path
     USER_SECRET_ROOT: Path | None = None
+    CODEX_USER_HOME_ROOT: Path | None = None
 
     MODEL_PROVIDER: str = "deepseek"
     MODEL_NAME: str = ""
@@ -35,6 +36,7 @@ class Settings(BaseSettings):
     BUILDER_ENABLED: bool = True
     CODEX_MAX_CONCURRENT_RUNS: int = Field(default=1, ge=1, le=4)
     CODEX_TASK_TIMEOUT_SECONDS: int = Field(default=1800, ge=30, le=7200)
+    CODEX_COMPATIBILITY_TIMEOUT_SECONDS: int = Field(default=180, ge=30, le=600)
     AGENT_MAX_TURNS_PER_RUN: int = Field(default=12, ge=1, le=50)
     AGENT_MAX_RETRIES_PER_RUN: int = Field(default=2, ge=0, le=5)
     RUN_HEARTBEAT_TIMEOUT_SECONDS: int = Field(default=90, ge=15, le=600)
@@ -59,7 +61,13 @@ class Settings(BaseSettings):
             raise ValueError("V1 MODEL_PROVIDER is frozen to deepseek")
         return value
 
-    @field_validator("ARTIFACT_ROOT", "WORKSPACE_ROOT", "CODEX_CLI_PATH", "USER_SECRET_ROOT")
+    @field_validator(
+        "ARTIFACT_ROOT",
+        "WORKSPACE_ROOT",
+        "CODEX_CLI_PATH",
+        "USER_SECRET_ROOT",
+        "CODEX_USER_HOME_ROOT",
+    )
     @classmethod
     def require_absolute_path(cls, value: Path | None) -> Path | None:
         if value is None:
@@ -74,8 +82,18 @@ class Settings(BaseSettings):
             self.USER_SECRET_ROOT = (self.ARTIFACT_ROOT.parent / "secrets").resolve(
                 strict=False
             )
-        if self.ARTIFACT_ROOT == self.WORKSPACE_ROOT:
-            raise ValueError("ARTIFACT_ROOT and WORKSPACE_ROOT must be different directories")
+        if self.CODEX_USER_HOME_ROOT is None:
+            self.CODEX_USER_HOME_ROOT = (
+                self.WORKSPACE_ROOT.parent / "codex-users"
+            ).resolve(strict=False)
+        runtime_roots = {
+            self.ARTIFACT_ROOT,
+            self.WORKSPACE_ROOT,
+            self.USER_SECRET_ROOT,
+            self.CODEX_USER_HOME_ROOT,
+        }
+        if len(runtime_roots) != 4:
+            raise ValueError("runtime storage roots must be different directories")
         if not self.ARTIFACT_ROOT.is_dir():
             raise ValueError("ARTIFACT_ROOT must be an existing directory")
         if not self.WORKSPACE_ROOT.is_dir():

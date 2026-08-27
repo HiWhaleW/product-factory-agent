@@ -155,6 +155,24 @@ export type ProviderCredentialStatus = {
   internal_test_fallback: boolean;
 };
 
+export type CodexRuntimeCapabilityStatus = {
+  runtime: "codex_app_server";
+  configured: boolean;
+  compatibility: "not_configured" | "untested" | "compatible" | "partial" | "incompatible";
+  config_version: string | null;
+  checked_at: string | null;
+  checks: {
+    app_server: boolean;
+    responses_api: boolean;
+    streaming: boolean;
+    structured_output: boolean;
+    tool_calling: boolean;
+    secret_isolation: boolean;
+  };
+  error_code: string | null;
+  user_message: string | null;
+};
+
 export type ResearchCredentialStatus = {
   provider: "web_search";
   configured: boolean;

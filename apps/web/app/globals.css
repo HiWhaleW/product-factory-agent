@@ -453,6 +453,10 @@ textarea::placeholder { color: #817c77; }
 .api-key-state { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 8px 18px; }
 .api-key-state span { font-size: 12px; font-weight: 800; }
 .api-key-state button { min-height: 40px; border-color: #a42b16; color: #8a2614; }
+.codex-capability-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 18px; border-block: 1px solid var(--ink); background: var(--ink); }
+.codex-capability-grid > div { display: flex; justify-content: space-between; gap: 12px; padding: 12px 18px; background: var(--paper-bright); }
+.codex-capability-grid span { color: var(--ink-soft); font-size: 11px; }
+.codex-capability-grid strong { font-size: 11px; }
 .api-key-settings > .form-error, .internal-fallback-note { margin: 0; padding: 0 18px 16px; }
 .internal-fallback-note { color: var(--ink-soft); font-size: 11px; line-height: 1.55; }
 .error-panel { margin-top: 40px; padding: 30px; border: 0; border-top: 10px solid var(--orange); background: var(--paper-bright); box-shadow: none; }
@@ -552,6 +556,7 @@ textarea::placeholder { color: #817c77; }
   .api-key-actions { grid-column: 1; flex-direction: column; }
   .api-key-delete-empty { align-self: flex-start; }
   .api-key-state { align-items: flex-start; flex-direction: column; }
+  .codex-capability-grid { grid-template-columns: 1fr; }
 
   .workspace-page { grid-template-rows: 31px 91px minmax(0, 1fr); gap: 6px; width: calc(100% - 12px); height: calc(100dvh - 58px); padding: 5px 0 6px; }
   .project-header h1 { max-width: 100%; gap: 7px; font-size: 13px; }
