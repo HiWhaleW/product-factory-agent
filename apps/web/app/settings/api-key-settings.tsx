@@ -2,9 +2,14 @@
 
 import { FormEvent, useState } from "react";
 
-import type { ApiError, ProviderCredentialStatus } from "@/lib/contracts";
+import type {
+  ApiError,
+  CodexRuntimeCapabilityStatus,
+  ProviderCredentialStatus,
+} from "@/lib/contracts";
 
 const endpoint = "/api/control/api/v1/me/provider-credentials/model-api";
+const confirmationEndpoint = "/api/control/api/v1/me/codex-runtime/compatibility";
 
 export type CredentialDraft = {
   providerName: string;
@@ -13,13 +18,11 @@ export type CredentialDraft = {
   apiKey: string;
 };
 
-export function credentialDraftFromStatus(
-  status: ProviderCredentialStatus,
-): CredentialDraft {
+export function emptyCredentialDraft(): CredentialDraft {
   return {
-    providerName: status.configured ? status.provider_name ?? "" : "",
-    baseUrl: status.configured ? status.base_url ?? "" : "",
-    modelName: status.configured ? status.model_name ?? "" : "",
+    providerName: "",
+    baseUrl: "",
+    modelName: "",
     apiKey: "",
   };
 }
@@ -36,7 +39,7 @@ export function credentialDraftError(draft: CredentialDraft): string {
     return "服务地址必须是有效的 HTTPS Base URL。";
   }
   if (!draft.modelName.trim()) return "请填写模型名。";
-  if (!draft.apiKey) return "请先粘贴 API Key，再点击添加。";
+  if (!draft.apiKey) return "请先粘贴 API Key，再点击保存。";
   if (draft.apiKey !== draft.apiKey.trim() || /\s/.test(draft.apiKey)) {
     return "API Key 不能包含空格或换行。";
   }
@@ -59,26 +62,106 @@ export function credentialDeleteDisabled(
   return pending || !status.configured;
 }
 
-export function ApiKeySettings({ initialStatus }: { initialStatus: ProviderCredentialStatus }) {
-  const initialDraft = credentialDraftFromStatus(initialStatus);
+export function credentialCanConfirmSavedStatus(
+  status: ProviderCredentialStatus,
+  draft: CredentialDraft,
+): boolean {
+  return Boolean(
+    status.configured &&
+      !draft.apiKey &&
+      !draft.providerName &&
+      !draft.baseUrl &&
+      !draft.modelName,
+  );
+}
+
+export function credentialConfirmationDisabled(
+  status: ProviderCredentialStatus,
+  draft: CredentialDraft,
+  pending: boolean,
+): boolean {
+  return pending || !credentialCanConfirmSavedStatus(status, draft);
+}
+
+export function credentialConfirmationLabel(
+  status: ProviderCredentialStatus,
+  confirmation: CodexRuntimeCapabilityStatus | null,
+): string {
+  if (!status.configured) return "待配置";
+  if (confirmation?.compatibility === "compatible") return "已确认";
+  if (confirmation?.compatibility === "partial") return "部分兼容";
+  if (confirmation?.compatibility === "incompatible") return "确认失败";
+  return "待确认";
+}
+
+export function credentialConfirmationClass(
+  confirmation: CodexRuntimeCapabilityStatus | null,
+): string {
+  if (confirmation?.compatibility === "compatible") return "status-pill live";
+  if (confirmation?.compatibility === "incompatible") return "status-pill error";
+  return "status-pill warning";
+}
+
+export function ApiKeySettings({
+  initialStatus,
+  initialCodexStatus,
+}: {
+  initialStatus: ProviderCredentialStatus;
+  initialCodexStatus: CodexRuntimeCapabilityStatus;
+}) {
+  const initialDraft = emptyCredentialDraft();
   const [status, setStatus] = useState<ProviderCredentialStatus>(initialStatus);
+  const [confirmation, setConfirmation] =
+    useState<CodexRuntimeCapabilityStatus | null>(initialCodexStatus);
   const [providerName, setProviderName] = useState(initialDraft.providerName);
   const [baseUrl, setBaseUrl] = useState(initialDraft.baseUrl);
   const [modelName, setModelName] = useState(initialDraft.modelName);
   const [apiKey, setApiKey] = useState(initialDraft.apiKey);
   const [pending, setPending] = useState(false);
+  const [confirmationPending, setConfirmationPending] = useState(false);
   const [message, setMessage] = useState(credentialStatusMessage(initialStatus));
   const [error, setError] = useState("");
 
   function applyStatus(next: ProviderCredentialStatus) {
-    const nextDraft = credentialDraftFromStatus(next);
+    const nextDraft = emptyCredentialDraft();
     setStatus(next);
     setProviderName(nextDraft.providerName);
     setBaseUrl(nextDraft.baseUrl);
     setModelName(nextDraft.modelName);
     setApiKey(nextDraft.apiKey);
-    setMessage(credentialStatusMessage(next));
+    setConfirmation(null);
+    setMessage(
+      next.configured
+        ? `${credentialStatusMessage(next)} · API 已保存，尚未确认可用`
+        : credentialStatusMessage(next),
+    );
     window.dispatchEvent(new CustomEvent("product-factory:provider-credential-changed"));
+  }
+
+  async function confirmApi() {
+    const draft = { providerName, baseUrl, modelName, apiKey };
+    if (credentialConfirmationDisabled(status, draft, pending || confirmationPending)) return;
+    setConfirmationPending(true);
+    setError("");
+    try {
+      const response = await fetch(confirmationEndpoint, { method: "POST" });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as ApiError;
+        throw new Error(body.error?.user_message ?? "API 确认失败");
+      }
+      const next = (await response.json()) as CodexRuntimeCapabilityStatus;
+      setConfirmation(next);
+      setMessage(
+        `${credentialStatusMessage(status)} · ${next.user_message ?? "API 确认已完成"}`,
+      );
+      window.dispatchEvent(
+        new CustomEvent("product-factory:codex-runtime-confirmed", { detail: next }),
+      );
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "API 确认失败");
+    } finally {
+      setConfirmationPending(false);
+    }
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -138,31 +221,53 @@ export function ApiKeySettings({ initialStatus }: { initialStatus: ProviderCrede
     <section aria-labelledby="api-key-title" className="api-key-settings">
       <header>
         <div><p className="eyebrow">MODEL API / 模型接口</p><h2 id="api-key-title">大模型 API</h2></div>
-        <span className={status?.configured ? "status-pill live" : "status-pill warning"}>{status?.configured ? "已配置" : "待配置"}</span>
+        <span className={credentialConfirmationClass(confirmation)}>
+          {credentialConfirmationLabel(status, confirmation)}
+        </span>
       </header>
       <p className="api-key-explanation">
-        支持使用 OpenAI 兼容接口的不同模型。Key 原文只发送到当前环境的受控后端，不会进入数据库、页面回包、日志、项目 Context 或 Artifact。
+        支持使用 OpenAI 兼容接口的不同模型。先保存 API，再主动确认真实流式输出、结构化输出和工具调用是否可用；确认会发起真实模型请求，可能消耗少量 Token。Key 原文只发送到当前环境的受控后端，不会进入数据库、页面回包、日志、项目 Context 或 Artifact。
       </p>
       <form autoComplete="off" noValidate onSubmit={save}>
-        <label htmlFor="provider-name"><strong>接口名称</strong><span>例如 DeepSeek、OpenAI 或你的模型服务</span></label>
+        <label htmlFor="provider-name"><strong>接口名称</strong><span>例如 DeepSeek、OpenAI 或你的模型服务；由当前用户填写</span></label>
         <input id="provider-name" maxLength={80} onChange={(event) => setProviderName(event.target.value)} required type="text" value={providerName} />
-        <label htmlFor="provider-base-url"><strong>服务地址</strong><span>OpenAI 兼容 API 的 HTTPS Base URL</span></label>
+        <label htmlFor="provider-base-url"><strong>服务地址</strong><span>由当前用户填写 OpenAI 兼容 API 的 HTTPS Base URL</span></label>
         <input autoCapitalize="none" id="provider-base-url" maxLength={500} onChange={(event) => setBaseUrl(event.target.value)} required spellCheck={false} type="url" value={baseUrl} />
-        <label htmlFor="provider-model"><strong>模型名</strong><span>填写接口服务实际支持的模型 ID</span></label>
+        <label htmlFor="provider-model"><strong>模型名</strong><span>由当前用户填写接口服务实际支持的模型 ID</span></label>
         <input autoCapitalize="none" id="provider-model" maxLength={120} onChange={(event) => setModelName(event.target.value)} required spellCheck={false} type="text" value={modelName} />
-        <label htmlFor="model-api-key"><strong>API Key</strong><span>{status?.configured ? "粘贴新 Key 以替换现有 Key" : "粘贴接口服务生成的 API Key"}</span></label>
+        <label htmlFor="model-api-key"><strong>API Key</strong><span>{status?.configured ? "完整填写以上信息并粘贴新 Key，才会替换现有 API" : "粘贴接口服务生成的 API Key"}</span></label>
         <input autoCapitalize="none" autoComplete="new-password" id="model-api-key" maxLength={512} minLength={8} name="model-api-key" onChange={(event) => setApiKey(event.target.value)} required spellCheck={false} type="password" value={apiKey} />
         <div className="api-key-actions">
-          <button className="primary-button" disabled={pending} type="submit">{pending ? "处理中…" : status?.configured ? "替换 API Key" : "添加 API Key"}</button>
+          <button className="primary-button" disabled={pending || confirmationPending} type="submit">{pending ? "保存中…" : status?.configured ? "替换 API" : "保存 API"}</button>
+          <button
+            className="secondary-button"
+            disabled={credentialConfirmationDisabled(
+              status,
+              { providerName, baseUrl, modelName, apiKey },
+              pending || confirmationPending,
+            )}
+            onClick={confirmApi}
+            type="button"
+          >
+            {confirmationPending
+              ? "确认中…"
+              : confirmation?.compatibility === "compatible"
+                ? "重新确认 API"
+                : "确认 API"}
+          </button>
           <button
             className="danger-button"
-            disabled={credentialDeleteDisabled(status, pending)}
+            disabled={credentialDeleteDisabled(status, pending || confirmationPending)}
             onClick={remove}
             type="button"
           >删除 API Key</button>
         </div>
       </form>
       <div aria-live="polite" className="api-key-state"><span>{message}</span></div>
+      {status.configured &&
+      !credentialCanConfirmSavedStatus(status, { providerName, baseUrl, modelName, apiKey }) ? (
+        <p className="internal-fallback-note">请先保存当前修改，再确认 API。</p>
+      ) : null}
       {error ? <p className="form-error" role="alert">{error}</p> : null}
     </section>
   );

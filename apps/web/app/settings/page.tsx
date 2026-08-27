@@ -31,7 +31,10 @@ export default async function SettingsPage() {
       <section className="hero compact">
         <div><p className="eyebrow">API SETTINGS / API 设置</p><h1>让 Agent 使用你的 API</h1><p className="lead">产品不提供任何 API，请分别添加你的大模型 API 和网络搜索 API。</p></div>
       </section>
-      <ApiKeySettings initialStatus={credential} />
+      <ApiKeySettings
+        initialCodexStatus={codexCapability}
+        initialStatus={credential}
+      />
       <CodexRuntimeSettings initialStatus={codexCapability} />
       <ResearchApiSettings initialStatus={researchCredential} />
     </main>

@@ -38,14 +38,26 @@ export function CodexRuntimeSettings({
     function refreshFromCredentialChange() {
       void refresh();
     }
+    function refreshFromConfirmation(event: Event) {
+      const confirmationEvent = event as CustomEvent<CodexRuntimeCapabilityStatus>;
+      setStatus(confirmationEvent.detail);
+    }
     window.addEventListener(
       "product-factory:provider-credential-changed",
       refreshFromCredentialChange,
+    );
+    window.addEventListener(
+      "product-factory:codex-runtime-confirmed",
+      refreshFromConfirmation,
     );
     return () => {
       window.removeEventListener(
         "product-factory:provider-credential-changed",
         refreshFromCredentialChange,
+      );
+      window.removeEventListener(
+        "product-factory:codex-runtime-confirmed",
+        refreshFromConfirmation,
       );
     };
   }, []);
@@ -80,15 +92,15 @@ export function CodexRuntimeSettings({
     <section aria-labelledby="codex-runtime-title" className="api-key-settings">
       <header>
         <div>
-          <p className="eyebrow">CODEX RUNTIME / CODEX 运行时</p>
-          <h2 id="codex-runtime-title">Codex 兼容性</h2>
+          <p className="eyebrow">CODEX COMPATIBILITY / API 确认</p>
+          <h2 id="codex-runtime-title">API 可用性确认</h2>
         </div>
         <span className={codexCompatibilityClass(status)}>
           {codexCompatibilityLabel(status)}
         </span>
       </header>
       <p className="api-key-explanation">
-        使用当前账户保存的模型 API 启动隔离的 Codex App Server，检测真实流式输出、结构化输出和工具调用。检测不会把 Key 写入数据库、页面回包或 Codex 配置文件。
+        “已保存”不等于“已可用”。确认 API 会使用当前账户保存的模型 API 启动隔离的 Codex App Server，检测真实流式输出、结构化输出和工具调用。检测不会把 Key 写入数据库、页面回包或 Codex 配置文件。
       </p>
       <div className="codex-capability-grid" aria-label="Codex 能力检测结果">
         {checks.map(([label, passed]) => (
@@ -106,7 +118,11 @@ export function CodexRuntimeSettings({
           onClick={checkCompatibility}
           type="button"
         >
-          {pending ? "检测中…" : "开始兼容性检测"}
+          {pending
+            ? "确认中…"
+            : status.compatibility === "compatible"
+              ? "重新确认 API"
+              : "确认 API"}
         </button>
       </div>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
